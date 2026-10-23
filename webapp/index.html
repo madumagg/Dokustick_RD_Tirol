@@ -122,8 +122,17 @@ textarea:focus, input:focus, select:focus { outline: 2px solid var(--accent); ou
 .block { position: relative; }
 .doc-text { min-height: 64px; resize: none; font-size: 17px; overflow: hidden; }
 #docBlocks > .block-text:only-child .doc-text { min-height: 30vh; }
-.block-x { position: absolute; top: 6px; right: 6px; border: 0; background: var(--surface-2); color: var(--muted); border-radius: 8px; width: 30px; height: 30px; }
-.block-text:has(.block-x) .doc-text { padding-right: 42px; }
+.block-tools { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; }
+.block-x { border: 0; background: var(--surface-2); color: var(--muted); border-radius: 8px; width: 32px; height: 32px; }
+.block-text:has(.block-tools) .doc-text { padding-right: 80px; }
+.grip { border: 0; background: var(--surface-2); color: var(--muted); border-radius: 8px; width: 32px; height: 32px; font-size: 18px; line-height: 1; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.block-head .grip { background: none; width: 28px; margin-left: -6px; }
+.block-head { cursor: grab; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.block.dragging { position: relative; z-index: 20; box-shadow: 0 8px 28px rgba(0,0,0,.22); opacity: .96; transition: none; cursor: grabbing; }
+.block { transition: transform .15s; }
+#docBlocks { position: relative; }
+.drop-line { position: absolute; left: 0; right: 0; height: 4px; margin-top: -2px; border-radius: 2px; background: var(--accent); pointer-events: none; z-index: 19; }
+body.drag-on { user-select: none; -webkit-user-select: none; cursor: grabbing; }
 .block-mod { padding: 10px 12px 12px; border-left: 4px solid var(--accent); }
 .block-head { display: flex; align-items: center; gap: 2px; margin-bottom: 6px; }
 .block-head button { border: 0; background: none; color: var(--muted); min-width: 36px; height: 36px; border-radius: 8px; font-size: 17px; }

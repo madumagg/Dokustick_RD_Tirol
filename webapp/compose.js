@@ -181,12 +181,25 @@ function appendText(text) {
   ta.dispatchEvent(new Event('input'));
 }
 
+// Tastatur-Bedienung des Griffs (Pfeiltasten)
 function moveBlock(b, dir) {
   const i = doc.indexOf(b), j = i + dir;
   if (j < 0 || j >= doc.length) return;
   [doc[i], doc[j]] = [doc[j], doc[i]];
   saveDoc();
   renderDoc();
+  document.querySelector(`[data-block="${b.id}"] .grip`)?.focus();
+}
+
+function grip(b, card) {
+  const g = el('button', {
+    type: 'button', class: 'grip', title: 'Ziehen zum Verschieben', 'aria-label': 'Verschieben (Pfeiltasten)',
+    onkeydown: (e) => {
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); moveBlock(b, e.key === 'ArrowUp' ? -1 : 1); }
+    },
+  }, '⠿');
+  enableDrag(g, b, card, { immediate: true });
+  return g;
 }
 
 function removeBlock(b) {
@@ -230,23 +243,27 @@ function renderTextBlock(b) {
     onfocus: () => { activeBlockId = b.id; },
     oninput: (e) => { b.text = e.target.value; autosize(e.target); saveDoc(); },
   }, b.text);
-  return el('div', { class: 'block block-text', 'data-block': b.id },
-    ta,
-    doc.length > 1 ? el('button', { type: 'button', class: 'block-x', title: 'Textblock entfernen', 'aria-label': 'Textblock entfernen', onclick: () => removeBlock(b) }, '✕') : null);
+  const card = el('div', { class: 'block block-text', 'data-block': b.id }, ta);
+  if (doc.length > 1) {
+    card.append(el('div', { class: 'block-tools' },
+      grip(b, card),
+      el('button', { type: 'button', class: 'block-x', title: 'Textblock entfernen', 'aria-label': 'Textblock entfernen', onclick: () => removeBlock(b) }, '✕')));
+  }
+  return card;
 }
 
 function renderModuleBlock(b) {
   const pre = el('div', { class: 'preview small' });
   const update = () => { saveDoc(); renderPreviewInto(pre, expandDynamic(blockText(b))); };
-  const card = el('div', { class: 'block block-mod card', 'data-block': b.id },
-    el('div', { class: 'block-head' },
-      el('strong', { class: 'grow' }, b.title),
-      el('button', { type: 'button', title: 'Nur diesen Block senden', 'aria-label': 'Nur diesen Block senden', onclick: () => send(blockText(b)) }, '⟶'),
-      el('button', { type: 'button', title: 'Nach oben', 'aria-label': 'Nach oben', onclick: () => moveBlock(b, -1) }, '↑'),
-      el('button', { type: 'button', title: 'Nach unten', 'aria-label': 'Nach unten', onclick: () => moveBlock(b, 1) }, '↓'),
-      el('button', { type: 'button', title: 'Entfernen', 'aria-label': 'Entfernen', onclick: () => removeBlock(b) }, '✕')),
-    formFields(b.tpl).map((f) => renderFieldInput(f, b.values, update)),
-    pre);
+  const card = el('div', { class: 'block block-mod card', 'data-block': b.id });
+  const head = el('div', { class: 'block-head' },
+    grip(b, card),
+    el('strong', { class: 'grow' }, b.title),
+    el('button', { type: 'button', title: 'Nur diesen Block senden', 'aria-label': 'Nur diesen Block senden', onclick: () => send(blockText(b)) }, '⟶'),
+    el('button', { type: 'button', title: 'Entfernen', 'aria-label': 'Entfernen', onclick: () => removeBlock(b) }, '✕'));
+  // Kopfzeile gedrueckt halten (Touch) bzw. ziehen (Maus) verschiebt die Karte
+  enableDrag(head, b, card);
+  card.append(head, ...formFields(b.tpl).map((f) => renderFieldInput(f, b.values, update)), pre);
   update();
   return card;
 }
@@ -293,6 +310,104 @@ function renderFieldInput(f, values, onChange) {
   draw();
   return el('div', { class: 'field compact' }, label, chips);
 }
+
+/* ================= Verschieben per Ziehen ================= */
+
+const LONG_PRESS_MS = 350;
+let drag = null;
+
+/*
+ * Touch: gedrueckt halten, dann ziehen (kurzes Wischen scrollt normal).
+ * Maus: sofort ziehen. Der Griff (immediate) zieht auch per Touch sofort.
+ */
+function enableDrag(handle, b, card, { immediate = false } = {}) {
+  handle.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || drag) return;
+    if (!immediate && e.target.closest('button, input, textarea, select')) return;
+    const touchLike = e.pointerType !== 'mouse';
+    drag = { b, card, handle, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, y: e.clientY, active: false, wait: touchLike && !immediate, immediate };
+    if (drag.wait) drag.timer = setTimeout(() => drag && startDrag(), LONG_PRESS_MS);
+    else if (immediate) { e.preventDefault(); startDrag(); }
+  });
+  handle.addEventListener('contextmenu', (e) => { if (drag) e.preventDefault(); });
+}
+
+function startDrag() {
+  const d = drag;
+  d.active = true;
+  clearTimeout(d.timer);
+  try { d.handle.setPointerCapture(d.pointerId); } catch { /* egal */ }
+  navigator.vibrate?.(25);
+  // Positionen aller Bloecke zu Beginn merken (Seitenkoordinaten)
+  d.scroll0 = window.scrollY;
+  d.rects = [...document.querySelectorAll('#docBlocks > .block')].map((n) => {
+    const r = n.getBoundingClientRect();
+    return { id: n.dataset.block, top: r.top + window.scrollY, height: r.height };
+  });
+  d.self = d.rects.find((r) => r.id === d.b.id);
+  d.line = el('div', { class: 'drop-line' });
+  $('#docBlocks').append(d.line);
+  d.card.classList.add('dragging');
+  document.body.classList.add('drag-on');
+  moveDrag();
+  autoScroll();
+}
+
+function moveDrag() {
+  const d = drag;
+  const delta = d.y - d.y0 + (window.scrollY - d.scroll0);
+  d.card.style.transform = `translateY(${delta}px)`;
+  // Ziel: wie viele andere Bloecke liegen mit ihrer Mitte oberhalb der Kartenmitte?
+  const center = d.self.top + d.self.height / 2 + delta;
+  const others = d.rects.filter((r) => r.id !== d.b.id);
+  d.target = others.filter((r) => r.top + r.height / 2 < center).length;
+  const box = $('#docBlocks').getBoundingClientRect().top + window.scrollY;
+  const at = d.target < others.length ? others[d.target].top - 5 : others.length ? others[others.length - 1].top + others[others.length - 1].height + 5 : d.self.top;
+  d.line.style.top = (at - box) + 'px';
+}
+
+// Am oberen/unteren Rand automatisch mitscrollen
+function autoScroll() {
+  if (!drag || !drag.active) return;
+  // Je naeher am Rand, desto schneller (bis ca. 1500 px/s)
+  const zone = 120, top = 70, bottom = window.innerHeight - 150;
+  const v = drag.y < top + zone ? -Math.min(1, (top + zone - drag.y) / zone) * 25
+    : drag.y > bottom - zone ? Math.min(1, (drag.y - bottom + zone) / zone) * 25 : 0;
+  if (v) { window.scrollBy(0, v); moveDrag(); }
+  requestAnimationFrame(autoScroll);
+}
+
+function endDrag(drop) {
+  const d = drag;
+  drag = null;
+  if (!d) return;
+  clearTimeout(d.timer);
+  if (!d.active) return;
+  d.line.remove();
+  d.card.classList.remove('dragging');
+  d.card.style.transform = '';
+  document.body.classList.remove('drag-on');
+  if (drop && d.target != null) {
+    const rest = doc.filter((x) => x !== d.b);
+    rest.splice(d.target, 0, d.b);
+    const changed = rest.some((x, i) => x !== doc[i]);
+    doc = rest;
+    if (changed) { saveDoc(); renderDoc(); }
+  }
+}
+
+document.addEventListener('pointermove', (e) => {
+  if (!drag || e.pointerId !== drag.pointerId) return;
+  drag.y = e.clientY;
+  if (drag.active) return moveDrag();
+  const dist = Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0);
+  if (drag.wait) { if (dist > 8) endDrag(false); } // Finger bewegt sich vor Ablauf -> Scrollen
+  else if (dist > 5) startDrag();                    // Maus: ab 5 px ziehen
+});
+document.addEventListener('pointerup', (e) => { if (drag && e.pointerId === drag.pointerId) endDrag(true); });
+document.addEventListener('pointercancel', (e) => { if (drag && e.pointerId === drag.pointerId) endDrag(false); });
+// Waehrend des Ziehens darf der Browser nicht scrollen
+document.addEventListener('touchmove', (e) => { if (drag && (drag.active || drag.wait)) { if (drag.active) e.preventDefault(); } }, { passive: false });
 
 /* ================= Baustein-Auswahl im Schreiben-Fenster ================= */
 
