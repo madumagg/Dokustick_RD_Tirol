@@ -1,0 +1,16 @@
+{
+  "name": "DokuStick",
+  "short_name": "DokuStick",
+  "description": "Text per Bluetooth an den DokuStick-Dongle senden und als Tastatur eintippen lassen.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6f7",
+  "theme_color": "#0b6f6a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

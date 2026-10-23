@@ -1,0 +1,1010 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b6f6a">
+<title>DokuStick</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root {
+  --bg: #f4f6f7;
+  --surface: #ffffff;
+  --surface-2: #eef1f2;
+  --text: #15201f;
+  --muted: #5b6b6a;
+  --border: #d5dcdc;
+  --accent: #0b6f6a;
+  --accent-text: #ffffff;
+  --accent-soft: #d9efed;
+  --danger: #b3261e;
+  --danger-soft: #fbe3e1;
+  --warn: #8a5a00;
+  --warn-soft: #fff1d1;
+  --ok: #1d7a35;
+  --radius: 14px;
+  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1414;
+    --surface: #172020;
+    --surface-2: #1f2a2a;
+    --text: #e6eeed;
+    --muted: #93a5a3;
+    --border: #2c3a3a;
+    --accent: #3fb8ae;
+    --accent-text: #04201e;
+    --accent-soft: #173a37;
+    --danger: #f2867c;
+    --danger-soft: #3a1c1a;
+    --warn: #f0c060;
+    --warn-soft: #3a2f14;
+    --ok: #6fd28a;
+    --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1414; --surface: #172020; --surface-2: #1f2a2a; --text: #e6eeed; --muted: #93a5a3;
+  --border: #2c3a3a; --accent: #3fb8ae; --accent-text: #04201e; --accent-soft: #173a37;
+  --danger: #f2867c; --danger-soft: #3a1c1a; --warn: #f0c060; --warn-soft: #3a2f14; --ok: #6fd28a; --shadow: none;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  -webkit-tap-highlight-color: transparent;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+/* Kopfzeile */
+header {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+}
+.bar { display: flex; align-items: center; gap: 12px; max-width: 760px; margin: 0 auto; }
+.brand { font-weight: 700; font-size: 18px; letter-spacing: -.01em; flex: 1; display: flex; align-items: center; gap: 8px; }
+.brand svg { width: 26px; height: 26px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); flex: none; }
+.dot.on { background: var(--ok); }
+.dot.busy { background: var(--warn); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+
+.status { max-width: 760px; margin: 8px auto 0; display: grid; gap: 6px; }
+.status:empty { display: none; }
+.note { font-size: 13px; padding: 6px 10px; border-radius: 10px; background: var(--surface-2); color: var(--muted); }
+.note.warn { background: var(--warn-soft); color: var(--warn); }
+.note.err { background: var(--danger-soft); color: var(--danger); }
+.progress { display: flex; align-items: center; gap: 10px; }
+.progress .track { flex: 1; height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.progress .fill { height: 100%; width: 0; background: var(--accent); transition: width .15s; }
+
+main { max-width: 760px; margin: 0 auto; padding: 16px; }
+section[hidden] { display: none; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 20px 0 8px; font-weight: 600; }
+h2:first-child { margin-top: 0; }
+
+/* Buttons */
+.btn {
+  border: 1px solid var(--border); background: var(--surface); border-radius: 12px;
+  padding: 10px 14px; min-height: 44px; font-weight: 500;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn:active { transform: scale(.98); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+.btn.danger { color: var(--danger); border-color: var(--danger); background: transparent; }
+.btn.small { min-height: 36px; padding: 6px 10px; font-size: 14px; }
+.btn.big { width: 100%; min-height: 56px; font-size: 18px; }
+.btn.icon { width: 44px; padding: 0; }
+.btn.rec { background: var(--danger); border-color: var(--danger); color: #fff; animation: pulse 1.2s infinite; }
+.btn[disabled] { opacity: .5; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.row.end { justify-content: flex-end; }
+.grow { flex: 1; }
+
+/* Eingaben */
+textarea, input[type=text], input[type=search], select {
+  width: 100%; border: 1px solid var(--border); background: var(--surface); border-radius: 12px; padding: 10px 12px;
+}
+textarea:focus, input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+#editor { min-height: 38vh; resize: vertical; font-size: 17px; }
+.interim { min-height: 1.4em; color: var(--muted); font-style: italic; font-size: 14px; margin: 6px 2px; }
+label.field { display: block; margin-bottom: 12px; }
+label.field > span { display: block; font-size: 14px; color: var(--muted); margin-bottom: 4px; }
+.check { display: flex; gap: 10px; align-items: center; min-height: 44px; }
+.check input { width: 20px; height: 20px; accent-color: var(--accent); }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.pad { padding: 14px; }
+
+/* Textbausteine */
+.mods { display: grid; gap: 8px; }
+.mod { display: flex; align-items: stretch; }
+.mod .send {
+  flex: 1; text-align: left; border: 0; background: none; padding: 12px 14px; min-height: 56px; border-radius: var(--radius) 0 0 var(--radius);
+}
+.mod .send:active { background: var(--accent-soft); }
+.mod .title { font-weight: 600; display: block; }
+.mod .prev { font-size: 13px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mod .acts { display: flex; border-left: 1px solid var(--border); }
+.mod .acts button { border: 0; background: none; width: 46px; color: var(--muted); font-size: 18px; }
+.mod .acts button + button { border-left: 1px solid var(--border); }
+.empty { color: var(--muted); text-align: center; padding: 24px 8px; }
+
+/* Formulare */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.chip { border: 1px solid var(--border); background: var(--surface-2); border-radius: 999px; padding: 6px 12px; font-size: 14px; min-height: 36px; }
+.chip.sel { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.preview { font-family: inherit; white-space: pre-wrap; word-break: break-word; font-size: 15px; background: var(--surface-2); border-radius: 12px; padding: 12px; margin: 0; }
+.tok { color: var(--accent); font-weight: 600; }
+code { background: var(--surface-2); padding: 1px 5px; border-radius: 6px; font-size: 14px; }
+.help { font-size: 14px; color: var(--muted); }
+.help li { margin: 3px 0; }
+
+/* Navigation */
+nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
+  background: var(--surface); border-top: 1px solid var(--border);
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+nav button { border: 0; background: none; padding: 8px 4px 10px; min-height: 60px; color: var(--muted); font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+nav button svg { width: 24px; height: 24px; }
+nav button[aria-selected=true] { color: var(--accent); font-weight: 600; }
+
+dialog { border: 0; border-radius: 18px; padding: 0; width: min(560px, calc(100vw - 24px)); background: var(--surface); color: var(--text); }
+dialog::backdrop { background: rgba(0,0,0,.45); }
+dialog form { padding: 18px; }
+dialog h3 { margin: 0 0 14px; }
+
+#toast {
+  position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 15px;
+  max-width: calc(100vw - 32px); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 50;
+}
+#toast.show { opacity: 1; }
+#toast.err { background: var(--danger); color: #fff; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <div class="brand">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><rect x="4" y="4" width="56" height="56" rx="14" fill="var(--accent)"/><rect x="22" y="12" width="20" height="10" rx="2" fill="var(--accent-text)" opacity=".85"/><rect x="16" y="22" width="32" height="30" rx="6" fill="var(--accent-text)"/><path d="M26 33h12M26 40h8" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round"/></svg>
+      DokuStick
+    </div>
+    <span class="pill"><span class="dot" id="connDot"></span><span id="connText">Nicht verbunden</span></span>
+    <button class="btn small primary" id="connBtn">Verbinden</button>
+  </div>
+  <div class="status" id="statusArea"></div>
+</header>
+
+<main>
+  <!-- Schreiben -->
+  <section id="tab-write">
+    <textarea id="editor" placeholder="Text eingeben oder diktieren …" autocomplete="off" spellcheck="true"></textarea>
+    <div class="interim" id="interim"></div>
+    <div class="row">
+      <button class="btn" id="micBtn" title="Diktat starten">🎤 Diktat</button>
+      <select id="tokenSel" class="btn" style="width:auto" aria-label="Platzhalter einfügen">
+        <option value="">＋ Taste …</option>
+        <option value="{TAB}">Tab</option>
+        <option value="{ENTER}">Enter</option>
+        <option value="{SHIFT+TAB}">Shift+Tab</option>
+        <option value="{PAUSE}">Pause 0,5 s</option>
+        <option value="{DATUM}">Datum</option>
+        <option value="{ZEIT}">Uhrzeit</option>
+      </select>
+      <span class="grow"></span>
+      <button class="btn" id="clearBtn">Leeren</button>
+    </div>
+    <div style="margin-top:12px"><button class="btn big primary" id="sendBtn">Senden ⟶</button></div>
+  </section>
+
+  <!-- Textbausteine -->
+  <section id="tab-modules" hidden>
+    <div class="row" style="margin-bottom:12px">
+      <input type="search" id="modSearch" class="grow" placeholder="Suchen …" style="flex:1">
+      <button class="btn primary" id="modAdd">＋ Neu</button>
+    </div>
+    <div id="modList"></div>
+  </section>
+
+  <!-- Formulare -->
+  <section id="tab-forms" hidden>
+    <div id="formListView">
+      <div class="row" style="margin-bottom:12px">
+        <span class="grow help">Vorlagen mit Feldern zum Ausfüllen</span>
+        <button class="btn primary" id="formAdd">＋ Neu</button>
+      </div>
+      <div id="formList" class="mods"></div>
+    </div>
+    <div id="formFillView" hidden>
+      <div class="row" style="margin-bottom:12px">
+        <button class="btn small" id="formBack">‹ Zurück</button>
+        <strong class="grow" id="formTitle"></strong>
+        <button class="btn small" id="formEdit">Bearbeiten</button>
+      </div>
+      <div id="formFields"></div>
+      <h2>Vorschau</h2>
+      <pre class="preview" id="formPreview"></pre>
+      <div class="row" style="margin-top:12px">
+        <button class="btn" id="formReset">Felder leeren</button>
+        <button class="btn" id="formToEditor">In Editor</button>
+        <span class="grow"></span>
+      </div>
+      <div style="margin-top:12px"><button class="btn big primary" id="formSend">Senden ⟶</button></div>
+    </div>
+  </section>
+
+  <!-- Einstellungen -->
+  <section id="tab-settings" hidden>
+    <h2>Tippen</h2>
+    <div class="card pad">
+      <label class="field"><span>Tippverzögerung: <b id="delayVal"></b> ms pro Tastenanschlag</span>
+        <input type="range" id="delay" min="1" max="40" step="1" style="width:100%">
+      </label>
+      <p class="help" style="margin:0 0 10px">Fehlen am Zielgerät Zeichen oder kommen sie verdreht an, Wert erhöhen (z.&nbsp;B. bei Remote-Desktop / Citrix auf 15–25&nbsp;ms).</p>
+      <button class="btn" id="testBtn">Tastatur-Test senden</button>
+      <p class="help" style="margin:8px 0 0">Tippt <code>Test äöü ÄÖÜ ß @ € {[]} \ | ~ ^ ° ² µ 123</code>. Am Zielgerät muss genau das ankommen. Das Zielgerät muss auf <b>Deutsch (Deutschland/Österreich)</b> als Tastaturlayout eingestellt sein.</p>
+    </div>
+
+    <h2>Diktat</h2>
+    <div class="card pad">
+      <label class="field"><span>Sprache</span>
+        <select id="lang">
+          <option value="de-AT">Deutsch (Österreich)</option>
+          <option value="de-DE">Deutsch (Deutschland)</option>
+          <option value="de-CH">Deutsch (Schweiz)</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="voiceCmds"> Sprachbefehle verwenden</label>
+      <p class="help" style="margin:0 0 12px">„neue Zeile“, „neuer Absatz“, „Punkt“, „Komma“, „Doppelpunkt“, „Fragezeichen“, „Schrägstrich“, „Bindestrich“, „Klammer auf/zu“, „Tabulator“</p>
+      <label class="field"><span>Eigene Ersetzungen (eine pro Zeile: <code>gesprochen =&gt; Text</code>)</span>
+        <textarea id="replacements" rows="5" placeholder="Blutdruck => RR&#10;Sauerstoffsättigung => SpO2&#10;Herzfrequenz => HF"></textarea>
+      </label>
+      <p class="note warn" style="margin:0">Datenschutz: Die Spracherkennung im Browser läuft je nach Gerät über Server von Google bzw. Apple. Keine Namen oder identifizierenden Patientendaten diktieren.</p>
+    </div>
+
+    <h2>Allgemein</h2>
+    <div class="card pad">
+      <label class="check"><input type="checkbox" id="clearAfter"> Editor nach dem Senden leeren</label>
+      <label class="field" style="margin-top:6px"><span>Darstellung</span>
+        <select id="theme">
+          <option value="">Wie System</option>
+          <option value="light">Hell</option>
+          <option value="dark">Dunkel</option>
+        </select>
+      </label>
+    </div>
+
+    <h2>Daten</h2>
+    <div class="card pad">
+      <p class="help" style="margin-top:0">Textbausteine, Formulare und Einstellungen werden nur auf diesem Gerät gespeichert. Ausgefüllte Formulare und der Editor-Text werden nicht gespeichert.</p>
+      <div class="row">
+        <button class="btn" id="exportBtn">Exportieren</button>
+        <button class="btn" id="importBtn">Importieren</button>
+        <input type="file" id="importFile" accept="application/json,.json" hidden>
+        <button class="btn danger" id="resetBtn">Auf Standard zurücksetzen</button>
+      </div>
+    </div>
+
+    <h2>Dongle</h2>
+    <div class="card pad help">
+      <ul style="margin:0;padding-left:18px">
+        <li><b>Erstes Koppeln:</b> Dongle einstecken (LED blinkt blau), „Verbinden“ tippen und die Kopplungsanfrage bestätigen.</li>
+        <li><b>Weiteres Handy koppeln:</b> Taste am Dongle kurz drücken → 60&nbsp;s Kopplungsmodus.</li>
+        <li><b>Alle Kopplungen löschen:</b> Taste 5&nbsp;s halten, bis die LED rot leuchtet.</li>
+        <li><b>LEDs:</b> blau blinkend = koppelbereit · grün = verbunden · flackernd = tippt · rot blinkend = nicht am Zielgerät eingesteckt.</li>
+        <li><b>Verbindung klappt nicht mehr</b> (z.&nbsp;B. nach Löschen der Kopplungen): „DokuStick“ in den Bluetooth-Einstellungen des Handys entfernen und neu verbinden.</li>
+      </ul>
+      <p style="margin-bottom:0">Firmware: <span id="fwVer">–</span></p>
+    </div>
+  </section>
+</main>
+
+<nav role="tablist">
+  <button role="tab" data-tab="write" aria-selected="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Schreiben</button>
+  <button role="tab" data-tab="modules" aria-selected="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Bausteine</button>
+  <button role="tab" data-tab="forms" aria-selected="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>Formulare</button>
+  <button role="tab" data-tab="settings" aria-selected="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>Einstellungen</button>
+</nav>
+
+<dialog id="dlg"><form method="dialog" id="dlgForm"></form></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+
+/* ================= Konstanten ================= */
+
+const SVC_UUID = '6e7a0001-4b3c-4f8e-9a1d-5c2b7d0a4e01';
+const CMD_UUID = '6e7a0002-4b3c-4f8e-9a1d-5c2b7d0a4e01';
+const STAT_UUID = '6e7a0003-4b3c-4f8e-9a1d-5c2b7d0a4e01';
+const CMD_DATA = 1, CMD_CANCEL = 2, CMD_DELAY = 3;
+const CHUNK = 19;            // Nutzdaten pro BLE-Paket (passt in die Standard-MTU)
+const ERR_QUEUE_FULL = 0x80;
+
+// Sondertasten: [Modifier, HID-Usage-ID]
+const KEYS = {
+  'TAB': [0, 0x2B], 'SHIFT+TAB': [0x02, 0x2B], 'ENTER': [0, 0x28], 'ESC': [0, 0x29],
+  'BACKSPACE': [0, 0x2A], 'DEL': [0, 0x4C], 'HOME': [0, 0x4A], 'END': [0, 0x4D],
+  'RIGHT': [0, 0x4F], 'LEFT': [0, 0x50], 'DOWN': [0, 0x51], 'UP': [0, 0x52],
+};
+const TOKEN_RE = /\{(SHIFT\+TAB|TAB|ENTER|ESC|BACKSPACE|DEL|HOME|END|RIGHT|LEFT|DOWN|UP|PAUSE(?::(\d+))?|DATUM|ZEIT)\}/g;
+
+// Zeichen, die ohne Entsprechung auf der deutschen Tastatur ersetzt werden
+const NORMALIZE = { '≥': '>=', '≤': '<=', '±': '+/-', '×': 'x', '÷': ':', '→': '->', '←': '<-', '•': '-', '·': '-', '½': '1/2', '¼': '1/4', '¾': '3/4', '‰': ' Promille' };
+// Zeichen, die die Firmware tippen kann (zusaetzlich zu druckbarem ASCII)
+const SUPPORTED = new Set([...'\n\täöüÄÖÜß§°²³€µμ´áéíóúÁÉÍÓÚàèìòùâêîôû   “”„‘’‚–—−…']);
+
+const DEFAULT_MODULES = [
+  { cat: 'Befund', title: 'Wach & orientiert', text: 'Pat. bei Eintreffen wach, ansprechbar und zu allen Qualitäten orientiert.' },
+  { cat: 'Befund', title: 'Keine Allergien', text: 'Keine Allergien bekannt.' },
+  { cat: 'Befund', title: 'Keine Dauermedikation', text: 'Keine Dauermedikation bekannt.' },
+  { cat: 'Maßnahmen', title: 'Monitoring', text: 'Monitoring (EKG, SpO2, NIBP) angelegt.' },
+  { cat: 'Maßnahmen', title: 'Venöser Zugang', text: 'Periphervenöser Zugang gelegt, Infusion angehängt.' },
+  { cat: 'Transport', title: 'Transport liegend', text: 'Transport liegend unter Monitoring ins Krankenhaus.' },
+  { cat: 'Transport', title: 'Transportverweigerung', text: 'Pat. lehnt Transport nach ausführlicher Aufklärung über mögliche Folgen ab.' },
+  { cat: 'Tasten', title: 'Tab', text: '{TAB}' },
+  { cat: 'Tasten', title: 'Enter', text: '{ENTER}' },
+  { cat: 'Tasten', title: 'Datum & Uhrzeit', text: '{DATUM} {ZEIT}' },
+];
+const DEFAULT_FORMS = [
+  { name: 'Vitalparameter', tpl: 'RR {{RR}} mmHg, HF {{HF:#}}/min, SpO2 {{SpO2:#}} %, AF {{AF:#}}/min, BZ {{BZ:#}} mg/dl, Temp. {{Temp:#}} °C, GCS {{GCS:15|14|13|12|11|10|9|8|7|6|5|4|3}}' },
+  { name: 'Kurzbefund', tpl: 'Pat. {{Bewusstsein:wach, orientiert|wach, desorientiert|somnolent|soporös|komatös}}.\nAtmung: {{Atmung:unauffällig|Dyspnoe|Tachypnoe|Bradypnoe}}.\nHaut: {{Haut:rosig, warm, trocken|blass|kaltschweißig|zyanotisch}}.\nSchmerz NRS {{NRS:#}}/10.' },
+  { name: 'Felder mit Tab füllen', tpl: '{{Feld 1}}{TAB}{{Feld 2}}{TAB}{{Feld 3}}' },
+];
+
+/* ================= Hilfsfunktionen ================= */
+
+const $ = (s) => document.querySelector(s);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+
+function el(tag, props = {}, ...children) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === 'class') n.className = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else if (v !== undefined && v !== null && v !== false) n.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of children.flat()) if (c != null) n.append(c);
+  return n;
+}
+
+let toastTimer;
+function toast(msg, kind = '') {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'show ' + kind;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (t.className = ''), kind === 'err' ? 5000 : 2500);
+}
+
+const store = {
+  load(key, fallback) {
+    try { const v = localStorage.getItem('dokustick.' + key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+  },
+  save(key, value) {
+    try { localStorage.setItem('dokustick.' + key, JSON.stringify(value)); } catch { /* privater Modus */ }
+  },
+};
+
+const withIds = (list) => list.map((x) => ({ id: uid(), ...x }));
+let modules = store.load('modules', null) || withIds(DEFAULT_MODULES);
+let forms = store.load('forms', null) || withIds(DEFAULT_FORMS);
+let settings = Object.assign({ delay: 5, lang: 'de-AT', voiceCmds: true, replacements: '', clearAfter: false, theme: '' }, store.load('settings', {}));
+const saveAll = () => { store.save('modules', modules); store.save('forms', forms); store.save('settings', settings); };
+
+/* ================= Text kodieren ================= */
+
+const pad2 = (n) => String(n).padStart(2, '0');
+function expandDynamic(text) {
+  const d = new Date();
+  return text
+    .replaceAll('{DATUM}', `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`)
+    .replaceAll('{ZEIT}', `${pad2(d.getHours())}:${pad2(d.getMinutes())}`);
+}
+
+function normalize(text) {
+  text = text.replace(/\r\n?/g, '\n').replace(/\u0000/g, '');
+  return [...text].map((c) => NORMALIZE[c] ?? c).join('');
+}
+
+function unsupportedChars(text) {
+  const bad = new Set();
+  for (const c of normalize(text).replace(TOKEN_RE, '')) {
+    const code = c.codePointAt(0);
+    if ((code >= 0x20 && code <= 0x7E) || SUPPORTED.has(c)) continue;
+    bad.add(c);
+  }
+  return [...bad];
+}
+
+// Wandelt Text inkl. Platzhaltern in den Datenstrom der Firmware um
+function encode(text) {
+  text = expandDynamic(normalize(text));
+  const enc = new TextEncoder();
+  const out = [];
+  const pushText = (s) => { for (const b of enc.encode(s)) out.push(b); };
+  let last = 0;
+  TOKEN_RE.lastIndex = 0;
+  for (let m; (m = TOKEN_RE.exec(text));) {
+    pushText(text.slice(last, m.index));
+    if (m[1].startsWith('PAUSE')) {
+      let ms = m[2] ? Number(m[2]) : 500;
+      while (ms > 0) { const n = Math.min(255, Math.ceil(ms / 10)); out.push(0, 0xFF, n); ms -= n * 10; }
+    } else {
+      const [mod, key] = KEYS[m[1]];
+      out.push(0, mod, key);
+    }
+    last = TOKEN_RE.lastIndex;
+  }
+  pushText(text.slice(last));
+  return new Uint8Array(out);
+}
+
+/* ================= Bluetooth ================= */
+
+const ble = {
+  device: null, cmd: null, stat: null, status: null,
+  connecting: false, userDisconnect: false, statusWaiters: [],
+  get connected() { return !!(this.device && this.device.gatt.connected && this.cmd); },
+};
+let sendJob = null; // { total, sent, cancelled }
+let sendChain = Promise.resolve();
+
+function parseStatus(dv) {
+  const s = {
+    flags: dv.getUint8(0), pending: dv.getUint16(1, true), free: dv.getUint16(3, true),
+    delay: dv.getUint8(5), version: dv.getUint8(6),
+  };
+  s.usb = !!(s.flags & 1); s.caps = !!(s.flags & 2); s.typing = !!(s.flags & 4); s.pairing = !!(s.flags & 8);
+  ble.status = s;
+  ble.statusWaiters.splice(0).forEach((r) => r());
+  renderStatus();
+}
+
+const waitStatus = (ms) => new Promise((r) => { ble.statusWaiters.push(r); setTimeout(r, ms); });
+
+async function connect() {
+  if (!navigator.bluetooth) return renderStatus();
+  ble.connecting = true; ble.userDisconnect = false; renderStatus();
+  const remembered = !!ble.device;
+  try {
+    if (!ble.device) useDevice(await navigator.bluetooth.requestDevice({ filters: [{ services: [SVC_UUID] }] }));
+    await setupGatt();
+    toast('Verbunden');
+  } catch (e) {
+    handleConnectError(e);
+    // Gemerkter Dongle nicht erreichbar: beim naechsten Versuch Auswahl anzeigen
+    if (remembered && !/auth|encrypt|insufficient|pair/i.test(String(e && e.message))) ble.device = null;
+  } finally {
+    ble.connecting = false; renderStatus();
+  }
+}
+
+function useDevice(d) {
+  ble.device = d;
+  if (!d.dokustickHooked) { d.addEventListener('gattserverdisconnected', onDisconnected); d.dokustickHooked = true; }
+}
+
+async function setupGatt() {
+  const server = await ble.device.gatt.connect();
+  const svc = await server.getPrimaryService(SVC_UUID);
+  const cmd = await svc.getCharacteristic(CMD_UUID);
+  ble.stat = await svc.getCharacteristic(STAT_UUID);
+  ble.stat.addEventListener('characteristicvaluechanged', (e) => parseStatus(e.target.value));
+  // Loest beim ersten Mal die Kopplung aus (verschluesselte Charakteristik)
+  await ble.stat.startNotifications();
+  parseStatus(await ble.stat.readValue());
+  ble.cmd = cmd;
+  await writeCmd(new Uint8Array([CMD_DELAY, settings.delay]));
+}
+
+function handleConnectError(e) {
+  const msg = String(e && (e.message || e.name) || e);
+  if (e && e.name === 'NotFoundError') return; // Auswahl abgebrochen
+  if (/auth|encrypt|insufficient|pair/i.test(msg)) {
+    toast('Kopplung abgelehnt: Taste am Dongle kurz drücken (LED blinkt blau) und erneut verbinden.', 'err');
+  } else {
+    toast('Verbindung fehlgeschlagen: ' + msg, 'err');
+  }
+  if (ble.device && ble.device.gatt.connected) ble.device.gatt.disconnect();
+  ble.cmd = null;
+}
+
+async function onDisconnected() {
+  ble.cmd = null; ble.stat = null; ble.status = null;
+  if (sendJob) sendJob.cancelled = true;
+  renderStatus();
+  if (ble.userDisconnect) return;
+  // Automatisch erneut verbinden (z.B. kurz ausser Reichweite)
+  for (const delay of [500, 1000, 2000, 4000, 8000]) {
+    await sleep(delay);
+    if (ble.userDisconnect || ble.connected) return;
+    try { ble.connecting = true; renderStatus(); await setupGatt(); toast('Wieder verbunden'); return; } catch { /* weiter versuchen */ } finally { ble.connecting = false; renderStatus(); }
+  }
+}
+
+function disconnect() {
+  ble.userDisconnect = true;
+  if (ble.device && ble.device.gatt.connected) ble.device.gatt.disconnect();
+}
+
+async function writeCmd(bytes) {
+  if (!ble.cmd) throw new Error('Nicht verbunden');
+  if (ble.cmd.writeValueWithResponse) await ble.cmd.writeValueWithResponse(bytes);
+  else await ble.cmd.writeValue(bytes);
+}
+
+function send(text) {
+  if (!text.trim()) return toast('Kein Text vorhanden');
+  if (!ble.connected) return toast('Nicht mit dem Dongle verbunden', 'err');
+  const bad = unsupportedChars(text);
+  if (bad.length && !confirm(`Diese Zeichen gibt es auf der deutschen Tastatur nicht und werden ausgelassen:\n\n${bad.join('  ')}\n\nTrotzdem senden?`)) return false;
+  const bytes = encode(text);
+  sendChain = sendChain.then(() => transmit(bytes)).catch((e) => toast('Senden fehlgeschlagen: ' + (e.message || e), 'err'));
+  return true;
+}
+
+async function transmit(bytes) {
+  const job = sendJob = { total: bytes.length, sent: 0, cancelled: false };
+  let free = ble.status ? ble.status.free : 512;
+  renderStatus();
+  try {
+    for (let i = 0; i < bytes.length && !job.cancelled; i += CHUNK) {
+      const part = bytes.slice(i, i + CHUNK);
+      // Flusskontrolle: nicht mehr schicken, als der Dongle puffern kann
+      while (free < part.length + 64 && !job.cancelled) {
+        await waitStatus(500);
+        if (ble.status) free = ble.status.free;
+      }
+      const pkt = new Uint8Array(part.length + 1);
+      pkt[0] = CMD_DATA; pkt.set(part, 1);
+      for (let tries = 0; !job.cancelled; tries++) {
+        try { await writeCmd(pkt); break; } catch (e) {
+          if (!ble.connected || tries > 40) throw e;
+          await sleep(250); // Warteschlange voll -> kurz warten
+        }
+      }
+      free -= part.length;
+      job.sent += part.length;
+      renderStatus();
+    }
+    // Warten, bis der Dongle fertig getippt hat
+    while (!job.cancelled && ble.connected && ble.status && (ble.status.pending > 0 || ble.status.typing)) {
+      await waitStatus(1000);
+    }
+  } finally {
+    if (sendJob === job) sendJob = null;
+    renderStatus();
+  }
+}
+
+async function cancelTyping() {
+  if (sendJob) sendJob.cancelled = true;
+  try { await writeCmd(new Uint8Array([CMD_CANCEL])); toast('Abgebrochen'); } catch { /* ignorieren */ }
+}
+
+function renderStatus() {
+  const dot = $('#connDot'), txt = $('#connText'), btn = $('#connBtn'), area = $('#statusArea');
+  area.replaceChildren();
+  const s = ble.status;
+  dot.className = 'dot' + (ble.connected ? (sendJob || (s && s.typing) ? ' busy' : ' on') : '');
+  txt.textContent = ble.connecting ? 'Verbinde …' : ble.connected ? 'Verbunden' : 'Nicht verbunden';
+  btn.textContent = ble.connected ? 'Trennen' : 'Verbinden';
+  btn.className = 'btn small' + (ble.connected ? '' : ' primary');
+  btn.disabled = ble.connecting;
+  $('#fwVer').textContent = s ? 'Version ' + s.version : '–';
+
+  if (!navigator.bluetooth) {
+    area.append(el('div', { class: 'note err' }, 'Dieser Browser unterstützt kein Web Bluetooth. Android: Chrome verwenden. iPhone: die kostenlose App „Bluefy“ verwenden. Die Seite muss über https geöffnet werden.'));
+    btn.disabled = true;
+    return;
+  }
+  if (!ble.connected || !s) return;
+  if (!s.usb) area.append(el('div', { class: 'note warn' }, 'Dongle ist nicht am Zielgerät eingesteckt (oder das Gerät schläft).'));
+  if (s.caps) area.append(el('div', { class: 'note' }, 'Feststelltaste am Zielgerät ist aktiv – wird automatisch ausgeglichen.'));
+  if (sendJob || s.typing) {
+    const total = sendJob ? sendJob.total : s.pending;
+    const done = sendJob ? Math.max(0, sendJob.sent - s.pending) : 0;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    area.append(el('div', { class: 'progress' },
+      el('div', { class: 'track' }, el('div', { class: 'fill', style: `width:${pct}%` })),
+      el('button', { class: 'btn small danger', onclick: cancelTyping }, 'Abbrechen')));
+  }
+}
+
+$('#connBtn').addEventListener('click', () => (ble.connected ? disconnect() : connect()));
+
+/* ================= Diktat ================= */
+
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, listening = false;
+
+const VOICE_CMDS = [
+  ['neuer absatz', '\n\n'], ['neue zeile', '\n'], ['doppelpunkt', ':'], ['semikolon', ';'], ['fragezeichen', '?'],
+  ['ausrufezeichen', '!'], ['schrägstrich', '/'], ['bindestrich', '-'], ['klammer auf', '('], ['klammer zu', ')'],
+  ['tabulator', '{TAB}'], ['komma', ','], ['punkt', '.'],
+];
+const reEscape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+function parseReplacements() {
+  return settings.replacements.split('\n')
+    .map((l) => l.split(/=>|→/))
+    .filter((p) => p.length === 2 && p[0].trim())
+    .map(([a, b]) => [a.trim(), b.trim()]);
+}
+
+function processSpeech(t) {
+  const rules = [...parseReplacements(), ...(settings.voiceCmds ? VOICE_CMDS : [])];
+  for (const [spoken, repl] of rules) {
+    t = t.replace(new RegExp(`(^|\\s)${reEscape(spoken)}(?=\\s|$|[.,!?])`, 'giu'), (_, pre) => pre + repl);
+  }
+  return t.replace(/[ \t]+([.,:;?!)])/g, '$1').replace(/\(\s+/g, '(').replace(/ *\n */g, '\n');
+}
+
+function insertDictation(raw) {
+  const ta = $('#editor');
+  let ins = processSpeech(raw.trim());
+  if (!ins) return;
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  const before = ta.value.slice(0, s);
+  if (before && !/\s$/.test(before) && !/^[.,:;?!)\n]/.test(ins)) ins = ' ' + ins;
+  if (/(^|[.!?]\s*|\n\s*)$/.test(before)) ins = ins.replace(/^(\s*)(\p{Ll})/u, (_, a, b) => a + b.toUpperCase());
+  ta.setRangeText(ins, s, e, 'end');
+}
+
+function updateMicBtn() {
+  const b = $('#micBtn');
+  b.className = 'btn' + (listening ? ' rec' : '');
+  b.textContent = listening ? '■ Stopp' : '🎤 Diktat';
+}
+
+function startDictation() {
+  if (!SpeechRec) return toast('Spracheingabe wird von diesem Browser nicht unterstützt', 'err');
+  rec = new SpeechRec();
+  rec.lang = settings.lang;
+  // Einzelne Saetze + automatischer Neustart ist auf Android zuverlaessiger als continuous
+  rec.continuous = false;
+  rec.interimResults = true;
+  rec.onresult = (e) => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const r = e.results[i];
+      if (r.isFinal) insertDictation(r[0].transcript); else interim += r[0].transcript;
+    }
+    $('#interim').textContent = interim;
+  };
+  rec.onerror = (e) => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      listening = false; updateMicBtn();
+      toast('Kein Zugriff auf das Mikrofon', 'err');
+    }
+  };
+  rec.onend = () => {
+    $('#interim').textContent = '';
+    if (listening) { try { rec.start(); } catch { listening = false; updateMicBtn(); } }
+  };
+  listening = true;
+  updateMicBtn();
+  rec.start();
+}
+
+function stopDictation() {
+  listening = false;
+  if (rec) rec.stop();
+  updateMicBtn();
+}
+
+$('#micBtn').addEventListener('click', () => (listening ? stopDictation() : startDictation()));
+
+/* ================= Schreiben ================= */
+
+$('#sendBtn').addEventListener('click', () => {
+  const ta = $('#editor');
+  if (send(ta.value) && settings.clearAfter) ta.value = '';
+});
+$('#clearBtn').addEventListener('click', () => { $('#editor').value = ''; $('#editor').focus(); });
+$('#tokenSel').addEventListener('change', (e) => {
+  const v = e.target.value;
+  e.target.value = '';
+  if (!v) return;
+  const ta = $('#editor');
+  ta.setRangeText(v, ta.selectionStart, ta.selectionEnd, 'end');
+  ta.focus();
+});
+
+function insertIntoEditor(text) {
+  const ta = $('#editor');
+  const sep = ta.value && !ta.value.endsWith('\n') && !ta.value.endsWith(' ') ? ' ' : '';
+  ta.value += sep + text;
+  showTab('write');
+  toast('In Editor eingefügt');
+}
+
+/* ================= Textbausteine ================= */
+
+function renderModules() {
+  const q = $('#modSearch').value.trim().toLowerCase();
+  const list = $('#modList');
+  list.replaceChildren();
+  const shown = modules.filter((m) => !q || (m.title + ' ' + m.text + ' ' + m.cat).toLowerCase().includes(q));
+  if (!shown.length) {
+    list.append(el('div', { class: 'empty' }, modules.length ? 'Nichts gefunden.' : 'Noch keine Textbausteine. Mit „＋ Neu“ anlegen.'));
+    return;
+  }
+  const groups = new Map();
+  for (const m of shown) {
+    const c = m.cat || 'Allgemein';
+    if (!groups.has(c)) groups.set(c, []);
+    groups.get(c).push(m);
+  }
+  for (const [cat, items] of groups) {
+    list.append(el('h2', {}, cat));
+    list.append(el('div', { class: 'mods' }, items.map((m) =>
+      el('div', { class: 'mod card' },
+        el('button', { class: 'send', onclick: () => send(m.text) && toast('Wird getippt: ' + m.title) },
+          el('span', { class: 'title' }, m.title),
+          el('span', { class: 'prev' }, m.text)),
+        el('div', { class: 'acts' },
+          el('button', { title: 'In Editor einfügen', 'aria-label': 'In Editor einfügen', onclick: () => insertIntoEditor(m.text) }, '↧'),
+          el('button', { title: 'Bearbeiten', 'aria-label': 'Bearbeiten', onclick: () => editModule(m) }, '✎'))))));
+  }
+}
+
+function editModule(m) {
+  const isNew = !m;
+  m = m || { id: uid(), cat: '', title: '', text: '' };
+  const cats = [...new Set(modules.map((x) => x.cat).filter(Boolean))];
+  openDialog(isNew ? 'Neuer Textbaustein' : 'Textbaustein bearbeiten', [
+    field('Titel', el('input', { type: 'text', name: 'title', value: m.title, required: true })),
+    field('Kategorie', el('input', { type: 'text', name: 'cat', value: m.cat, list: 'catList' }),
+      el('datalist', { id: 'catList' }, cats.map((c) => el('option', { value: c })))),
+    field('Text', el('textarea', { name: 'text', rows: 5, required: true }, m.text)),
+    el('p', { class: 'help', style: 'margin-top:0' }, 'Sondertasten: ', el('code', {}, '{TAB}'), ' ', el('code', {}, '{ENTER}'), ' ', el('code', {}, '{PAUSE}'), ' ', el('code', {}, '{DATUM}'), ' ', el('code', {}, '{ZEIT}')),
+  ], {
+    onSave: (f) => {
+      Object.assign(m, { title: f.title.value.trim(), cat: f.cat.value.trim(), text: f.text.value });
+      if (isNew) modules.push(m);
+      saveAll(); renderModules();
+    },
+    onDelete: isNew ? null : () => { modules = modules.filter((x) => x.id !== m.id); saveAll(); renderModules(); },
+  });
+}
+
+$('#modSearch').addEventListener('input', renderModules);
+$('#modAdd').addEventListener('click', () => editModule(null));
+
+/* ================= Formulare ================= */
+
+const FIELD_RE = /\{\{\s*([^}:|]+?)\s*(?::([^}]*))?\}\}/g;
+let currentForm = null;
+let formValues = {};
+
+function formFields(tpl) {
+  const fields = new Map();
+  for (const m of tpl.matchAll(FIELD_RE)) {
+    if (!fields.has(m[1])) {
+      const opt = (m[2] || '').trim();
+      fields.set(m[1], { name: m[1], numeric: opt === '#', options: opt && opt !== '#' ? opt.split('|').map((o) => o.trim()) : [] });
+    }
+  }
+  return [...fields.values()];
+}
+
+const fillForm = (tpl, values) => tpl.replace(FIELD_RE, (_, name) => values[name.trim()] ?? '');
+
+function renderFormList() {
+  const list = $('#formList');
+  list.replaceChildren();
+  if (!forms.length) list.append(el('div', { class: 'empty' }, 'Noch keine Formulare. Mit „＋ Neu“ anlegen.'));
+  for (const f of forms) {
+    list.append(el('div', { class: 'mod card' },
+      el('button', { class: 'send', onclick: () => openForm(f) },
+        el('span', { class: 'title' }, f.name),
+        el('span', { class: 'prev' }, formFields(f.tpl).map((x) => x.name).join(' · ') || 'Keine Felder')),
+      el('div', { class: 'acts' },
+        el('button', { title: 'Bearbeiten', 'aria-label': 'Bearbeiten', onclick: () => editForm(f) }, '✎'))));
+  }
+}
+
+function openForm(f) {
+  currentForm = f;
+  formValues = {};
+  $('#formListView').hidden = true;
+  $('#formFillView').hidden = false;
+  $('#formTitle').textContent = f.name;
+  const box = $('#formFields');
+  box.replaceChildren();
+  for (const fld of formFields(f.tpl)) {
+    const input = el('input', { type: 'text', inputmode: fld.numeric ? 'decimal' : null, autocomplete: 'off',
+      oninput: (e) => { formValues[fld.name] = e.target.value; syncChips(); renderPreview(); } });
+    const chips = el('div', { class: 'chips' }, fld.options.map((o) =>
+      el('button', { type: 'button', class: 'chip', 'data-v': o, onclick: () => {
+        const v = formValues[fld.name] === o ? '' : o;
+        formValues[fld.name] = v; input.value = v; syncChips(); renderPreview();
+      } }, o)));
+    const syncChips = () => chips.querySelectorAll('.chip').forEach((c) => c.classList.toggle('sel', c.dataset.v === formValues[fld.name]));
+    box.append(field(fld.name, input, fld.options.length ? chips : null));
+  }
+  renderPreview();
+  window.scrollTo(0, 0);
+}
+
+function renderPreview() {
+  const text = expandDynamic(fillForm(currentForm.tpl, formValues));
+  const pre = $('#formPreview');
+  pre.replaceChildren();
+  let last = 0;
+  TOKEN_RE.lastIndex = 0;
+  for (let m; (m = TOKEN_RE.exec(text));) {
+    pre.append(text.slice(last, m.index), el('span', { class: 'tok' }, '⟨' + m[1] + '⟩'));
+    last = TOKEN_RE.lastIndex;
+  }
+  pre.append(text.slice(last));
+}
+
+function closeForm() {
+  currentForm = null; formValues = {};
+  $('#formFillView').hidden = true;
+  $('#formListView').hidden = false;
+  renderFormList();
+}
+
+function editForm(f) {
+  const isNew = !f;
+  f = f || { id: uid(), name: '', tpl: '' };
+  openDialog(isNew ? 'Neues Formular' : 'Formular bearbeiten', [
+    field('Name', el('input', { type: 'text', name: 'name', value: f.name, required: true })),
+    field('Vorlage', el('textarea', { name: 'tpl', rows: 7, required: true }, f.tpl)),
+    el('ul', { class: 'help', style: 'padding-left:18px;margin-top:0' },
+      el('li', {}, el('code', {}, '{{Name}}'), ' – Textfeld'),
+      el('li', {}, el('code', {}, '{{HF:#}}'), ' – Zahlenfeld'),
+      el('li', {}, el('code', {}, '{{Haut:rosig|blass|zyanotisch}}'), ' – Auswahl (freie Eingabe weiterhin möglich)'),
+      el('li', {}, el('code', {}, '{TAB}'), ' ', el('code', {}, '{ENTER}'), ' ', el('code', {}, '{PAUSE}'), ' ', el('code', {}, '{DATUM}'), ' ', el('code', {}, '{ZEIT}'), ' – Sondertasten')),
+  ], {
+    onSave: (fm) => {
+      Object.assign(f, { name: fm.name.value.trim(), tpl: fm.tpl.value });
+      if (isNew) forms.push(f);
+      saveAll();
+      if (currentForm === f) openForm(f); else renderFormList();
+    },
+    onDelete: isNew ? null : () => { forms = forms.filter((x) => x.id !== f.id); saveAll(); closeForm(); },
+  });
+}
+
+$('#formAdd').addEventListener('click', () => editForm(null));
+$('#formBack').addEventListener('click', closeForm);
+$('#formEdit').addEventListener('click', () => editForm(currentForm));
+$('#formReset').addEventListener('click', () => openForm(currentForm));
+$('#formSend').addEventListener('click', () => send(fillForm(currentForm.tpl, formValues)));
+$('#formToEditor').addEventListener('click', () => insertIntoEditor(fillForm(currentForm.tpl, formValues)));
+
+/* ================= Dialog ================= */
+
+function field(label, ...inputs) {
+  return el('label', { class: 'field' }, el('span', {}, label), ...inputs);
+}
+
+function openDialog(title, content, { onSave, onDelete }) {
+  const dlg = $('#dlg'), form = $('#dlgForm');
+  form.replaceChildren(
+    el('h3', {}, title),
+    ...content,
+    el('div', { class: 'row', style: 'margin-top:8px' },
+      onDelete ? el('button', { type: 'button', class: 'btn danger', onclick: () => {
+        if (confirm('Wirklich löschen?')) { onDelete(); dlg.close(); }
+      } }, 'Löschen') : null,
+      el('span', { class: 'grow' }),
+      el('button', { type: 'button', class: 'btn', onclick: () => dlg.close() }, 'Abbrechen'),
+      el('button', { type: 'submit', class: 'btn primary' }, 'Speichern')));
+  form.onsubmit = (e) => { e.preventDefault(); onSave(form.elements); dlg.close(); };
+  dlg.showModal();
+}
+
+/* ================= Einstellungen ================= */
+
+function applyTheme() {
+  if (settings.theme) document.documentElement.dataset.theme = settings.theme;
+  else delete document.documentElement.dataset.theme;
+}
+
+function renderSettings() {
+  $('#delay').value = settings.delay;
+  $('#delayVal').textContent = settings.delay;
+  $('#lang').value = settings.lang;
+  $('#voiceCmds').checked = settings.voiceCmds;
+  $('#replacements').value = settings.replacements;
+  $('#clearAfter').checked = settings.clearAfter;
+  $('#theme').value = settings.theme;
+}
+
+$('#delay').addEventListener('input', (e) => { $('#delayVal').textContent = e.target.value; });
+$('#delay').addEventListener('change', async (e) => {
+  settings.delay = Number(e.target.value); saveAll();
+  if (ble.connected) { try { await writeCmd(new Uint8Array([CMD_DELAY, settings.delay])); } catch { /* ignorieren */ } }
+});
+$('#lang').addEventListener('change', (e) => { settings.lang = e.target.value; saveAll(); });
+$('#voiceCmds').addEventListener('change', (e) => { settings.voiceCmds = e.target.checked; saveAll(); });
+$('#replacements').addEventListener('change', (e) => { settings.replacements = e.target.value; saveAll(); });
+$('#clearAfter').addEventListener('change', (e) => { settings.clearAfter = e.target.checked; saveAll(); });
+$('#theme').addEventListener('change', (e) => { settings.theme = e.target.value; saveAll(); applyTheme(); });
+$('#testBtn').addEventListener('click', () => send('Test äöü ÄÖÜ ß @ € {[]} \\ | ~ ^ ° ² µ 123'));
+
+$('#exportBtn').addEventListener('click', () => {
+  const data = JSON.stringify({ app: 'dokustick', version: 1, modules, forms, settings }, null, 2);
+  const a = el('a', { href: URL.createObjectURL(new Blob([data], { type: 'application/json' })), download: 'dokustick-backup.json' });
+  document.body.append(a); a.click(); a.remove();
+});
+$('#importBtn').addEventListener('click', () => $('#importFile').click());
+$('#importFile').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    if (data.app !== 'dokustick') throw new Error('Keine DokuStick-Sicherung');
+    if (!confirm('Vorhandene Textbausteine und Formulare werden ersetzt. Fortfahren?')) return;
+    modules = withIds((data.modules || []).map(({ id, ...m }) => m));
+    forms = withIds((data.forms || []).map(({ id, ...f }) => f));
+    settings = Object.assign(settings, data.settings || {});
+    saveAll(); renderAll(); toast('Import erfolgreich');
+  } catch (err) {
+    toast('Import fehlgeschlagen: ' + err.message, 'err');
+  }
+});
+$('#resetBtn').addEventListener('click', () => {
+  if (!confirm('Alle eigenen Textbausteine, Formulare und Einstellungen löschen?')) return;
+  modules = withIds(DEFAULT_MODULES);
+  forms = withIds(DEFAULT_FORMS);
+  settings = { delay: 5, lang: 'de-AT', voiceCmds: true, replacements: '', clearAfter: false, theme: '' };
+  saveAll(); renderAll(); toast('Zurückgesetzt');
+});
+
+/* ================= Navigation & Start ================= */
+
+function showTab(name) {
+  document.querySelectorAll('nav button').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === name));
+  document.querySelectorAll('main > section').forEach((s) => (s.hidden = s.id !== 'tab-' + name));
+  try { sessionStorage.setItem('dokustick.tab', name); } catch { /* egal */ }
+}
+document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+
+function renderAll() {
+  applyTheme(); renderSettings(); renderModules(); renderFormList(); renderStatus();
+}
+
+renderAll();
+try { const t = sessionStorage.getItem('dokustick.tab'); if (t) showTab(t); } catch { /* egal */ }
+
+// Bereits erlaubten Dongle merken, damit "Verbinden" ohne Geraeteauswahl klappt
+if (navigator.bluetooth && navigator.bluetooth.getDevices) {
+  navigator.bluetooth.getDevices().then((devs) => {
+    const d = devs.find((x) => x.name === 'DokuStick') || devs[0];
+    if (d && !ble.device) useDevice(d);
+  }).catch(() => {});
+}
+
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
