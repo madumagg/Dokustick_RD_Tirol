@@ -3,7 +3,7 @@
 /* ================= Konstanten ================= */
 
 // Wird mit tools/version.sh zusammen mit sw.js und index.html erhoeht
-const APP_VERSION = '15';
+const APP_VERSION = '16';
 
 const SVC_UUID = '6e7a0001-4b3c-4f8e-9a1d-5c2b7d0a4e01';
 const CMD_UUID = '6e7a0002-4b3c-4f8e-9a1d-5c2b7d0a4e01';
@@ -372,6 +372,8 @@ function renderStatus() {
   dot.className = 'dot' + (ble.connected ? (sendJob || (s && s.typing) ? ' busy' : ' on') : '');
   const virtual = !!(ble.device && ble.device.virtual);
   txt.textContent = ble.connecting ? 'Verbinde …' : ble.connected ? (virtual ? 'Virtueller Dongle' : 'Verbunden') : 'Nicht verbunden';
+  dot.title = txt.textContent; // auf schmalen Handys ist der Text ausgeblendet
+  dot.setAttribute('aria-label', txt.textContent);
   btn.textContent = ble.connected ? 'Trennen' : 'Verbinden';
   btn.className = 'btn small' + (ble.connected ? '' : ' primary');
   btn.disabled = ble.connecting;
@@ -756,6 +758,7 @@ function boot() {
   }
 
   $('#appVer').textContent = APP_VERSION;
+  $('#hdrVer').textContent = 'v' + APP_VERSION;
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     // Neue Version uebernommen -> einmal neu laden (Protokoll bleibt in der Sitzung erhalten)
     const hadController = !!navigator.serviceWorker.controller;

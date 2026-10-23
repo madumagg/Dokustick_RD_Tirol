@@ -211,6 +211,13 @@ dialog h3 { margin: 0 0 14px; }
 
 .badge { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; vertical-align: 2px; background: var(--accent-soft); color: var(--accent); }
 .sync { display: inline-flex; color: var(--muted); }
+.ver { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0; white-space: nowrap; }
+/* Schmale Handys: Statustext weglassen, Punkt und Knopf zeigen den Zustand */
+@media (max-width: 400px) {
+  .bar { gap: 8px; }
+  .brand { gap: 6px; font-size: 17px; }
+  #connText { display: none; }
+}
 .sync svg { width: 18px; height: 18px; }
 .sync.on { color: var(--ok); }
 .sync.busy { color: var(--warn); animation: pulse 1s infinite; }
@@ -259,6 +266,7 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
       <svg viewBox="0 0 64 64" aria-hidden="true"><rect x="4" y="4" width="56" height="56" rx="14" fill="var(--accent)"/><rect x="22" y="12" width="20" height="10" rx="2" fill="var(--accent-text)" opacity=".85"/><rect x="16" y="22" width="32" height="30" rx="6" fill="var(--accent-text)"/><path d="M26 33h12M26 40h8" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round"/></svg>
       DokuStick
       <span class="sync" id="syncDot" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H8a5 5 0 1 1 1.4-9.8A6 6 0 0 1 21 12.5 3.5 3.5 0 0 1 17.5 19Z"/></svg></span>
+      <span class="ver" id="hdrVer" title="App-Version"></span>
     </div>
     <span class="pill"><span class="dot" id="connDot"></span><span id="connText">Nicht verbunden</span></span>
     <button class="btn small primary" id="connBtn">Verbinden</button>
@@ -414,13 +422,13 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 <dialog id="dlg2"><form method="dialog" id="dlg2Form"></form></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=15"></script>
-<script src="vendor/supabase.js?v=15"></script>
-<script src="app.js?v=15"></script>
-<script src="compose.js?v=15"></script>
-<script src="cloud.js?v=15"></script>
-<script src="admin.js?v=15"></script>
-<script src="virtual.js?v=15"></script>
+<script src="config.js?v=16"></script>
+<script src="vendor/supabase.js?v=16"></script>
+<script src="app.js?v=16"></script>
+<script src="compose.js?v=16"></script>
+<script src="cloud.js?v=16"></script>
+<script src="admin.js?v=16"></script>
+<script src="virtual.js?v=16"></script>
 <script>boot(); $('#adminOpen').addEventListener('click', () => admin.open());</script>
 </body>
 </html>
