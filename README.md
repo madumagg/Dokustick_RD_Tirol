@@ -135,6 +135,22 @@ Der anon-Key darf öffentlich im Code stehen. Die Daten werden durch die Zugriff
 - Will niemand Neues mehr dazukommen, kann man unter *Authentication → Sign In / Providers* „Allow new users to sign up“ ausschalten.
 - In Bausteine und Formulare gehören **keine Patientendaten**. Ausgefüllte Formulare und der Editor-Text werden nie hochgeladen.
 
+### Administration
+
+Für App-Admins gibt es unter *Einstellungen → Administration* eine Verwaltung der gesamten App. Einmalig einrichten: Im Supabase **SQL Editor** den Inhalt von [`supabase/admin.sql`](supabase/admin.sql) ausführen (nach `schema.sql`). Der **zuerst registrierte Benutzer** wird dabei automatisch App-Admin.
+
+| Bereich | Funktionen |
+|---|---|
+| Übersicht | Anzahl Benutzer (aktiv, unbestätigt, gesperrt), Teams, Textbausteine, Formulare |
+| Benutzer | suchen, Passwort-Reset senden, sperren/entsperren, zum App-Admin machen, Konto löschen |
+| Teams | alle Teams sehen, anlegen, umbenennen, löschen; Mitglieder per E-Mail hinzufügen, entfernen, Rollen ändern; Beitrittscode erneuern |
+| Einstellungen | Registrierung offen / nur bestimmte E-Mail-Domains / geschlossen; Standard-Team für neue Benutzer; Hinweis an alle |
+
+Hinweise:
+- Gesperrte Benutzer werden sofort abgemeldet und können sich nicht mehr anmelden.
+- Löscht man ein Konto, das einziger Admin eines Teams ist, wird automatisch das am längsten dabei befindliche Mitglied Team-Admin.
+- Sich selbst kann man weder sperren noch löschen noch die Admin-Rechte entziehen. So bleibt immer mindestens ein App-Admin übrig.
+
 ## 5. Gehäuse (3D-Druck)
 
 Beim Konstruieren beachten:

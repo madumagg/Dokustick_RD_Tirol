@@ -21,6 +21,8 @@ const AUTH_ERRORS = [
   [/failed to fetch|network|load failed/i, 'Keine Internetverbindung.'],
   [/unable to validate email|invalid.*email/i, 'Ungültige E-Mail-Adresse.'],
   [/same.*password|different from the old/i, 'Das neue Passwort muss sich vom alten unterscheiden.'],
+  [/database error saving new user/i, 'Registrierung nicht möglich: Sie ist geschlossen oder deine E-Mail-Domain ist nicht zugelassen.'],
+  [/user is banned/i, 'Dieses Konto ist gesperrt. Bitte wende dich an den Administrator.'],
 ];
 
 function germanError(e) {
@@ -32,6 +34,7 @@ function germanError(e) {
 const cloud = {
   sb: null,
   account: store.load('account', null), // { id, email }
+  info: store.load('appInfo', {}),        // Registrierungsregeln, Hinweis an alle, Admin-Status
   teams: [],
   syncing: false,
   running: null,
@@ -70,6 +73,17 @@ const cloud = {
     setInterval(() => this.sync(), 120000);
     if (this.account) this.loadTeams();
     this.render();
+    this.loadInfo();
+  },
+
+  // App-Einstellungen vom Server (fehlt admin.sql, bleibt alles beim Alten)
+  async loadInfo() {
+    if (!this.sb || !navigator.onLine) return;
+    const { data, error } = await this.sb.rpc('app_info');
+    if (error || !data) return;
+    this.info = data;
+    store.save('appInfo', data);
+    this.render();
   },
 
   onAuth(event, session) {
@@ -92,6 +106,7 @@ const cloud = {
     }
     this.account = acc;
     store.save('account', acc);
+    if (!acc) { this.info = { ...this.info, is_admin: false }; this.loadInfo(); }
     this.teams = []; this.lastSync = null; this.error = null;
     loadItems();
     if (acc) this.loadTeams();
@@ -142,6 +157,7 @@ const cloud = {
       await this.pullTeams(acc);
       await this.pullItems(acc);
       await this.pullSettings(acc);
+      await this.loadInfo();
       const first = !this.lastSync;
       this.lastSync = Date.now();
       store.save(this.key('lastSync'), this.lastSync);
@@ -238,6 +254,11 @@ const cloud = {
   },
 
   async signUp(email, password) {
+    const { signup_mode: mode, allowed_domains: domains = [] } = this.info;
+    if (mode === 'closed') throw new Error('Die Registrierung ist derzeit geschlossen.');
+    if (mode === 'domains' && !domains.includes(email.split('@')[1]?.toLowerCase())) {
+      throw new Error('Registrierung nur mit E-Mail-Adressen von ' + domains.map((d) => '@' + d).join(', ') + ' möglich.');
+    }
     const { data, error } = await this.sb.auth.signUp({ email, password, options: { emailRedirectTo: this.redirectUrl() } });
     if (error) throw error;
     if (!data.session) {
@@ -403,9 +424,21 @@ const cloud = {
     return 'Synchronisiert ' + (min < 1 ? 'gerade eben' : `vor ${min} Min.`);
   },
 
+  renderAnnouncement() {
+    const box = $('#announce'), text = (this.info.announcement || '').trim();
+    box.replaceChildren();
+    if (!text || store.load('announceSeen', '') === text) return;
+    box.append(el('div', { class: 'note announce' },
+      el('span', { class: 'grow' }, text),
+      el('button', { type: 'button', class: 'linkish', 'aria-label': 'Hinweis ausblenden', onclick: () => { store.save('announceSeen', text); this.renderAnnouncement(); } }, '✕')));
+  },
+
   render() {
     const card = $('#accountCard'), teamsCard = $('#teamsCard'), teamsHead = $('#teamsHead');
     if (!card) return;
+    this.renderAnnouncement();
+    const adminCard = $('#adminCard');
+    adminCard.hidden = $('#adminHead').hidden = !(this.account && this.info.is_admin);
     card.replaceChildren();
     teamsCard.replaceChildren();
     teamsHead.hidden = teamsCard.hidden = !this.account;
@@ -428,8 +461,11 @@ const cloud = {
         try { await fn(); } catch (e) { toast(germanError(e), 'err'); } finally { btn.disabled = false; }
       };
       const needPw = () => { if (pw.value.length < 8) { toast('Das Passwort muss mindestens 8 Zeichen haben.', 'err'); return false; } return true; };
+      const mode = this.info.signup_mode;
       card.append(
         el('p', { class: 'help', style: 'margin-top:0' }, 'Mit einem Konto werden deine Bausteine, Formulare und Einstellungen gesichert und auf all deinen Geräten synchronisiert. Außerdem kannst du Teams beitreten.'),
+        mode === 'closed' ? el('p', { class: 'note' }, 'Neue Registrierungen sind derzeit geschlossen.') : null,
+        mode === 'domains' ? el('p', { class: 'note' }, 'Registrierung nur mit E-Mail-Adressen von ' + (this.info.allowed_domains || []).map((d) => '@' + d).join(', ') + '.') : null,
         field('E-Mail', email),
         field('Passwort', pw),
         el('div', { class: 'row' },

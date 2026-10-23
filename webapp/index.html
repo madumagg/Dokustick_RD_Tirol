@@ -52,6 +52,7 @@
   --danger: #f2867c; --danger-soft: #3a1c1a; --warn: #f0c060; --warn-soft: #3a2f14; --ok: #6fd28a; --shadow: none;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; }
 body {
   background: var(--bg);
@@ -181,6 +182,18 @@ dialog h3 { margin: 0 0 14px; }
 select.scope { width: auto; max-width: 40%; }
 input[type=email], input[type=password] { width: 100%; border: 1px solid var(--border); background: var(--surface); border-radius: 12px; padding: 10px 12px; }
 
+.badge.bad { background: var(--danger-soft); color: var(--danger); }
+.badge.warn { background: var(--warn-soft); color: var(--warn); }
+.seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: var(--surface-2); border-radius: 12px; padding: 4px; margin-bottom: 16px; }
+.seg button { border: 0; background: none; border-radius: 9px; padding: 8px 4px; min-height: 40px; font-size: 14px; color: var(--muted); }
+.seg button[aria-selected=true] { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: var(--shadow); }
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+.stat { padding: 14px; }
+.stat-v { font-size: 28px; font-weight: 700; line-height: 1.1; }
+.stat-l { font-weight: 600; margin-top: 2px; }
+.announce { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 12px; background: var(--accent-soft); color: var(--text); }
+#adminBody .card + .card { margin-top: 8px; }
+
 #toast {
   position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom)); transform: translateX(-50%);
   background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 15px;
@@ -206,6 +219,7 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 </header>
 
 <main>
+  <div id="announce"></div>
   <!-- Schreiben -->
   <section id="tab-write">
     <textarea id="editor" placeholder="Text eingeben oder diktieren …" autocomplete="off" spellcheck="true"></textarea>
@@ -271,6 +285,11 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
     <div class="card pad" id="accountCard"></div>
     <h2 id="teamsHead" hidden>Teams</h2>
     <div class="card pad" id="teamsCard" hidden></div>
+    <h2 id="adminHead" hidden>Administration</h2>
+    <div class="card pad" id="adminCard" hidden>
+      <p class="help" style="margin-top:0">Du bist App-Admin: Benutzer, Teams, Registrierung und den Hinweis an alle verwalten.</p>
+      <button class="btn primary" id="adminOpen">Administration öffnen</button>
+    </div>
 
     <h2>Tippen</h2>
     <div class="card pad">
@@ -333,6 +352,20 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
       <button class="btn danger" id="unpairBtn">Alle Kopplungen löschen</button>
     </div>
   </section>
+  <!-- Administration (nur fuer App-Admins) -->
+  <section id="tab-admin" hidden>
+    <div class="row" style="margin-bottom:12px">
+      <button class="btn small" id="adminBack">‹ Zurück</button>
+      <strong class="grow">Administration</strong>
+    </div>
+    <div class="seg" id="adminTabs" role="tablist">
+      <button role="tab" data-view="overview" aria-selected="true">Übersicht</button>
+      <button role="tab" data-view="users" aria-selected="false">Benutzer</button>
+      <button role="tab" data-view="teams" aria-selected="false">Teams</button>
+      <button role="tab" data-view="settings" aria-selected="false">Einstellungen</button>
+    </div>
+    <div id="adminBody"></div>
+  </section>
 </main>
 
 <nav role="tablist">
@@ -353,6 +386,7 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 <script src="vendor/supabase.js"></script>
 <script src="app.js"></script>
 <script src="cloud.js"></script>
-<script>boot();</script>
+<script src="admin.js"></script>
+<script>boot(); $('#adminOpen').addEventListener('click', () => admin.open());</script>
 </body>
 </html>

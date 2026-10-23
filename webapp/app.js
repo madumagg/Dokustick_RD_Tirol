@@ -831,7 +831,7 @@ function renderAll() {
 function boot() {
   loadItems();
   renderAll();
-  try { const t = sessionStorage.getItem('dokustick.tab'); if (t) showTab(t); } catch { /* egal */ }
+  try { const t = sessionStorage.getItem('dokustick.tab'); if (t) showTab(t === 'admin' ? 'settings' : t); } catch { /* egal */ }
 
   // Bereits erlaubten Dongle merken, damit "Verbinden" ohne Geraeteauswahl klappt
   if (navigator.bluetooth && navigator.bluetooth.getDevices) {
