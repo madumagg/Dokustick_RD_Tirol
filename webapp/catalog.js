@@ -14,10 +14,11 @@ const CATALOGS = {
     label: (e) => [e.trade_name, e.dose].filter(Boolean).join(' '),
     detail: (e) => e.ingredient,
     haystack: (e) => `${e.trade_name} ${e.ingredient} ${e.dose}`,
+    primary: (e) => `${e.trade_name} ${e.dose}`,
     fields: [
-      { key: 'trade_name', label: 'Handelsname', required: true, placeholder: 'z. B. Thrombo ASS' },
-      { key: 'ingredient', label: 'Wirkstoff', placeholder: 'z. B. Acetylsalicylsäure' },
-      { key: 'dose', label: 'Dosis', placeholder: 'z. B. 100 mg' },
+      { key: 'trade_name', label: 'Handelsname', required: true, max: 120, placeholder: 'z. B. Thrombo ASS' },
+      { key: 'ingredient', label: 'Wirkstoff', max: 200, placeholder: 'z. B. Acetylsalicylsäure' },
+      { key: 'dose', label: 'Dosis', max: 60, placeholder: 'z. B. 100 mg' },
     ],
     csv: ['Handelsname', 'Wirkstoff', 'Dosis'],
   },
@@ -26,11 +27,13 @@ const CATALOGS = {
     label: (e) => e.name,
     detail: (e) => e.abbreviation,
     haystack: (e) => `${e.name} ${e.abbreviation}`,
+    primary: (e) => e.name,
+    // Spalte heisst aus Kompatibilitaetsgruenden weiter "abbreviation"
     fields: [
-      { key: 'name', label: 'Name', required: true, placeholder: 'z. B. Koronare Herzkrankheit' },
-      { key: 'abbreviation', label: 'Abkürzung (optional)', placeholder: 'z. B. KHK' },
+      { key: 'name', label: 'Name', required: true, max: 150, placeholder: 'z. B. Koronare Herzkrankheit' },
+      { key: 'abbreviation', label: 'Abkürzung / Beschreibung (optional)', max: 300, multiline: true, placeholder: 'z. B. KHK, Verengung der Herzkranzgefäße' },
     ],
-    csv: ['Name', 'Abkürzung'],
+    csv: ['Name', 'Abkürzung/Beschreibung'],
   },
 };
 
@@ -79,7 +82,8 @@ const catalog = {
   pending(kind) { return this[kind].filter((e) => !e.approved); },
 
   // Jedes Suchwort muss vorkommen (Reihenfolge egal), z.B. "thrombo 100" -> "Thrombo ASS 100 mg".
-  // Treffer am Wortanfang vor Teiltreffern, Freigegebene vor Vorschlaegen.
+  // Reihenfolge: Treffer im Namen (am Wortanfang zuerst) vor Treffern nur in
+  // Wirkstoff/Beschreibung, Freigegebene vor Vorschlaegen.
   search(kind, q, limit = 8) {
     const words = normText(q).split(' ').filter(Boolean);
     if (!words.length) return [];
@@ -88,9 +92,11 @@ const catalog = {
     for (const e of this[kind]) {
       const h = normText(C.haystack(e));
       if (!words.every((w) => h.includes(w))) continue;
-      const i = h.indexOf(words[0]);
-      const wordStart = i === 0 || h[i - 1] === ' ';
-      hits.push({ e, score: (wordStart ? 0 : 2) + (e.approved ? 0 : 1) });
+      const name = normText(C.primary(e));
+      const inName = words.every((w) => name.includes(w));
+      const i = name.indexOf(words[0]);
+      const wordStart = i === 0 || (i > 0 && name[i - 1] === ' ');
+      hits.push({ e, score: (inName ? (wordStart ? 0 : 1) : 4) + (e.approved ? 0 : 2) });
     }
     return hits.sort((a, b) => a.score - b.score || C.label(a.e).localeCompare(C.label(b.e), 'de')).slice(0, limit).map((x) => x.e);
   },
@@ -118,7 +124,9 @@ const catalog = {
     if (this.available === false) { toast('Die Datenbank ist noch nicht eingerichtet.', 'err'); return Promise.resolve(null); }
     const isNew = !entry;
     const values = { ...prefill, ...(entry || {}) };
-    const inputs = Object.fromEntries(C.fields.map((f) => [f.key, el('input', { type: 'text', name: f.key, value: values[f.key] || '', required: !!f.required, placeholder: f.placeholder, autocomplete: 'off' })]));
+    const inputs = Object.fromEntries(C.fields.map((f) => [f.key, f.multiline
+      ? el('textarea', { name: f.key, rows: 3, maxlength: f.max, placeholder: f.placeholder }, values[f.key] || '')
+      : el('input', { type: 'text', name: f.key, value: values[f.key] || '', required: !!f.required, maxlength: f.max, placeholder: f.placeholder, autocomplete: 'off' })]));
     return new Promise((resolve) => {
       let result = null;
       $('#dlg').addEventListener('close', () => resolve(result), { once: true });
@@ -138,7 +146,8 @@ const catalog = {
             : cloud.sb.from(C.table).update(row).eq('id', entry.id).select(C.cols).single();
           const { data, error } = await q;
           if (error) {
-            toast(error.code === '23505' ? 'Diesen Eintrag gibt es schon (eventuell als Vorschlag, der noch auf Freigabe wartet).' : germanError(error), 'err');
+            toast(error.code === '23505' ? 'Diesen Eintrag gibt es schon (eventuell als Vorschlag, der noch auf Freigabe wartet).'
+              : error.code === '23514' ? 'Eine Eingabe ist zu lang für die Datenbank.' : germanError(error), 'err');
             return false;
           }
           result = data;
@@ -188,13 +197,18 @@ const catalog = {
       let rows = lines.map(split);
       if (rows.length && normText(rows[0][0]) === normText(C.csv[0])) rows = rows.slice(1); // Kopfzeile
       const keys = C.fields.map((f) => f.key);
-      const data = rows.map((r) => Object.fromEntries(keys.map((k, i) => [k, r[i] || '']))).filter((r) => r[keys[0]]);
-      if (!data.length) return toast('Keine Einträge in der Datei gefunden.', 'err');
-      if (!confirm(`${data.length} ${C.title} importieren? Bereits vorhandene werden übersprungen.\n\nBeispiel: ${C.label(data[0])}`)) return;
+      const all = rows.map((r) => Object.fromEntries(keys.map((k, i) => [k, r[i] || '']))).filter((r) => r[keys[0]]);
+      const tooLong = (r) => C.fields.some((f) => f.max && r[f.key].length > f.max);
+      const data = all.filter((r) => !tooLong(r));
+      const skippedLong = all.filter(tooLong);
+      if (!data.length) return toast(skippedLong.length ? 'Alle Zeilen sind zu lang für die Datenbank.' : 'Keine Einträge in der Datei gefunden.', 'err');
+      const longNote = skippedLong.length ? `\n\n${skippedLong.length} Zeile(n) sind zu lang und werden ausgelassen, z. B. „${C.label(skippedLong[0]).slice(0, 60)}“.` : '';
+      if (!confirm(`${data.length} ${C.title} importieren? Bereits vorhandene werden übersprungen.\n\nBeispiel: ${C.label(data[0])}${longNote}`)) return;
       const { data: n, error } = await cloud.sb.rpc('admin_import_catalog', { p_kind: kind, p_rows: data });
       if (error) return toast(germanError(error), 'err');
-      toast(`${n} neu importiert, ${data.length - n} übersprungen`);
-      await this.pull();
+      // Erst neu laden, dann melden: so sind die Eintraege sofort suchbar
+      await this.pull().catch(() => {});
+      toast(`${n} neu importiert, ${data.length - n} übersprungen` + (skippedLong.length ? `, ${skippedLong.length} zu lang` : ''));
     });
     input.click();
   },
@@ -239,7 +253,7 @@ const catalog = {
       return;
     }
     const kind = this.view, C = CATALOGS[kind];
-    const search = el('input', { type: 'search', placeholder: kind === 'med' ? 'Name oder Wirkstoff …' : 'Name oder Abkürzung …', value: this.query });
+    const search = el('input', { type: 'search', placeholder: kind === 'med' ? 'Name oder Wirkstoff …' : 'Name, Abkürzung, Beschreibung …', value: this.query });
     const list = el('div', { class: 'mods' });
     const draw = () => {
       this.query = search.value;

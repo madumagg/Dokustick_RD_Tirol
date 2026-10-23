@@ -48,6 +48,14 @@ export default async function (t) {
     eq(catalog.search('med', 'as').map((e) => e.id), ['1', '3'], 'Wortanfang vor Vorschlag');
     eq(catalog.similar('med', { trade_name: 'thrombo ass ', dose: '100 MG' }), ['Thrombo ASS 100 mg'], 'Ähnliche Einträge erkannt');
 
+    catalog.dx = [
+      { id: 'k', name: 'Koronare Herzkrankheit', abbreviation: 'KHK, Verengung der Herzkranzgefäße', approved: true },
+      { id: 'h', name: 'Herzinsuffizienz', abbreviation: 'HI, Herzschwäche', approved: true },
+      { id: 'a', name: 'Arterielle Hypertonie', abbreviation: 'aHT, Bluthochdruck, häufig Ursache von Herzproblemen', approved: true },
+    ];
+    eq(catalog.search('dx', 'herz').map((e) => e.id), ['h', 'k', 'a'], 'Name (Wortanfang) vor Name (Teilwort) vor Beschreibung');
+    eq(catalog.search('dx', 'bluthochdruck').map((e) => e.id), ['a'], 'Suche in der Beschreibung');
+
     // Sprachbefehle
     eq(processSpeech('neue zeile test komma fertig punkt'), '\ntest, fertig.', 'Sprachbefehle');
     return out;

@@ -51,6 +51,10 @@ export default async function (t) {
   const dxId = r.data.id;
   r = await V.from('diagnoses').insert({ name: ' testkrankheit ' + s });
   ok(r.error?.code === '23505', 'Doppelte Krankheit abgelehnt');
+  r = await U.from('diagnoses').update({ abbreviation: 'B'.repeat(300) }).eq('id', dxId).select();
+  ok(r.data?.length === 1, 'Abkürzung/Beschreibung mit 300 Zeichen erlaubt');
+  r = await U.from('diagnoses').update({ abbreviation: 'B'.repeat(301) }).eq('id', dxId).select();
+  ok(r.error?.code === '23514', 'Mehr als 300 Zeichen abgelehnt');
   r = await U.from('diagnoses').delete().eq('id', dxId).select();
   ok(r.data?.length === 1, 'Eigenen offenen Vorschlag zurückziehen');
 

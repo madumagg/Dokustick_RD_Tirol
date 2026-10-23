@@ -189,14 +189,15 @@ Hinweise:
 ### Datenbank: Medikamente & Krankheiten
 
 Einmalig einrichten: Im Supabase **SQL Editor** den Inhalt von [`supabase/migrations/20261023120200_catalog.sql`](supabase/migrations/20261023120200_catalog.sql) ausführen (nach den anderen beiden).
+Für Beschreibungen bei Krankheiten zusätzlich [`supabase/migrations/20261023230000_diagnoses_beschreibung.sql`](supabase/migrations/20261023230000_diagnoses_beschreibung.sql) ausführen.
 
-- **Reiter „Datenbank“:** Medikamente (Handelsname, Wirkstoff, Dosis) und Krankheiten (Name, optionale Abkürzung) ansehen und durchsuchen.
+- **Reiter „Datenbank“:** Medikamente (Handelsname, Wirkstoff, Dosis) und Krankheiten (Name, optional Abkürzung und/oder kurze Beschreibung, bis 300 Zeichen) ansehen und durchsuchen.
 - **Vorschlagen:** Jeder angemeldete Benutzer kann neue Einträge vorschlagen. Für einen selbst sind sie sofort nutzbar („wartet auf Freigabe“), für alle anderen erst nach der Freigabe durch einen App-Admin.
 - **Doppelte Einträge:** Die App warnt vor ähnlichen Einträgen. Exakte Doppelungen (gleicher Handelsname + Dosis bzw. gleicher Name) lehnt die Datenbank ab.
 - **Admins:**
   - Am Reiter zeigt ein rotes Abzeichen die offenen Vorschläge an. Mit „Nur offene Vorschläge“ werden sie gefiltert, mit ✓ freigegeben, mit ✎ bearbeitet, mit 🗑 abgelehnt.
   - Eigene Einträge von Admins sind sofort freigegeben.
-  - **CSV importieren:** Medikamente `Handelsname;Wirkstoff;Dosis`, Krankheiten `Name;Abkürzung`, je eine Zeile pro Eintrag, Kopfzeile optional. Vorhandene Einträge werden übersprungen. Eine Startliste mit 53 Volkskrankheiten liegt in [`data/`](data/).
+  - **CSV importieren:** Medikamente `Handelsname;Wirkstoff;Dosis`, Krankheiten `Name;Abkürzung/Beschreibung`, je eine Zeile pro Eintrag, Kopfzeile optional. Vorhandene Einträge werden übersprungen. Eine Startliste mit 53 Volkskrankheiten liegt in [`data/`](data/).
   - **CSV exportieren:** Speichert alle freigegebenen Einträge im selben Format, z. B. als Sicherung oder zum Weitergeben.
 - **In Bausteinen:** Feldart „Medikamente (Datenbank)“ bzw. „Krankheiten (Datenbank)“ (Syntax `{{Dauermedikation:@med}}`, `{{Vorerkrankungen:@dx}}`).
   - Im Protokoll ins Suchfeld tippen. Jedes Wort muss vorkommen, „thrombo 100“ findet also „Thrombo ASS 100 mg“, und auch die Suche nach dem Wirkstoff funktioniert. Den gewünschten Treffer antippen, mehrere sind möglich.

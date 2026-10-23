@@ -10,7 +10,7 @@ export default async function (t) {
   const s = Date.now() % 100000;
   const device = (name) => newDevice(t, { name, cloud: true });
   const sync = (p) => p.evaluate(() => cloud.sync());
-  const dlgFill = async (p, vals) => { for (const [k, v] of Object.entries(vals)) await p.fill(`#dlg input[name=${k}]`, v); await p.click('#dlg button[type=submit]'); };
+  const dlgFill = async (p, vals) => { for (const [k, v] of Object.entries(vals)) await p.fill(`#dlg [name=${k}]`, v); await p.click('#dlg button[type=submit]'); };
   const med1 = `Thrombo ASS ${s}`, med2 = `Concor ${s}`, dx1 = `Koronare Herzkrankheit ${s}`;
   // --- Nicht angemeldet
   const N = await device('N');
@@ -51,12 +51,17 @@ export default async function (t) {
   await A.click('#dbBody >> text=＋ Neu');
   await dlgFill(A, { name: dx1, abbreviation: 'KHK' });
   await A.waitForSelector(`#dbBody .mod:has-text("${dx1}")`);
+  await A.click('#dbBody >> text=＋ Neu');
+  ok(await A.evaluate(() => document.querySelector('#dlg [name=abbreviation]').tagName === 'TEXTAREA' && document.querySelector('#dlg [name=abbreviation]').maxLength === 300), 'Abkürzung/Beschreibung: mehrzeilig, max. 300 Zeichen');
+  await dlgFill(A, { name: `Herzklappeninsuffizienz ${s}`, abbreviation: `Undichte Herzklappe ${s}, häufig Mitralklappe; Schlussunfähigkeit` });
+  await A.waitForSelector(`#dbBody .mod:has-text("Herzklappeninsuffizienz ${s}") .prev:has-text("Undichte Herzklappe")`);
+  ok(true, 'Lange Beschreibung gespeichert und in der Liste angezeigt');
   const csv = path.join(t.out, 'import.csv');
-  writeFileSync(csv, `Name;Abkürzung\nDiabetes mellitus Typ 2 ${s};DM2\n"Chronisch obstruktive Lungenerkrankung ${s}";COPD\ndiabetes mellitus typ 2 ${s};\n`);
+  writeFileSync(csv, `Name;Abkürzung/Beschreibung\nDiabetes mellitus Typ 2 ${s};DM2\n"Chronisch obstruktive Lungenerkrankung ${s}";COPD\ndiabetes mellitus typ 2 ${s};\nZu lang ${s};${'x'.repeat(301)}\n`);
   const [chooser] = await Promise.all([A.waitForEvent('filechooser'), A.click('#dbBody >> text=CSV importieren')]);
   await chooser.setFiles(csv);
   await A.waitForSelector('#toast >> text=importiert');
-  ok((await A.textContent('#toast')).startsWith('2 neu importiert, 1 übersprungen'), 'CSV-Import: ' + await A.textContent('#toast'));
+  ok((await A.textContent('#toast')).startsWith('2 neu importiert, 1 übersprungen, 1 zu lang'), 'CSV-Import: ' + await A.textContent('#toast'));
   await A.screenshot({ path: t.out + '/a1-db-admin.png' });
   // Mitgelieferte Liste (data/) laesst sich importieren; bei wiederholtem Lauf wird alles uebersprungen
   const [chooser2] = await Promise.all([A.waitForEvent('filechooser'), A.click('#dbBody >> text=CSV importieren')]);
@@ -68,7 +73,7 @@ export default async function (t) {
   // Export: gleiches Format wie der Import, nur freigegebene Eintraege
   const [dl] = await Promise.all([A.waitForEvent('download'), A.click('#dbBody >> text=CSV exportieren')]);
   const exported = readFileSync(await dl.path(), 'utf8');
-  ok(/^dokustick-krankheiten-\d{4}-\d\d-\d\d\.csv$/.test(dl.suggestedFilename()) && exported.startsWith('\uFEFFName;Abkürzung\r\n') && exported.includes(`Diabetes mellitus Typ 2 ${s};DM2`) && exported.includes(`${dx1};KHK`),
+  ok(/^dokustick-krankheiten-\d{4}-\d\d-\d\d\.csv$/.test(dl.suggestedFilename()) && exported.startsWith('\uFEFFName;Abkürzung/Beschreibung\r\n') && exported.includes(`Diabetes mellitus Typ 2 ${s};DM2`) && exported.includes(`${dx1};KHK`),
     'CSV-Export: ' + dl.suggestedFilename() + ', enthält importierte und angelegte Einträge');
 
   // --- Benutzer V nutzt die Datenbank im Protokoll
@@ -110,6 +115,10 @@ export default async function (t) {
   await P.locator('input[type=search]').fill('copd ' + s);
   await P.locator('.sugg-item').first().click();
   ok(!(await P.evaluate((n) => n.classList.contains('incomplete'))) && !(await M.evaluate((n) => n.classList.contains('incomplete'))), 'M und P vollständig');
+  await P.locator('input[type=search]').fill('undichte ' + s);
+  ok((await P.locator('.sugg-item').first().textContent()).startsWith(`Herzklappeninsuffizienz ${s}`), 'Suche über die Beschreibung findet die Krankheit');
+  await P.locator('.sugg-item').first().click();
+  ok((await P.locator('.preview').textContent()).endsWith(`Herzklappeninsuffizienz ${s}.`), 'Im Protokoll steht nur der Name, nicht die Beschreibung');
   await V.screenshot({ path: t.out + '/a2-protokoll-db.png', fullPage: true });
 
   // --- Offline: Suche aus dem Speicher

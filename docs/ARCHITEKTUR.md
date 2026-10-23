@@ -114,6 +114,7 @@ Schema als Migrationen in `supabase/migrations/` (Reihenfolge = Dateiname):
 | `…_schema.sql` | `items`, `teams`, `team_members`, `team_invites`, `user_settings`; Funktionen `create_team`, `join_team`, `new_team_code` |
 | `…_admin.sql` | `app_admins`, `app_settings`; `app_info`, `admin_*`-Funktionen; Trigger auf `auth.users` (Registrierungsregeln, Standard-Team) |
 | `…_catalog.sql` | `medications`, `diagnoses`; `admin_import_catalog` |
+| `…_diagnoses_beschreibung.sql` | `diagnoses.abbreviation` fasst jetzt Abkürzung **und/oder Beschreibung** (bis 300 Zeichen). Der Spaltenname bleibt aus Kompatibilitätsgründen. |
 
 Alle Tabellen haben **Row Level Security**. Kurzfassung:
 - **Eigene Einträge:** sieht und ändert nur der Besitzer.

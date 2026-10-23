@@ -361,6 +361,8 @@ function renderFieldInput(f, values, onChange) {
   return el('div', { class: 'field compact', 'data-field': f.name }, label, chips);
 }
 
+const shorten = (s, n) => (s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s);
+
 // Suchfeld fuer Medikamente/Krankheiten: Treffer antippen, mehrere sammeln
 function renderLookup(f, values, onChange, label, mark) {
   const C = CATALOGS[f.type];
@@ -368,7 +370,7 @@ function renderLookup(f, values, onChange, label, mark) {
   const sugg = el('div', { class: 'sugg' });
   const input = el('input', {
     type: 'search', autocomplete: 'off', enterkeyhint: 'done',
-    placeholder: f.type === 'med' ? 'Handelsname oder Wirkstoff suchen …' : 'Krankheit oder Abkürzung suchen …',
+    placeholder: f.type === 'med' ? 'Handelsname oder Wirkstoff suchen …' : 'Krankheit, Abkürzung oder Beschreibung …',
   });
   const list = () => (Array.isArray(values[f.name]) ? values[f.name] : []);
   const set = (arr) => { values[f.name] = arr; drawChips(); mark(input); onChange(); };
@@ -398,7 +400,7 @@ function renderLookup(f, values, onChange, label, mark) {
     const hits = catalog.search(f.type, q, 8).filter((e) => !taken.has(C.label(e)));
     for (const e of hits) {
       sugg.append(el('button', { type: 'button', class: 'sugg-item', onclick: () => add(C.label(e)) },
-        el('span', { class: 'grow' }, C.label(e), C.detail(e) ? el('span', { class: 'help' }, ' · ' + C.detail(e)) : null),
+        el('span', { class: 'grow' }, C.label(e), C.detail(e) ? el('span', { class: 'help' }, ' · ' + shorten(C.detail(e), 70)) : null),
         !e.approved ? el('span', { class: 'badge warn' }, 'Vorschlag') : null));
     }
     const exact = hits.some((e) => normText(C.label(e)) === normText(q));
