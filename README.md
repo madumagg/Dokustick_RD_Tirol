@@ -96,7 +96,7 @@ Bausteine können **Auswahlfelder** enthalten, z. B. beim ABCDE-Schema:
 - **Ins Protokoll:** Tippt man einen interaktiven Baustein an, landet er im Fenster *Schreiben* als Karte mit Auswahl-Knöpfen. Einfache Bausteine ohne Felder werden wie bisher sofort getippt. ↧ legt jeden Baustein ins Protokoll.
 - **Im Protokoll:** Optionen antippen, mit „…“ einen eigenen Wert eingeben. Dazwischen ist Freitext oder Diktat möglich. Blöcke entfernt man mit ✕.
 - **Verschieben:** Kopfzeile einer Karte gedrückt halten (Touch, ca. ⅓ s) bzw. mit der Maus anklicken und an die neue Stelle ziehen. Mit dem Griff ⠿ geht es auch sofort, am Bildschirmrand scrollt die Seite mit. Per Tastatur: Griff auswählen und Pfeiltasten drücken.
-- **Senden:** „Alles senden“ tippt das ganze Protokoll und lässt es stehen. ⟶ an einer Karte sendet nur diesen Block.
+- **Senden:** „Alles senden“ tippt das ganze Protokoll und lässt es stehen. Zwischen den Blöcken steht automatisch eine Leerzeile (abschaltbar unter *Einstellungen → Tippen*, z. B. für einzeilige Felder). ⟶ an einer Karte sendet nur diesen Block.
 - **Einsatz beenden:** Der Knopf ganz unten setzt nach einer Sicherheitsabfrage alle Bausteine im Protokoll zurück und löscht den Freitext. Die gespeicherten Bausteine bleiben erhalten.
 - **Leere Messwerte fallen weg:** Ohne Wert wird aus „RR … mmHg, HF 80/min“ einfach „HF 80/min“. Noch nicht beantwortete Auswahlfelder sind orange markiert („offen“).
 - **Mehrfachauswahl:** Optionen, die mit „kein“ beginnen (z. B. „keine Maßnahmen erforderlich“), heben die anderen auf und umgekehrt.

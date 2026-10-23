@@ -9,7 +9,7 @@
  */
 
 // Einstellungen, die mit dem Konto mitwandern (Darstellung bleibt pro Geraet)
-const SYNCED_SETTINGS = ['delay', 'lang', 'voiceCmds', 'replacements'];
+const SYNCED_SETTINGS = ['delay', 'lang', 'voiceCmds', 'replacements', 'blankLine'];
 const ITEM_COLS = 'id,kind,title,category,body,sort,deleted,team_id,updated_at';
 
 const AUTH_ERRORS = [

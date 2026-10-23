@@ -38,7 +38,7 @@ const DEFAULT_FORMS = [
   { title: 'Kurzbefund', body: 'Pat. {{Bewusstsein:wach, orientiert|wach, desorientiert|somnolent|soporös|komatös}}.\nAtmung: {{Atmung:unauffällig|Dyspnoe|Tachypnoe|Bradypnoe}}.\nHaut: {{Haut:rosig, warm, trocken|blass|kaltschweißig|zyanotisch}}.\nSchmerz NRS {{NRS:#}}/10.' },
   { title: 'Felder mit Tab füllen', body: '{{Feld 1}}{TAB}{{Feld 2}}{TAB}{{Feld 3}}' },
 ];
-const DEFAULT_SETTINGS = { delay: 5, lang: 'de-AT', voiceCmds: true, replacements: '', theme: '' };
+const DEFAULT_SETTINGS = { delay: 5, lang: 'de-AT', voiceCmds: true, replacements: '', blankLine: true, theme: '' };
 
 /* ================= Hilfsfunktionen ================= */
 
@@ -618,6 +618,7 @@ function renderSettings() {
   $('#delayVal').textContent = settings.delay;
   $('#lang').value = settings.lang;
   $('#voiceCmds').checked = settings.voiceCmds;
+  $('#blankLine').checked = settings.blankLine;
   $('#replacements').value = settings.replacements;
   $('#theme').value = settings.theme;
 }
@@ -630,6 +631,7 @@ $('#delay').addEventListener('input', (e) => { $('#delayVal').textContent = e.ta
 $('#delay').addEventListener('change', (e) => { settings.delay = Number(e.target.value); saveSettings(); sendDelay(); });
 $('#lang').addEventListener('change', (e) => { settings.lang = e.target.value; saveSettings(); });
 $('#voiceCmds').addEventListener('change', (e) => { settings.voiceCmds = e.target.checked; saveSettings(); });
+$('#blankLine').addEventListener('change', (e) => { settings.blankLine = e.target.checked; saveSettings(); });
 $('#replacements').addEventListener('change', (e) => { settings.replacements = e.target.value; saveSettings(); });
 $('#theme').addEventListener('change', (e) => { settings.theme = e.target.value; store.save('settings', settings); applyTheme(); });
 $('#unpairBtn').addEventListener('click', async () => {

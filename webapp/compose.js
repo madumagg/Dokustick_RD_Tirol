@@ -137,7 +137,8 @@ function saveDoc() {
 }
 
 const blockText = (b) => (b.type === 'text' ? b.text : fillTemplate(b.tpl, b.values));
-const docText = () => doc.map(blockText).filter((t) => t.trim()).join('\n');
+// Bloecke getrennt durch eine Leerzeile (abschaltbar fuer einzeilige Zielfelder)
+const docText = () => doc.map(blockText).filter((t) => t.trim()).join(settings.blankLine ? '\n\n' : '\n');
 const docIsEmpty = () => !doc.some((b) => b.type === 'module' || b.text.trim());
 
 function clearDoc() {

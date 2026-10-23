@@ -318,6 +318,8 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
         <input type="range" id="delay" min="1" max="40" step="1" style="width:100%">
       </label>
       <p class="help" style="margin:0 0 10px">Fehlen am Zielgerät Zeichen oder kommen sie verdreht an, Wert erhöhen (z.&nbsp;B. bei Remote-Desktop / Citrix auf 15–25&nbsp;ms).</p>
+      <label class="check"><input type="checkbox" id="blankLine"> Leerzeile zwischen den Blöcken im Protokoll</label>
+      <p class="help" style="margin:-4px 0 12px">Für einzeilige Eingabefelder am Zielgerät ausschalten.</p>
       <button class="btn" id="testBtn">Tastatur-Test senden</button>
       <p class="help" style="margin:8px 0 0">Tippt <code>Test äöü ÄÖÜ ß @ € {[]} \ | ~ ^ ° ² µ 123</code>. Am Zielgerät muss genau das ankommen. Das Zielgerät muss auf <b>Deutsch (Deutschland/Österreich)</b> als Tastaturlayout eingestellt sein.</p>
     </div>
