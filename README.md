@@ -197,7 +197,7 @@ Für Beschreibungen bei Krankheiten zusätzlich [`supabase/migrations/2026102323
 - **Admins:**
   - Am Reiter zeigt ein rotes Abzeichen die offenen Vorschläge an. Mit „Nur offene Vorschläge“ werden sie gefiltert, mit ✓ freigegeben, mit ✎ bearbeitet, mit 🗑 abgelehnt.
   - Eigene Einträge von Admins sind sofort freigegeben.
-  - **CSV importieren:** Medikamente `Handelsname;Wirkstoff;Dosis`, Krankheiten `Name;Abkürzung/Beschreibung`, je eine Zeile pro Eintrag, Kopfzeile optional. Vorhandene Einträge werden übersprungen. Eine Startliste mit 53 Volkskrankheiten liegt in [`data/`](data/).
+  - **CSV importieren:** Medikamente `Handelsname;Wirkstoff;Dosis`, Krankheiten `Name;Abkürzung/Beschreibung`, je eine Zeile pro Eintrag, Kopfzeile optional. Vorhandene Einträge werden übersprungen. Startlisten liegen in [`data/`](data/): 53 Volkskrankheiten und knapp 2900 in Österreich zugelassene Medikamente. Quellen und Regeln stehen in [`data/README.md`](data/README.md).
   - **CSV exportieren:** Speichert alle freigegebenen Einträge im selben Format, z. B. als Sicherung oder zum Weitergeben.
 - **In Bausteinen:** Feldart „Medikamente (Datenbank)“ bzw. „Krankheiten (Datenbank)“ (Syntax `{{Dauermedikation:@med}}`, `{{Vorerkrankungen:@dx}}`).
   - Im Protokoll ins Suchfeld tippen. Jedes Wort muss vorkommen, „thrombo 100“ findet also „Thrombo ASS 100 mg“, und auch die Suche nach dem Wirkstoff funktioniert. Den gewünschten Treffer antippen, mehrere sind möglich.

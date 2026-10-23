@@ -66,7 +66,7 @@ const catalog = {
   async pull() {
     if (!cloud.sb || !cloud.account || !navigator.onLine) return;
     for (const kind of ['med', 'dx']) {
-      const { data, error } = await cloud.sb.from(CATALOGS[kind].table).select(CATALOGS[kind].cols).limit(20000);
+      const { data, error } = await this.fetchAll(CATALOGS[kind]);
       if (error) {
         // Tabelle existiert nicht -> Datenbank noch nicht eingerichtet
         if (error.code === '42P01' || error.code === 'PGRST205' || /does not exist|schema cache/i.test(error.message)) { this.available = false; this.save(); this.render(); return; }
@@ -77,6 +77,20 @@ const catalog = {
     this.available = true;
     this.save();
     this.render();
+  },
+
+  // Supabase liefert pro Abfrage hoechstens 1000 Zeilen (max_rows), daher seitenweise bis zur Gesamtzahl laden
+  async fetchAll(C) {
+    const rows = [];
+    let total = Infinity;
+    while (rows.length < total) {
+      const { data, error, count } = await cloud.sb.from(C.table).select(C.cols, { count: 'exact' }).order('id').range(rows.length, rows.length + 999);
+      if (error) return { error };
+      if (count != null) total = count;
+      if (!data.length) break;
+      rows.push(...data);
+    }
+    return { data: rows };
   },
 
   pending(kind) { return this[kind].filter((e) => !e.approved); },
@@ -272,7 +286,10 @@ const catalog = {
     box.replaceChildren(
       el('div', { class: 'row', style: 'margin-bottom:10px' },
         el('div', { class: 'grow', style: 'min-width:180px' }, search),
-        el('button', { type: 'button', class: 'btn primary', onclick: () => this.edit(kind).then((e) => e && this.render()) }, this.isAdmin ? '＋ Neu' : '＋ Vorschlagen')),
+        el('button', { type: 'button', class: 'btn primary', onclick: () => this.edit(kind).then((e) => {
+          // Nach dem Namen filtern, sonst geht der neue Eintrag in langen Listen unter
+          if (e) { this.query = kind === 'med' ? e.trade_name : e.name; this.render(); }
+        }) }, this.isAdmin ? '＋ Neu' : '＋ Vorschlagen')),
       this.isAdmin ? el('div', { class: 'row', style: 'margin-bottom:10px' },
         el('label', { class: 'check grow', style: 'min-height:36px' },
           el('input', { type: 'checkbox', checked: this.onlyPending, onchange: (e) => { this.onlyPending = e.target.checked; this.render(); } }),

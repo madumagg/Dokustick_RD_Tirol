@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { newDevice, login, ROOT } from '../lib/harness.mjs';
+import { newDevice, login, serviceClient, ROOT } from '../lib/harness.mjs';
 
 export const needsCloud = true;
 export const title = 'Medikamente & Krankheiten: Vorschlag, Freigabe, Import, Suche im Protokoll';
@@ -70,6 +70,20 @@ export default async function (t) {
   const m = (await A.textContent('#toast')).match(/(\d+) neu importiert, (\d+) übersprungen/);
   ok(m && Number(m[1]) + Number(m[2]) === 53, 'Mitgelieferte Liste data/krankheiten-volkskrankheiten.csv: ' + (m && m[0]));
   ok(await A.evaluate(() => catalog.search('dx', 'pavk').some((e) => e.name === 'Periphere arterielle Verschlusskrankheit')), 'Suche nach Abkürzung „pavk“ findet pAVK');
+  // Mitgelieferte Medikamentenliste: mehr als 1000 Zeilen, die App muss seitenweise laden (Supabase max_rows = 1000)
+  await A.click('#dbTabs button[data-kind=med]');
+  const medFile = path.join(ROOT, 'data', 'medikamente-oesterreich.csv');
+  const medRows = readFileSync(medFile, 'utf8').trim().split('\n').length - 1;
+  const [chooser3] = await Promise.all([A.waitForEvent('filechooser'), A.click('#dbBody >> text=CSV importieren')]);
+  await chooser3.setFiles(medFile);
+  await A.waitForFunction((n) => { const m = document.querySelector('#toast').textContent.match(/(\d+) neu importiert, (\d+) übersprungen/); return m && Number(m[1]) + Number(m[2]) === n; }, medRows, { timeout: 30000 });
+  ok(true, `Mitgelieferte Liste data/medikamente-oesterreich.csv: ${medRows} Zeilen, ${await A.textContent('#toast')}`);
+  const { count: medCount } = await serviceClient().from('medications').select('id', { count: 'exact', head: true });
+  const loaded = await A.evaluate(() => catalog.med.length);
+  ok(medCount > 1000 && loaded === medCount, `Alle ${medCount} Medikamente geladen (App: ${loaded}), nicht nur die ersten 1000`);
+  ok(await A.evaluate(() => catalog.search('med', 'concor 5', 50).some((e) => e.trade_name === 'Concor' && e.dose === '5 mg') && catalog.search('med', 'bisoprolol').length > 0 && catalog.search('med', 'xarelto 20').some((e) => e.dose === '20 mg')),
+    'Suche in der importierten Liste: „concor 5“, „bisoprolol“, „xarelto 20“');
+  await A.click('#dbTabs button[data-kind=dx]');
   // Export: gleiches Format wie der Import, nur freigegebene Eintraege
   const [dl] = await Promise.all([A.waitForEvent('download'), A.click('#dbBody >> text=CSV exportieren')]);
   const exported = readFileSync(await dl.path(), 'utf8');
@@ -138,6 +152,6 @@ export default async function (t) {
   // --- U sieht Freigabe nach Sync
   await sync(U);
   await U.click('#dbTabs button[data-kind=med]');
-  ok(!(await U.isVisible(`#dbBody .mod:has-text("${med1}") .badge`)), 'U: eigener Vorschlag jetzt freigegeben');
+  ok(await U.evaluate((n) => catalog.med.find((e) => e.trade_name === n)?.approved === true, med1), 'U: eigener Vorschlag jetzt freigegeben');
   ok(await U.evaluate((n) => !catalog.med.some((e) => e.trade_name === n), 'Neuomed' + s), 'U: sieht Vs offenen Vorschlag nicht');
 }
