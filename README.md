@@ -215,9 +215,9 @@ Beim Konstruieren beachten:
 ## Updates
 
 - Ist Internet da, lädt die App immer die neueste Version. Ist eine neue Version verfügbar, während die App offen ist, lädt sie sich selbst neu. Das Protokoll bleibt dabei erhalten.
-- Die installierte Version steht oben im Kopf neben dem Namen (z. B. „v16“) und unter *Einstellungen → Dongle → App-Version*.
+- Die installierte Version steht oben im Kopf neben dem Namen (z. B. „v0.18“) und unter *Einstellungen → Dongle → App-Version*. Schema: **0.x** = in Entwicklung, ab **1.0** fertiges Produkt.
 - Klemmt etwas nach einem Update: *Einstellungen → Dongle → **App neu laden***. Das leert den Offline-Speicher. Anmeldung, Bausteine und Einstellungen bleiben erhalten.
-- Für Entwickler: Vor jedem Veröffentlichen die Version mit `tools/version.sh <nummer>` erhöhen.
+- Für Entwickler: Vor jedem Veröffentlichen `tools/version.sh` ausführen. Das erhöht die Version automatisch um eine Stufe (0.18 → 0.19). Mit `tools/version.sh 1.0` setzt man eine bestimmte Version.
 
 ## Datenschutz
 

@@ -223,6 +223,11 @@ dialog h3 { margin: 0 0 14px; }
 @media (max-width: 389px) {
   #connText { display: none; }
 }
+@media (max-width: 340px) {
+  .bar { gap: 6px; }
+  .brand { gap: 4px; font-size: 15px; }
+  .brand svg { width: 22px; height: 22px; }
+}
 .sync svg { width: 18px; height: 18px; }
 .sync.on { color: var(--ok); }
 .sync.busy { color: var(--warn); animation: pulse 1s infinite; }
@@ -450,14 +455,14 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 <dialog id="dlg2"><form method="dialog" id="dlg2Form"></form></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=18"></script>
-<script src="vendor/supabase.js?v=18"></script>
-<script src="app.js?v=18"></script>
-<script src="compose.js?v=18"></script>
-<script src="catalog.js?v=18"></script>
-<script src="cloud.js?v=18"></script>
-<script src="admin.js?v=18"></script>
-<script src="virtual.js?v=18"></script>
+<script src="config.js?v=0.18"></script>
+<script src="vendor/supabase.js?v=0.18"></script>
+<script src="app.js?v=0.18"></script>
+<script src="compose.js?v=0.18"></script>
+<script src="catalog.js?v=0.18"></script>
+<script src="cloud.js?v=0.18"></script>
+<script src="admin.js?v=0.18"></script>
+<script src="virtual.js?v=0.18"></script>
 <script>boot(); $('#adminOpen').addEventListener('click', () => admin.open());</script>
 </body>
 </html>
