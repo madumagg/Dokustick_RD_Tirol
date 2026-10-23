@@ -117,7 +117,30 @@ textarea, input[type=text], input[type=search], select {
   width: 100%; border: 1px solid var(--border); background: var(--surface); border-radius: 12px; padding: 10px 12px;
 }
 textarea:focus, input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-#editor { min-height: 38vh; resize: vertical; font-size: 17px; }
+/* Protokoll */
+#docBlocks { display: grid; gap: 10px; margin-bottom: 4px; }
+.block { position: relative; }
+.doc-text { min-height: 64px; resize: none; font-size: 17px; overflow: hidden; }
+#docBlocks > .block-text:only-child .doc-text { min-height: 30vh; }
+.block-x { position: absolute; top: 6px; right: 6px; border: 0; background: var(--surface-2); color: var(--muted); border-radius: 8px; width: 30px; height: 30px; }
+.block-text:has(.block-x) .doc-text { padding-right: 42px; }
+.block-mod { padding: 10px 12px 12px; border-left: 4px solid var(--accent); }
+.block-head { display: flex; align-items: center; gap: 2px; margin-bottom: 6px; }
+.block-head button { border: 0; background: none; color: var(--muted); min-width: 36px; height: 36px; border-radius: 8px; font-size: 17px; }
+.block-head button:active { background: var(--surface-2); }
+.field.compact { margin-bottom: 10px; }
+.field.compact > span { font-weight: 600; color: var(--text); font-size: 14px; }
+.chip.more { min-width: 40px; color: var(--muted); }
+.field.compact > span.open { color: var(--warn); }
+.field.compact > span.open::after { content: ' · offen'; font-weight: 400; font-size: 12px; }
+.preview.small { font-size: 14px; padding: 8px 10px; color: var(--muted); }
+.write-bar { position: sticky; bottom: calc(68px + env(safe-area-inset-bottom)); padding-top: 12px; z-index: 5; }
+.pick-list { display: grid; gap: 6px; margin-top: 6px; }
+.pick { display: flex; align-items: center; gap: 10px; text-align: left; border: 1px solid var(--border); background: var(--surface); border-radius: 12px; padding: 10px 12px; min-height: 48px; }
+.pick:active { background: var(--accent-soft); }
+.pick-n { color: var(--accent); font-weight: 700; white-space: nowrap; }
+.fields-box { background: var(--surface-2); border-radius: 12px; padding: 10px 12px; margin: -4px 0 12px; }
+.fields-box .chip { background: var(--surface); }
 .interim { min-height: 1.4em; color: var(--muted); font-style: italic; font-size: 14px; margin: 6px 2px; }
 label.field { display: block; margin-bottom: 12px; }
 label.field > span { display: block; font-size: 14px; color: var(--muted); margin-bottom: 4px; }
@@ -155,7 +178,7 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 6px; font-
 nav {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
   background: var(--surface); border-top: 1px solid var(--border);
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(3, 1fr);
   padding-bottom: env(safe-area-inset-bottom);
 }
 nav button { border: 0; background: none; padding: 8px 4px 10px; min-height: 60px; color: var(--muted); font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
@@ -220,13 +243,14 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 
 <main>
   <div id="announce"></div>
-  <!-- Schreiben -->
+  <!-- Schreiben: Protokoll aus Text- und Baustein-Bloecken -->
   <section id="tab-write">
-    <textarea id="editor" placeholder="Text eingeben oder diktieren …" autocomplete="off" spellcheck="true"></textarea>
+    <div id="docBlocks"></div>
     <div class="interim" id="interim"></div>
     <div class="row">
+      <button class="btn primary" id="addBlockBtn">＋ Baustein</button>
       <button class="btn" id="micBtn" title="Diktat starten">🎤 Diktat</button>
-      <select id="tokenSel" class="btn" style="width:auto" aria-label="Platzhalter einfügen">
+      <select id="tokenSel" class="btn" style="width:auto" aria-label="Taste einfügen">
         <option value="">＋ Taste …</option>
         <option value="{TAB}">Tab</option>
         <option value="{ENTER}">Enter</option>
@@ -238,45 +262,24 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
       <span class="grow"></span>
       <button class="btn" id="clearBtn">Leeren</button>
     </div>
-    <div style="margin-top:12px"><button class="btn big primary" id="sendBtn">Senden ⟶</button></div>
+    <div class="write-bar"><button class="btn big primary" id="sendBtn">Alles senden ⟶</button></div>
   </section>
 
-  <!-- Textbausteine -->
+  <!-- Bausteine -->
   <section id="tab-modules" hidden>
     <div class="row" style="margin-bottom:12px">
       <input type="search" id="modSearch" class="grow" placeholder="Suchen …" style="flex:1">
       <select id="modScope" class="scope" aria-label="Filter" hidden></select>
+    </div>
+    <div class="row" style="margin-bottom:4px">
+      <span class="grow help">Antippen: interaktive Bausteine kommen ins Protokoll, einfache werden sofort getippt.</span>
+    </div>
+    <div class="row" style="margin-bottom:12px">
+      <button class="btn" id="modTemplates">Vorlagen</button>
+      <span class="grow"></span>
       <button class="btn primary" id="modAdd">＋ Neu</button>
     </div>
     <div id="modList"></div>
-  </section>
-
-  <!-- Formulare -->
-  <section id="tab-forms" hidden>
-    <div id="formListView">
-      <div class="row" style="margin-bottom:12px">
-        <span class="grow help">Vorlagen mit Feldern zum Ausfüllen</span>
-        <select id="formScope" class="scope" aria-label="Filter" hidden></select>
-        <button class="btn primary" id="formAdd">＋ Neu</button>
-      </div>
-      <div id="formList" class="mods"></div>
-    </div>
-    <div id="formFillView" hidden>
-      <div class="row" style="margin-bottom:12px">
-        <button class="btn small" id="formBack">‹ Zurück</button>
-        <strong class="grow" id="formTitle"></strong>
-        <button class="btn small" id="formEdit">Bearbeiten</button>
-      </div>
-      <div id="formFields"></div>
-      <h2>Vorschau</h2>
-      <pre class="preview" id="formPreview"></pre>
-      <div class="row" style="margin-top:12px">
-        <button class="btn" id="formReset">Felder leeren</button>
-        <button class="btn" id="formToEditor">In Editor</button>
-        <span class="grow"></span>
-      </div>
-      <div style="margin-top:12px"><button class="btn big primary" id="formSend">Senden ⟶</button></div>
-    </div>
   </section>
 
   <!-- Einstellungen -->
@@ -373,18 +376,18 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Schreiben</button>
   <button role="tab" data-tab="modules" aria-selected="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Bausteine</button>
-  <button role="tab" data-tab="forms" aria-selected="false">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>Formulare</button>
   <button role="tab" data-tab="settings" aria-selected="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>Einstellungen</button>
 </nav>
 
 <dialog id="dlg"><form method="dialog" id="dlgForm"></form></dialog>
+<dialog id="dlg2"><form method="dialog" id="dlg2Form"></form></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script src="config.js"></script>
 <script src="vendor/supabase.js"></script>
 <script src="app.js"></script>
+<script src="compose.js"></script>
 <script src="cloud.js"></script>
 <script src="admin.js"></script>
 <script>boot(); $('#adminOpen').addEventListener('click', () => admin.open());</script>

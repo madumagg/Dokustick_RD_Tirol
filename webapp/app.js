@@ -105,6 +105,7 @@ function defaultItems() {
   return [
     ...DEFAULT_MODULES.map((m, i) => newItem('module', { ...m, sort: i })),
     ...DEFAULT_FORMS.map((f, i) => newItem('form', { ...f, sort: i })),
+    ...TEMPLATES.filter((t) => t.category === 'ABCDE').map((t, i) => newItem('module', { ...t, sort: 100 + i })),
   ];
 }
 
@@ -131,7 +132,8 @@ function loadItems() {
 
 function saveItems() { store.save(itemsKey(), items); }
 
-const listItems = (kind) => items.filter((i) => i.kind === kind && !i.deleted).sort((a, b) => a.sort - b.sort);
+// Bausteine und (fruehere) Formulare werden gemeinsam angezeigt
+const listItems = (kind) => items.filter((i) => (!kind || i.kind === kind) && !i.deleted).sort((a, b) => a.sort - b.sort);
 
 function canEdit(it) { return !it.team_id || cloud.isAdmin(it.team_id); }
 
@@ -405,7 +407,7 @@ function processSpeech(t) {
 }
 
 function insertDictation(raw) {
-  const ta = $('#editor');
+  const ta = activeTextArea();
   let ins = processSpeech(raw.trim());
   if (!ins) return;
   const s = ta.selectionStart, e = ta.selectionEnd;
@@ -413,6 +415,7 @@ function insertDictation(raw) {
   if (before && !/\s$/.test(before) && !/^[.,:;?!)\n]/.test(ins)) ins = ' ' + ins;
   if (/(^|[.!?]\s*|\n\s*)$/.test(before)) ins = ins.replace(/^(\s*)(\p{Ll})/u, (_, a, b) => a + b.toUpperCase());
   ta.setRangeText(ins, s, e, 'end');
+  ta.dispatchEvent(new Event('input'));
 }
 
 function updateMicBtn() {
@@ -459,30 +462,6 @@ function stopDictation() {
 
 $('#micBtn').addEventListener('click', () => (listening ? stopDictation() : startDictation()));
 
-/* ================= Schreiben ================= */
-
-$('#sendBtn').addEventListener('click', () => {
-  const ta = $('#editor');
-  if (send(ta.value) && settings.clearAfter) ta.value = '';
-});
-$('#clearBtn').addEventListener('click', () => { $('#editor').value = ''; $('#editor').focus(); });
-$('#tokenSel').addEventListener('change', (e) => {
-  const v = e.target.value;
-  e.target.value = '';
-  if (!v) return;
-  const ta = $('#editor');
-  ta.setRangeText(v, ta.selectionStart, ta.selectionEnd, 'end');
-  ta.focus();
-});
-
-function insertIntoEditor(text) {
-  const ta = $('#editor');
-  const sep = ta.value && !ta.value.endsWith('\n') && !ta.value.endsWith(' ') ? ' ' : '';
-  ta.value += sep + text;
-  showTab('write');
-  toast('In Editor eingefügt');
-}
-
 /* ================= Gemeinsame Listen-Bausteine ================= */
 
 // Filter "Alle / Meine / Team X", nur sichtbar, wenn man in einem Team ist
@@ -527,7 +506,7 @@ function itemActions(it, extra) {
   return el('div', { class: 'acts' },
     extra,
     canEdit(it)
-      ? el('button', { title: 'Bearbeiten', 'aria-label': 'Bearbeiten', onclick: () => (it.kind === 'module' ? editModule(it) : editForm(it)) }, '✎')
+      ? el('button', { title: 'Bearbeiten', 'aria-label': 'Bearbeiten', onclick: () => editModule(it) }, '✎')
       : el('button', { title: 'Als eigene Kopie speichern', 'aria-label': 'Als eigene Kopie speichern', onclick: () => copyToMine(it) }, '⧉'));
 }
 
@@ -539,26 +518,30 @@ function renderModules() {
   const scope = $('#modScope').value;
   const list = $('#modList');
   list.replaceChildren();
-  const all = listItems('module');
+  const all = listItems();
   const shown = all.filter((m) => inScope(m, scope) && (!q || (m.title + ' ' + m.body + ' ' + m.category).toLowerCase().includes(q)));
   if (!shown.length) {
-    list.append(el('div', { class: 'empty' }, all.length ? 'Nichts gefunden.' : 'Noch keine Textbausteine. Mit „＋ Neu“ anlegen.'));
+    list.append(el('div', { class: 'empty' }, all.length ? 'Nichts gefunden.' : 'Noch keine Textbausteine. Mit „＋ Neu“ anlegen oder aus den Vorlagen übernehmen.'));
     return;
   }
   const groups = new Map();
   for (const m of shown) {
-    const c = m.category || 'Allgemein';
+    const c = m.category || (m.kind === 'form' ? 'Formulare' : 'Allgemein');
     if (!groups.has(c)) groups.set(c, []);
     groups.get(c).push(m);
   }
   for (const [cat, group] of groups) {
     list.append(el('h2', {}, cat));
-    list.append(el('div', { class: 'mods' }, group.map((m) =>
-      el('div', { class: 'mod card' },
-        el('button', { class: 'send', onclick: () => send(m.body) && toast('Wird getippt: ' + m.title) },
-          el('span', { class: 'title' }, m.title, teamBadge(m)),
-          el('span', { class: 'prev' }, m.body)),
-        itemActions(m, el('button', { title: 'In Editor einfügen', 'aria-label': 'In Editor einfügen', onclick: () => insertIntoEditor(m.body) }, '↧'))))));
+    list.append(el('div', { class: 'mods' }, group.map((m) => {
+      const interactive = formFields(m.body).length > 0;
+      // Interaktive Bausteine kommen ins Protokoll, einfache werden sofort getippt
+      const tap = () => (interactive ? addToDoc(m) : send(m.body) && toast('Wird getippt: ' + m.title));
+      return el('div', { class: 'mod card' },
+        el('button', { class: 'send', onclick: tap },
+          el('span', { class: 'title' }, m.title, interactive ? el('span', { class: 'badge' }, 'interaktiv') : null, teamBadge(m)),
+          el('span', { class: 'prev' }, templatePreview(m.body))),
+        itemActions(m, el('button', { title: 'Ins Protokoll', 'aria-label': 'Ins Protokoll', onclick: () => addToDoc(m) }, '↧')));
+    })));
   }
 }
 
@@ -566,14 +549,16 @@ function editModule(m) {
   const isNew = !m;
   // Ist gerade ein Team gefiltert, in dem man Admin ist, landet der neue Eintrag dort
   m = m || newItem('module', { team_id: cloud.adminTeamOr($('#modScope').value) });
-  const cats = [...new Set(listItems('module').map((x) => x.category).filter(Boolean))];
-  openDialog(isNew ? 'Neuer Textbaustein' : 'Textbaustein bearbeiten', [
+  const cats = [...new Set(listItems().map((x) => x.category).filter(Boolean))];
+  const body = el('textarea', { name: 'text', rows: 6, required: true, placeholder: 'z. B. A – Atemwege: ' }, m.body);
+  openDialog(isNew ? 'Neuer Baustein' : 'Baustein bearbeiten', [
     field('Titel', el('input', { type: 'text', name: 'title', value: m.title, required: true })),
     field('Kategorie', el('input', { type: 'text', name: 'cat', value: m.category, list: 'catList' }),
       el('datalist', { id: 'catList' }, cats.map((c) => el('option', { value: c })))),
-    field('Text', el('textarea', { name: 'text', rows: 5, required: true }, m.body)),
+    field('Text', body),
+    fieldEditor(body),
     ownerField(m),
-    el('p', { class: 'help', style: 'margin-top:0' }, 'Sondertasten: ', el('code', {}, '{TAB}'), ' ', el('code', {}, '{ENTER}'), ' ', el('code', {}, '{PAUSE}'), ' ', el('code', {}, '{DATUM}'), ' ', el('code', {}, '{ZEIT}')),
+    el('p', { class: 'help' }, 'Sondertasten im Text: ', el('code', {}, '{TAB}'), ' ', el('code', {}, '{ENTER}'), ' ', el('code', {}, '{PAUSE}'), ' ', el('code', {}, '{DATUM}'), ' ', el('code', {}, '{ZEIT}')),
   ], {
     onSave: (f) => {
       Object.assign(m, { title: f.title.value.trim(), category: f.cat.value.trim(), body: f.text.value });
@@ -587,115 +572,7 @@ function editModule(m) {
 
 $('#modSearch').addEventListener('input', renderModules);
 $('#modAdd').addEventListener('click', () => editModule(null));
-
-/* ================= Formulare ================= */
-
-const FIELD_RE = /\{\{\s*([^}:|]+?)\s*(?::([^}]*))?\}\}/g;
-let currentForm = null;
-let formValues = {};
-
-function formFields(tpl) {
-  const fields = new Map();
-  for (const m of tpl.matchAll(FIELD_RE)) {
-    if (!fields.has(m[1])) {
-      const opt = (m[2] || '').trim();
-      fields.set(m[1], { name: m[1], numeric: opt === '#', options: opt && opt !== '#' ? opt.split('|').map((o) => o.trim()) : [] });
-    }
-  }
-  return [...fields.values()];
-}
-
-const fillForm = (tpl, values) => tpl.replace(FIELD_RE, (_, name) => values[name.trim()] ?? '');
-
-function renderFormList() {
-  renderScopeSelect($('#formScope'), renderFormList);
-  const scope = $('#formScope').value;
-  const list = $('#formList');
-  list.replaceChildren();
-  const shown = listItems('form').filter((f) => inScope(f, scope));
-  if (!shown.length) list.append(el('div', { class: 'empty' }, 'Noch keine Formulare. Mit „＋ Neu“ anlegen.'));
-  for (const f of shown) {
-    list.append(el('div', { class: 'mod card' },
-      el('button', { class: 'send', onclick: () => openForm(f) },
-        el('span', { class: 'title' }, f.title, teamBadge(f)),
-        el('span', { class: 'prev' }, formFields(f.body).map((x) => x.name).join(' · ') || 'Keine Felder')),
-      itemActions(f, null)));
-  }
-}
-
-function openForm(f) {
-  currentForm = f;
-  formValues = {};
-  $('#formListView').hidden = true;
-  $('#formFillView').hidden = false;
-  $('#formTitle').textContent = f.title;
-  $('#formEdit').hidden = !canEdit(f);
-  const box = $('#formFields');
-  box.replaceChildren();
-  for (const fld of formFields(f.body)) {
-    const input = el('input', { type: 'text', inputmode: fld.numeric ? 'decimal' : null, autocomplete: 'off',
-      oninput: (e) => { formValues[fld.name] = e.target.value; syncChips(); renderPreview(); } });
-    const chips = el('div', { class: 'chips' }, fld.options.map((o) =>
-      el('button', { type: 'button', class: 'chip', 'data-v': o, onclick: () => {
-        const v = formValues[fld.name] === o ? '' : o;
-        formValues[fld.name] = v; input.value = v; syncChips(); renderPreview();
-      } }, o)));
-    const syncChips = () => chips.querySelectorAll('.chip').forEach((c) => c.classList.toggle('sel', c.dataset.v === formValues[fld.name]));
-    box.append(field(fld.name, input, fld.options.length ? chips : null));
-  }
-  renderPreview();
-  window.scrollTo(0, 0);
-}
-
-function renderPreview() {
-  const text = expandDynamic(fillForm(currentForm.body, formValues));
-  const pre = $('#formPreview');
-  pre.replaceChildren();
-  let last = 0;
-  TOKEN_RE.lastIndex = 0;
-  for (let m; (m = TOKEN_RE.exec(text));) {
-    pre.append(text.slice(last, m.index), el('span', { class: 'tok' }, '⟨' + m[1] + '⟩'));
-    last = TOKEN_RE.lastIndex;
-  }
-  pre.append(text.slice(last));
-}
-
-function closeForm() {
-  currentForm = null; formValues = {};
-  $('#formFillView').hidden = true;
-  $('#formListView').hidden = false;
-  renderFormList();
-}
-
-function editForm(f) {
-  const isNew = !f;
-  f = f || newItem('form', { team_id: cloud.adminTeamOr($('#formScope').value) });
-  openDialog(isNew ? 'Neues Formular' : 'Formular bearbeiten', [
-    field('Name', el('input', { type: 'text', name: 'name', value: f.title, required: true })),
-    field('Vorlage', el('textarea', { name: 'tpl', rows: 7, required: true }, f.body)),
-    ownerField(f),
-    el('ul', { class: 'help', style: 'padding-left:18px;margin-top:0' },
-      el('li', {}, el('code', {}, '{{Name}}'), ' – Textfeld'),
-      el('li', {}, el('code', {}, '{{HF:#}}'), ' – Zahlenfeld'),
-      el('li', {}, el('code', {}, '{{Haut:rosig|blass|zyanotisch}}'), ' – Auswahl (freie Eingabe weiterhin möglich)'),
-      el('li', {}, el('code', {}, '{TAB}'), ' ', el('code', {}, '{ENTER}'), ' ', el('code', {}, '{PAUSE}'), ' ', el('code', {}, '{DATUM}'), ' ', el('code', {}, '{ZEIT}'), ' – Sondertasten')),
-  ], {
-    onSave: (fm) => {
-      Object.assign(f, { title: fm.name.value.trim(), body: fm.tpl.value });
-      if (fm.owner) f.team_id = fm.owner.value || null;
-      putItem(f);
-      if (currentForm === f) openForm(f); else renderFormList();
-    },
-    onDelete: isNew ? null : () => { removeItem(f); closeForm(); },
-  });
-}
-
-$('#formAdd').addEventListener('click', () => editForm(null));
-$('#formBack').addEventListener('click', closeForm);
-$('#formEdit').addEventListener('click', () => editForm(currentForm));
-$('#formReset').addEventListener('click', () => openForm(currentForm));
-$('#formSend').addEventListener('click', () => send(fillForm(currentForm.body, formValues)));
-$('#formToEditor').addEventListener('click', () => insertIntoEditor(fillForm(currentForm.body, formValues)));
+$('#modTemplates').addEventListener('click', () => openTemplates());
 
 /* ================= Dialog ================= */
 
@@ -815,17 +692,10 @@ document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click
 
 function renderItems() {
   renderModules();
-  if (currentForm) {
-    // Offenes Formular wurde evtl. geloescht oder geaendert
-    const f = items.find((x) => x.id === currentForm.id && !x.deleted);
-    if (!f) closeForm(); else currentForm = f;
-  } else {
-    renderFormList();
-  }
 }
 
 function renderAll() {
-  applyTheme(); renderSettings(); renderItems(); renderStatus(); cloud.render();
+  applyTheme(); renderSettings(); renderItems(); renderDoc(); renderStatus(); cloud.render();
 }
 
 function boot() {

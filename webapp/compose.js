@@ -1,0 +1,462 @@
+'use strict';
+
+/*
+ * Interaktive Bausteine und das Protokoll im Schreiben-Fenster.
+ *
+ * Feld-Syntax in Bausteinen (wird auch vom Feld-Editor erzeugt):
+ *   {{Name}}              Textfeld
+ *   {{Name:#}}            Zahlenfeld
+ *   {{Name:a|b|c}}        Einfachauswahl
+ *   {{Name+:a|b|c}}       Mehrfachauswahl
+ *   *a                    Vorauswahl, z.B. {{Atmung:*unauffällig|Dyspnoe}}
+ * Optionen, die mit "kein" beginnen, schliessen bei Mehrfachauswahl die anderen aus.
+ */
+
+const FIELD_RE = /\{\{\s*([^}:|]+?)\s*(?::([^}]*))?\}\}/g;
+const FIELD_TYPES = { single: 'Einfachauswahl', multi: 'Mehrfachauswahl', text: 'Text', number: 'Zahl' };
+
+const TEMPLATES = [
+  { category: 'ABCDE', title: 'A – Atemwege', body: 'A – Atemwege: {{Atemwege:frei und gesichert|gefährdet}}. Maßnahmen: {{Maßnahmen A+:*keine Maßnahmen erforderlich|Wendltubus|Guedeltubus|Larynxtubus|Endotrachealtubus|i-gel Larynxmaske}}.' },
+  { category: 'ABCDE', title: 'B – Belüftung', body: 'B – Belüftung: Atmung {{Atmung:*unauffällig|Dyspnoe|Tachypnoe|Bradypnoe|Apnoe}}, AF {{AF:#}}/min, SpO2 {{SpO2:#}} %, Auskultation {{Auskultation:*seitengleich, vesikulär|abgeschwächt links|abgeschwächt rechts|Spastik|Rasselgeräusche}}. Maßnahmen: {{Maßnahmen B+:*keine Maßnahmen erforderlich|O2-Gabe|assistierte Beatmung|kontrollierte Beatmung}}.' },
+  { category: 'ABCDE', title: 'C – Kreislauf', body: 'C – Kreislauf: {{Kreislauf:*stabil|instabil}}, RR {{RR}} mmHg, HF {{HF:#}}/min, Rekap.-Zeit {{Rekap:*< 2 s|> 2 s}}, Haut {{Haut:*rosig, warm, trocken|blass|kaltschweißig|zyanotisch|marmoriert}}. Maßnahmen: {{Maßnahmen C+:*keine Maßnahmen erforderlich|i.v.-Zugang|i.o.-Zugang|Volumengabe|Blutstillung|Tourniquet|Beckenschlinge}}.' },
+  { category: 'ABCDE', title: 'D – Neurologie', body: 'D – Neurologie: GCS {{GCS:15|14|13|12|11|10|9|8|7|6|5|4|3}}, Pupillen {{Pupillen:*isokor, lichtreagibel|anisokor|lichtstarr}}, BZ {{BZ:#}} mg/dl, FAST {{FAST:*unauffällig|auffällig}}. Maßnahmen: {{Maßnahmen D+:*keine Maßnahmen erforderlich|Glukosegabe|Stroke-Voranmeldung}}.' },
+  { category: 'ABCDE', title: 'E – Exposure', body: 'E – Exposure: {{Befund E:*keine weiteren Auffälligkeiten|Verletzungen (siehe Freitext)}}, Temp. {{Temp:#}} °C. Maßnahmen: {{Maßnahmen E+:*keine Maßnahmen erforderlich|Wärmeerhalt|Immobilisation|Wundversorgung|Schienung}}.' },
+  { category: 'Allgemein', title: 'Vitalparameter', body: 'RR {{RR}} mmHg, HF {{HF:#}}/min, SpO2 {{SpO2:#}} %, AF {{AF:#}}/min, BZ {{BZ:#}} mg/dl, Temp. {{Temp:#}} °C, GCS {{GCS:15|14|13|12|11|10|9|8|7|6|5|4|3}}' },
+  { category: 'Allgemein', title: 'Schmerz', body: 'Schmerz NRS {{NRS:0|1|2|3|4|5|6|7|8|9|10}}/10, Lokalisation {{Lokalisation}}.' },
+];
+
+/* ================= Felder ================= */
+
+function parseField(rawName, rawOpt) {
+  let name = rawName.trim();
+  const multi = name.endsWith('+');
+  if (multi) name = name.slice(0, -1).trim();
+  const opt = (rawOpt || '').trim();
+  if (opt === '#') return { name, type: 'number', options: [], defaults: [] };
+  if (!opt) return { name, type: 'text', options: [], defaults: [] };
+  const parts = opt.split('|').map((o) => o.trim()).filter(Boolean);
+  const options = parts.map((o) => o.replace(/^\*/, '').trim());
+  const defaults = parts.filter((o) => o.startsWith('*')).map((o) => o.slice(1).trim());
+  return { name, type: multi ? 'multi' : 'single', options, defaults: multi ? defaults : defaults.slice(0, 1) };
+}
+
+// Alle Felder eines Bausteins (gleicher Name = gleiches Feld)
+function formFields(tpl) {
+  const fields = new Map();
+  for (const m of tpl.matchAll(FIELD_RE)) {
+    const f = parseField(m[1], m[2]);
+    if (!fields.has(f.name)) fields.set(f.name, { ...f, token: m[0] });
+  }
+  return [...fields.values()];
+}
+
+const cleanName = (s) => s.replace(/[{}:|+]/g, '').trim();
+const cleanOption = (s) => s.replace(/[{}|]/g, '').replace(/^\*/, '').trim();
+
+function fieldToken(f) {
+  const name = cleanName(f.name);
+  if (f.type === 'text') return `{{${name}}}`;
+  if (f.type === 'number') return `{{${name}:#}}`;
+  const opts = f.options.map(cleanOption).filter(Boolean).map((o) => (f.defaults.includes(o) ? '*' + o : o));
+  return `{{${name}${f.type === 'multi' ? '+' : ''}:${opts.join('|')}}}`;
+}
+
+function initialValues(tpl) {
+  const v = {};
+  for (const f of formFields(tpl)) v[f.name] = f.type === 'multi' ? [...f.defaults] : (f.defaults[0] || '');
+  return v;
+}
+
+function fieldValueText(f, v) {
+  if (f.type === 'multi') return (Array.isArray(v) ? v : []).join(', ');
+  return v || '';
+}
+
+// Zerlegt eine Vorlage an ", ", ": " und Satzenden (ausserhalb von Feldern)
+function splitSegments(tpl) {
+  const DELIM = /, |: |\. (?=[A-ZÄÖÜ])/y;
+  const parts = [{ s: '' }];
+  let depth = 0;
+  for (let i = 0; i < tpl.length;) {
+    if (tpl.startsWith('{{', i)) { depth++; parts[parts.length - 1].s += '{{'; i += 2; continue; }
+    if (depth && tpl.startsWith('}}', i)) { depth--; parts[parts.length - 1].s += '}}'; i += 2; continue; }
+    DELIM.lastIndex = i;
+    const m = !depth && DELIM.exec(tpl);
+    if (m) { parts.push({ s: m[0], delim: true }, { s: '' }); i += m[0].length; continue; }
+    parts[parts.length - 1].s += tpl[i++];
+  }
+  return parts;
+}
+
+/*
+ * Setzt die Werte ein. Abschnitte, deren Felder alle leer sind, fallen weg,
+ * z.B. wird aus "RR {{RR}} mmHg, HF {{HF:#}}/min" ohne RR einfach "HF 80/min".
+ */
+function fillTemplate(tpl, values) {
+  const valueOf = (n, o) => { const f = parseField(n, o); return fieldValueText(f, values[f.name]); };
+  const allEmpty = (seg) => {
+    const fields = [...seg.matchAll(FIELD_RE)];
+    return fields.length > 0 && fields.every((m) => !valueOf(m[1], m[2]).trim());
+  };
+  const parts = splitSegments(tpl);
+  for (let k = 0; k < parts.length; k += 2) {
+    if (!allEmpty(parts[k].s)) continue;
+    const next = parts[k + 1];
+    if (next && next.s === ', ') { parts[k].drop = next.drop = true; continue; }
+    // Sonst das naechste noch vorhandene Komma davor entfernen, Satzzeichen am Ende behalten
+    let j = k - 1;
+    while (j > 0 && parts[j].drop) j -= 2;
+    if (j > 0 && parts[j].s === ', ') {
+      parts[j].drop = parts[k].drop = true;
+      parts[k].keep = (parts[k].s.match(/[.!?]\s*$/) || [''])[0];
+    }
+  }
+  return parts.map((p) => (p.drop ? p.keep || '' : p.s)).join('')
+    .replace(FIELD_RE, (_, n, o) => valueOf(n, o));
+}
+
+// Kurzansicht fuer Listen: Felder als [Name]
+const templatePreview = (tpl) => tpl.replace(FIELD_RE, (_, n, o) => `[${parseField(n, o).name}]`);
+
+const isExclusive = (o) => /^kein/i.test(o);
+
+/* ================= Protokoll (Schreiben) ================= */
+
+const textBlock = (text = '') => ({ id: uid(), type: 'text', text });
+const moduleBlock = (it) => ({ id: uid(), type: 'module', title: it.title, tpl: it.body, values: initialValues(it.body) });
+
+// Bleibt beim Neuladen erhalten, wird beim Schliessen des Tabs verworfen
+let doc = (() => {
+  try { const d = JSON.parse(sessionStorage.getItem('dokustick.doc')); if (Array.isArray(d) && d.length) return d; } catch { /* egal */ }
+  return [textBlock()];
+})();
+let activeBlockId = null;
+
+function saveDoc() {
+  try { sessionStorage.setItem('dokustick.doc', JSON.stringify(doc)); } catch { /* egal */ }
+}
+
+const blockText = (b) => (b.type === 'text' ? b.text : fillTemplate(b.tpl, b.values));
+const docText = () => doc.map(blockText).filter((t) => t.trim()).join('\n');
+const docIsEmpty = () => !doc.some((b) => b.type === 'module' || b.text.trim());
+
+function clearDoc() {
+  doc = [textBlock()];
+  activeBlockId = null;
+  saveDoc();
+  renderDoc();
+}
+
+// Textfeld fuer Diktat & Einfuegen: das zuletzt benutzte, sonst ein neues am Ende
+function activeTextArea() {
+  let b = doc.find((x) => x.id === activeBlockId && x.type === 'text');
+  if (!b) {
+    b = doc[doc.length - 1];
+    if (!b || b.type !== 'text') { b = textBlock(); doc.push(b); renderDoc(); }
+  }
+  activeBlockId = b.id;
+  return document.querySelector(`[data-block="${b.id}"] textarea`);
+}
+
+// Baustein ins Protokoll: mit Feldern als Karte, sonst als Text
+function addToDoc(it, { quiet = false } = {}) {
+  if (!formFields(it.body).length) {
+    appendText(it.body);
+  } else {
+    // Vor einem leeren Textfeld am Ende einfuegen, damit man danach weiterschreiben kann
+    const last = doc[doc.length - 1];
+    const block = moduleBlock(it);
+    if (last && last.type === 'text' && !last.text.trim()) doc.splice(doc.length - 1, 0, block);
+    else doc.push(block, textBlock());
+    saveDoc();
+    renderDoc();
+  }
+  if (!quiet) toast(`„${it.title}“ im Protokoll`);
+}
+
+function appendText(text) {
+  const ta = activeTextArea();
+  const sep = ta.value && !/[\s]$/.test(ta.value) ? ' ' : '';
+  ta.value += sep + text;
+  ta.dispatchEvent(new Event('input'));
+}
+
+function moveBlock(b, dir) {
+  const i = doc.indexOf(b), j = i + dir;
+  if (j < 0 || j >= doc.length) return;
+  [doc[i], doc[j]] = [doc[j], doc[i]];
+  saveDoc();
+  renderDoc();
+}
+
+function removeBlock(b) {
+  if (b.type === 'module' && !confirm(`„${b.title}“ aus dem Protokoll entfernen?`)) return;
+  doc = doc.filter((x) => x !== b);
+  if (!doc.length) doc.push(textBlock());
+  saveDoc();
+  renderDoc();
+}
+
+function autosize(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = Math.max(ta.scrollHeight + 2, 64) + 'px';
+}
+
+function renderPreviewInto(pre, text) {
+  pre.replaceChildren();
+  let last = 0;
+  TOKEN_RE.lastIndex = 0;
+  for (let m; (m = TOKEN_RE.exec(text));) {
+    pre.append(text.slice(last, m.index), el('span', { class: 'tok' }, '⟨' + m[1] + '⟩'));
+    last = TOKEN_RE.lastIndex;
+  }
+  pre.append(text.slice(last));
+}
+
+function renderDoc() {
+  const box = $('#docBlocks');
+  box.replaceChildren(...doc.map(renderBlock));
+  box.querySelectorAll('textarea').forEach(autosize);
+}
+
+function renderBlock(b) {
+  return b.type === 'text' ? renderTextBlock(b) : renderModuleBlock(b);
+}
+
+function renderTextBlock(b) {
+  const ta = el('textarea', {
+    class: 'doc-text', rows: 2, placeholder: doc.length > 1 ? 'Freitext …' : 'Text eingeben, diktieren oder Bausteine hinzufügen …',
+    autocomplete: 'off', spellcheck: 'true',
+    onfocus: () => { activeBlockId = b.id; },
+    oninput: (e) => { b.text = e.target.value; autosize(e.target); saveDoc(); },
+  }, b.text);
+  return el('div', { class: 'block block-text', 'data-block': b.id },
+    ta,
+    doc.length > 1 ? el('button', { type: 'button', class: 'block-x', title: 'Textblock entfernen', 'aria-label': 'Textblock entfernen', onclick: () => removeBlock(b) }, '✕') : null);
+}
+
+function renderModuleBlock(b) {
+  const pre = el('div', { class: 'preview small' });
+  const update = () => { saveDoc(); renderPreviewInto(pre, expandDynamic(blockText(b))); };
+  const card = el('div', { class: 'block block-mod card', 'data-block': b.id },
+    el('div', { class: 'block-head' },
+      el('strong', { class: 'grow' }, b.title),
+      el('button', { type: 'button', title: 'Nur diesen Block senden', 'aria-label': 'Nur diesen Block senden', onclick: () => send(blockText(b)) }, '⟶'),
+      el('button', { type: 'button', title: 'Nach oben', 'aria-label': 'Nach oben', onclick: () => moveBlock(b, -1) }, '↑'),
+      el('button', { type: 'button', title: 'Nach unten', 'aria-label': 'Nach unten', onclick: () => moveBlock(b, 1) }, '↓'),
+      el('button', { type: 'button', title: 'Entfernen', 'aria-label': 'Entfernen', onclick: () => removeBlock(b) }, '✕')),
+    formFields(b.tpl).map((f) => renderFieldInput(f, b.values, update)),
+    pre);
+  update();
+  return card;
+}
+
+// Eingabe fuer ein Feld: Knoepfe fuer Auswahl, Eingabefeld fuer Text/Zahl
+function renderFieldInput(f, values, onChange) {
+  if (f.type === 'text' || f.type === 'number') {
+    return el('label', { class: 'field compact' }, el('span', {}, f.name),
+      el('input', { type: 'text', inputmode: f.type === 'number' ? 'decimal' : null, autocomplete: 'off', value: values[f.name] || '',
+        oninput: (e) => { values[f.name] = e.target.value; onChange(); } }));
+  }
+  const chips = el('div', { class: 'chips' });
+  const label = el('span', {}, f.name, f.type === 'multi' ? el('small', { class: 'help' }, ' · mehrere möglich') : null);
+  const selected = () => (f.type === 'multi' ? (Array.isArray(values[f.name]) ? values[f.name] : []) : [values[f.name]].filter(Boolean));
+  const draw = () => {
+    const sel = selected();
+    // Noch nichts gewaehlt -> Feld hervorheben, damit es nicht vergessen wird
+    label.classList.toggle('open', !sel.length);
+    const custom = sel.filter((v) => !f.options.includes(v));
+    chips.replaceChildren(
+      ...[...f.options, ...custom].map((o) => el('button', {
+        type: 'button', class: 'chip' + (sel.includes(o) ? ' sel' : ''), 'aria-pressed': String(sel.includes(o)),
+        onclick: () => toggle(o),
+      }, o)),
+      el('button', { type: 'button', class: 'chip more', title: 'Eigenen Wert eingeben', onclick: () => {
+        const v = prompt(`${f.name}: eigener Wert`);
+        if (v && v.trim()) toggle(v.trim(), true);
+      } }, '…'));
+  };
+  const toggle = (o, forceOn = false) => {
+    if (f.type === 'multi') {
+      let sel = selected();
+      if (sel.includes(o) && !forceOn) sel = sel.filter((x) => x !== o);
+      else if (isExclusive(o)) sel = [o];
+      else sel = [...sel.filter((x) => !isExclusive(x) && x !== o), o];
+      // Reihenfolge wie in den Optionen, eigene Werte am Ende
+      values[f.name] = [...f.options.filter((x) => sel.includes(x)), ...sel.filter((x) => !f.options.includes(x))];
+    } else {
+      values[f.name] = values[f.name] === o && !forceOn ? '' : o;
+    }
+    draw();
+    onChange();
+  };
+  draw();
+  return el('div', { class: 'field compact' }, label, chips);
+}
+
+/* ================= Baustein-Auswahl im Schreiben-Fenster ================= */
+
+function openPicker() {
+  const search = el('input', { type: 'search', placeholder: 'Bausteine suchen …' });
+  const list = el('div', {});
+  const added = new Map();
+  const draw = () => {
+    const q = search.value.trim().toLowerCase();
+    const groups = new Map();
+    for (const it of listItems().filter((x) => !q || (x.title + ' ' + x.category + ' ' + x.body).toLowerCase().includes(q))) {
+      const c = it.category || (it.kind === 'form' ? 'Formulare' : 'Allgemein');
+      if (!groups.has(c)) groups.set(c, []);
+      groups.get(c).push(it);
+    }
+    list.replaceChildren();
+    if (!groups.size) list.append(el('div', { class: 'empty' }, 'Keine Bausteine gefunden.'));
+    for (const [cat, group] of groups) {
+      list.append(el('div', { class: 'row', style: 'margin-top:12px' },
+        el('h2', { class: 'grow', style: 'margin:0' }, cat),
+        group.length > 1 ? el('button', { type: 'button', class: 'btn small', onclick: () => { group.forEach((it) => add(it)); } }, '＋ alle') : null));
+      list.append(el('div', { class: 'pick-list' }, group.map((it) => el('button', {
+        type: 'button', class: 'pick', onclick: () => add(it),
+      }, el('span', { class: 'grow' }, it.title, formFields(it.body).length ? el('span', { class: 'badge' }, 'interaktiv') : null),
+      added.get(it.id) ? el('span', { class: 'pick-n' }, '✓ ' + added.get(it.id)) : el('span', { class: 'pick-n' }, '＋')))));
+    }
+  };
+  const add = (it) => { addToDoc(it, { quiet: true }); added.set(it.id, (added.get(it.id) || 0) + 1); draw(); };
+  search.addEventListener('input', draw);
+  draw();
+  openDialog('Baustein hinzufügen', [search, list]);
+}
+
+/* ================= Feld-Editor (beim Bearbeiten eines Bausteins) ================= */
+
+// Zeigt die Felder eines Bausteins und erlaubt Hinzufuegen/Bearbeiten ohne Syntax
+function fieldEditor(bodyArea) {
+  const box = el('div', { class: 'fields-box' });
+  const draw = () => {
+    const fields = formFields(bodyArea.value);
+    box.replaceChildren(
+      el('div', { class: 'row' },
+        el('span', { class: 'grow help' }, fields.length ? `Felder (${fields.length}) – antippen zum Bearbeiten:` : 'Noch keine Felder. Mit Feldern wird der Baustein im Protokoll interaktiv.'),
+        el('button', { type: 'button', class: 'btn small primary', onclick: () => openFieldBuilder(bodyArea, null, draw) }, '＋ Feld')),
+      fields.length ? el('div', { class: 'chips' }, fields.map((f) => el('button', {
+        type: 'button', class: 'chip', onclick: () => openFieldBuilder(bodyArea, f, draw),
+      }, `${f.name} · ${FIELD_TYPES[f.type]}`))) : null);
+  };
+  bodyArea.addEventListener('input', draw);
+  draw();
+  return box;
+}
+
+function openFieldBuilder(bodyArea, field0, onDone) {
+  const dlg = $('#dlg2'), form = $('#dlg2Form');
+  const f = field0 ? { ...field0, options: [...field0.options], defaults: [...field0.defaults] } : { name: '', type: 'single', options: [], defaults: [] };
+  const name = el('input', { type: 'text', required: true, value: f.name, placeholder: 'z. B. Atemwege' });
+  const type = el('select', {}, Object.entries(FIELD_TYPES).map(([k, v]) => el('option', { value: k, selected: f.type === k }, v)));
+  const opts = el('textarea', { rows: 6, placeholder: 'frei und gesichert\ngefährdet' }, f.options.join('\n'));
+  const defBox = el('div', { class: 'chips' });
+  const optField = field('Auswahlmöglichkeiten (eine pro Zeile)', opts);
+  // Kein <label>: Knoepfe darin wuerden beim Neuzeichnen doppelt ausgeloest
+  const defField = el('div', { class: 'field' }, el('span', {}, 'Vorauswahl (optional, antippen)'), defBox);
+  const readOpts = () => opts.value.split('\n').map(cleanOption).filter(Boolean);
+  const drawDefaults = () => {
+    const isChoice = type.value === 'single' || type.value === 'multi';
+    optField.hidden = defField.hidden = !isChoice;
+    const list = readOpts();
+    f.defaults = f.defaults.filter((d) => list.includes(d));
+    if (type.value === 'single') f.defaults = f.defaults.slice(0, 1);
+    defBox.replaceChildren(...list.map((o) => el('button', {
+      type: 'button', class: 'chip' + (f.defaults.includes(o) ? ' sel' : ''), onclick: () => {
+        if (f.defaults.includes(o)) f.defaults = f.defaults.filter((d) => d !== o);
+        else f.defaults = type.value === 'single' ? [o] : [...f.defaults, o];
+        drawDefaults();
+      },
+    }, o)));
+  };
+  opts.addEventListener('input', drawDefaults);
+  type.addEventListener('change', drawDefaults);
+
+  form.replaceChildren(
+    el('h3', {}, field0 ? 'Feld bearbeiten' : 'Neues Feld'),
+    field('Name', name),
+    field('Art', type),
+    el('p', { class: 'help', style: 'margin-top:-6px' }, 'Einfachauswahl = genau eine Option · Mehrfachauswahl = mehrere Optionen (z. B. Maßnahmen). Optionen, die mit „kein“ beginnen, heben die anderen auf.'),
+    optField,
+    defField,
+    el('div', { class: 'row', style: 'margin-top:8px' },
+      field0 ? el('button', { type: 'button', class: 'btn danger', onclick: () => {
+        if (!confirm(`Feld „${f.name}“ aus dem Baustein entfernen?`)) return;
+        bodyArea.value = bodyArea.value.split(field0.token).join('');
+        bodyArea.dispatchEvent(new Event('input'));
+        dlg.close();
+      } }, 'Entfernen') : null,
+      el('span', { class: 'grow' }),
+      el('button', { type: 'button', class: 'btn', onclick: () => dlg.close() }, 'Abbrechen'),
+      el('button', { type: 'submit', class: 'btn primary' }, field0 ? 'Übernehmen' : 'Einfügen')));
+  drawDefaults();
+
+  form.onsubmit = (e) => {
+    e.preventDefault();
+    const nf = { name: cleanName(name.value), type: type.value, options: readOpts(), defaults: f.defaults };
+    if (!nf.name) return toast('Bitte einen Namen eingeben', 'err');
+    if ((nf.type === 'single' || nf.type === 'multi') && nf.options.length < 2) return toast('Mindestens zwei Auswahlmöglichkeiten eintragen', 'err');
+    const token = fieldToken(nf);
+    if (field0) {
+      bodyArea.value = bodyArea.value.split(field0.token).join(token);
+    } else {
+      const s = bodyArea.selectionStart ?? bodyArea.value.length;
+      bodyArea.setRangeText(token, s, bodyArea.selectionEnd ?? s, 'end');
+    }
+    bodyArea.dispatchEvent(new Event('input'));
+    dlg.close();
+    onDone();
+  };
+  dlg.showModal();
+  if (!field0) name.focus();
+}
+
+/* ================= Vorlagen ================= */
+
+function openTemplates() {
+  const exists = (t) => listItems().some((i) => i.title === t.title && !i.team_id);
+  const target = el('select', {},
+    el('option', { value: '' }, 'Meine eigenen'),
+    ...cloud.teams.filter((t) => t.role === 'admin').map((t) => el('option', { value: t.id }, 'Team: ' + t.name)));
+  const addTpl = (t) => { putItem(newItem('module', { ...t, team_id: target.value || null })); renderModules(); };
+  const list = el('div', {});
+  const draw = () => {
+    const groups = new Map();
+    TEMPLATES.forEach((t) => { if (!groups.has(t.category)) groups.set(t.category, []); groups.get(t.category).push(t); });
+    list.replaceChildren();
+    for (const [cat, group] of groups) {
+      list.append(el('div', { class: 'row', style: 'margin-top:12px' },
+        el('h2', { class: 'grow', style: 'margin:0' }, cat),
+        el('button', { type: 'button', class: 'btn small', onclick: () => { group.forEach(addTpl); toast(`${group.length} Bausteine hinzugefügt`); draw(); } }, '＋ alle')));
+      list.append(el('div', { class: 'pick-list' }, group.map((t) => el('button', { type: 'button', class: 'pick', onclick: () => { addTpl(t); toast(`„${t.title}“ hinzugefügt`); draw(); } },
+        el('span', { class: 'grow' }, el('span', { style: 'display:block' }, t.title), el('span', { class: 'help' }, templatePreview(t.body).slice(0, 90) + '…')),
+        el('span', { class: 'pick-n' }, exists(t) ? '✓' : '＋')))));
+    }
+  };
+  draw();
+  openDialog('Vorlagen', [
+    el('p', { class: 'help', style: 'margin-top:0' }, 'Fertige interaktive Bausteine zum Übernehmen. Danach kannst du sie frei anpassen (✎). B–E sind Vorschläge.'),
+    cloud.teams.some((t) => t.role === 'admin') ? field('Hinzufügen zu', target) : null,
+    list]);
+}
+
+/* ================= Schreiben: Bedienelemente ================= */
+
+$('#sendBtn').addEventListener('click', () => {
+  if (send(docText()) && settings.clearAfter) clearDoc();
+});
+$('#clearBtn').addEventListener('click', () => {
+  if (docIsEmpty() || confirm('Protokoll leeren?')) clearDoc();
+});
+$('#addBlockBtn').addEventListener('click', openPicker);
+$('#tokenSel').addEventListener('change', (e) => {
+  const v = e.target.value;
+  e.target.value = '';
+  if (!v) return;
+  const ta = activeTextArea();
+  ta.setRangeText(v, ta.selectionStart, ta.selectionEnd, 'end');
+  ta.dispatchEvent(new Event('input'));
+  ta.focus();
+});

@@ -110,7 +110,6 @@ const cloud = {
     this.teams = []; this.lastSync = null; this.error = null;
     loadItems();
     if (acc) this.loadTeams();
-    closeFormIfOpen();
     renderAll();
     if (acc) this.sync();
   },
@@ -500,7 +499,3 @@ const cloud = {
       el('button', { type: 'button', class: 'btn', onclick: () => this.createTeam() }, 'Team erstellen')));
   },
 };
-
-function closeFormIfOpen() {
-  if (currentForm) closeForm();
-}

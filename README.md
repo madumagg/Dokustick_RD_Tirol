@@ -87,13 +87,30 @@ Web Bluetooth funktioniert nur über **https**. Am einfachsten ist **GitHub Page
 | `{DATUM}` / `{ZEIT}` | aktuelles Datum / Uhrzeit |
 | `{UP}` `{DOWN}` `{LEFT}` `{RIGHT}` `{HOME}` `{END}` `{BACKSPACE}` `{DEL}` `{ESC}` | entsprechende Taste |
 
-### Formular-Felder
+### Interaktive Bausteine & Protokoll
+
+Bausteine können **Auswahlfelder** enthalten, z. B. beim ABCDE-Schema:
+
+> A – Atemwege: [frei und gesichert | gefährdet]. Maßnahmen: [keine Maßnahmen erforderlich | Wendltubus | Guedeltubus | …]
+
+- **Ins Protokoll:** Tippt man einen interaktiven Baustein an, landet er im Fenster *Schreiben* als Karte mit Auswahl-Knöpfen. Einfache Bausteine ohne Felder werden wie bisher sofort getippt. ↧ legt jeden Baustein ins Protokoll.
+- **Im Protokoll:** Optionen antippen, mit „…“ einen eigenen Wert eingeben. Dazwischen ist Freitext oder Diktat möglich, Blöcke lassen sich verschieben (↑ ↓) und entfernen (✕).
+- **Senden:** „Alles senden“ tippt das ganze Protokoll. ⟶ an einer Karte sendet nur diesen Block.
+- **Leere Messwerte fallen weg:** Ohne Wert wird aus „RR … mmHg, HF 80/min“ einfach „HF 80/min“. Noch nicht beantwortete Auswahlfelder sind orange markiert („offen“).
+- **Mehrfachauswahl:** Optionen, die mit „kein“ beginnen (z. B. „keine Maßnahmen erforderlich“), heben die anderen auf und umgekehrt.
+- **Felder anlegen:** Baustein bearbeiten (✎) → **＋ Feld**: Name, Art (Einfachauswahl, Mehrfachauswahl, Text, Zahl), Auswahlmöglichkeiten und Vorauswahl festlegen. Vorhandene Felder antippen, um sie zu ändern.
+- **Vorlagen:** *Bausteine → Vorlagen* enthält das ABCDE-Schema (A nach Vorgabe, B–E als anpassbare Vorschläge) sowie Vitalparameter und Schmerz.
+- Das Protokoll bleibt beim Neuladen der Seite erhalten und wird beim Schließen des Browser-Tabs verworfen. Es wird nie hochgeladen.
+
+Für Fortgeschrittene, so sieht ein Feld im Text aus:
 
 | Syntax | Feld |
 |---|---|
 | `{{Name}}` | Textfeld |
 | `{{HF:#}}` | Zahlenfeld |
-| `{{Haut:rosig\|blass\|zyanotisch}}` | Auswahl-Chips, freie Eingabe weiterhin möglich |
+| `{{Haut:rosig\|blass\|zyanotisch}}` | Einfachauswahl |
+| `{{Maßnahmen+:keine\|O2-Gabe\|Beatmung}}` | Mehrfachauswahl |
+| `*` vor einer Option | Vorauswahl, z. B. `{{Atmung:*unauffällig\|Dyspnoe}}` |
 
 ## 4. Konto & Teams (optional)
 
