@@ -7,3 +7,7 @@ target_sources(app PRIVATE
 	src/typer.c
 	src/keymap_de.c
 )
+
+if(CONFIG_BOARD_NRF52840_MDK_USB_DONGLE)
+	target_sources(app PRIVATE src/regout.c)
+endif()

@@ -302,13 +302,12 @@ dialog h3 { margin: 0 0 14px; }
     <h2>Dongle</h2>
     <div class="card pad help">
       <ul style="margin:0;padding-left:18px">
-        <li><b>Erstes Koppeln:</b> Dongle einstecken (LED blinkt blau), „Verbinden“ tippen und die Kopplungsanfrage bestätigen.</li>
-        <li><b>Weiteres Handy koppeln:</b> Taste am Dongle kurz drücken → 60&nbsp;s Kopplungsmodus.</li>
-        <li><b>Alle Kopplungen löschen:</b> Taste 5&nbsp;s halten, bis die LED rot leuchtet.</li>
-        <li><b>LEDs:</b> blau blinkend = koppelbereit · grün = verbunden · flackernd = tippt · rot blinkend = nicht am Zielgerät eingesteckt.</li>
+        <li><b>Koppeln:</b> Dongle einstecken – er ist dann 60&nbsp;s koppelbereit (LED blinkt blau). „Verbinden“ tippen und die Kopplungsanfrage bestätigen. Die Taste am Dongle kurz drücken öffnet das Kopplungsfenster erneut.</li>
+        <li><b>LEDs:</b> blau blinkend = koppelbereit · grün = verbunden · grün flackernd = tippt · rot blinkend = nicht am Zielgerät eingesteckt.</li>
         <li><b>Verbindung klappt nicht mehr</b> (z.&nbsp;B. nach Löschen der Kopplungen): „DokuStick“ in den Bluetooth-Einstellungen des Handys entfernen und neu verbinden.</li>
       </ul>
-      <p style="margin-bottom:0">Firmware: <span id="fwVer">–</span></p>
+      <p>Firmware: <span id="fwVer">–</span></p>
+      <button class="btn danger" id="unpairBtn">Alle Kopplungen löschen</button>
     </div>
   </section>
 </main>
@@ -335,7 +334,7 @@ dialog h3 { margin: 0 0 14px; }
 const SVC_UUID = '6e7a0001-4b3c-4f8e-9a1d-5c2b7d0a4e01';
 const CMD_UUID = '6e7a0002-4b3c-4f8e-9a1d-5c2b7d0a4e01';
 const STAT_UUID = '6e7a0003-4b3c-4f8e-9a1d-5c2b7d0a4e01';
-const CMD_DATA = 1, CMD_CANCEL = 2, CMD_DELAY = 3;
+const CMD_DATA = 1, CMD_CANCEL = 2, CMD_DELAY = 3, CMD_UNPAIR = 4;
 const CHUNK = 19;            // Nutzdaten pro BLE-Paket (passt in die Standard-MTU)
 const ERR_QUEUE_FULL = 0x80;
 
@@ -946,6 +945,12 @@ $('#voiceCmds').addEventListener('change', (e) => { settings.voiceCmds = e.targe
 $('#replacements').addEventListener('change', (e) => { settings.replacements = e.target.value; saveAll(); });
 $('#clearAfter').addEventListener('change', (e) => { settings.clearAfter = e.target.checked; saveAll(); });
 $('#theme').addEventListener('change', (e) => { settings.theme = e.target.value; saveAll(); applyTheme(); });
+$('#unpairBtn').addEventListener('click', async () => {
+  if (!ble.connected) return toast('Nicht mit dem Dongle verbunden', 'err');
+  if (!confirm('Alle gekoppelten Handys am Dongle löschen? Danach ist der Dongle wieder frei koppelbar. Entferne „DokuStick“ anschließend auch in den Bluetooth-Einstellungen dieses Handys.')) return;
+  ble.userDisconnect = true;
+  try { await writeCmd(new Uint8Array([CMD_UNPAIR])); toast('Kopplungen gelöscht'); } catch (e) { toast('Fehlgeschlagen: ' + e.message, 'err'); }
+});
 $('#testBtn').addEventListener('click', () => send('Test äöü ÄÖÜ ß @ € {[]} \\ | ~ ^ ° ² µ 123'));
 
 $('#exportBtn').addEventListener('click', () => {

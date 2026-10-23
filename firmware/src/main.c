@@ -1,10 +1,13 @@
 /*
- * DokuStick: Bluetooth-zu-USB-Tastatur fuer den Nordic nRF52840 Dongle.
+ * DokuStick: Bluetooth-zu-USB-Tastatur fuer nRF52840-Dongles
+ * (Nordic PCA10059, Makerdiary nRF52840 MDK USB Dongle).
  *
  * Das Smartphone verbindet sich per Bluetooth LE und schickt Text,
  * der Dongle tippt ihn als USB-Tastatur am Zielgeraet ein.
  *
- * Taste SW1:  kurz druecken   -> Kopplungsmodus fuer 60 s (LED blinkt blau)
+ * Kopplung: nach dem Einstecken (bzw. Neustart) 60 s moeglich, LED blinkt blau.
+ * Nordic-Dongle zusaetzlich mit Taste SW1:
+ *             kurz druecken   -> Kopplungsmodus fuer 60 s
  *             5 s halten      -> alle Kopplungen loeschen (LED leuchtet rot)
  */
 #include "typer.h"
@@ -18,7 +21,7 @@
 #include <zephyr/settings/settings.h>
 #include <zephyr/sys/byteorder.h>
 
-#define FW_VERSION 1
+#define FW_VERSION 2
 
 #define PAIRING_WINDOW_MS   (60 * 1000)
 #define ERASE_HOLD_MS       5000
@@ -28,6 +31,7 @@
 #define CMD_DATA      0x01 /* Datenstrom, siehe typer.h */
 #define CMD_CANCEL    0x02 /* Tippen abbrechen */
 #define CMD_DELAY     0x03 /* Tippverzoegerung in ms setzen */
+#define CMD_UNPAIR    0x04 /* alle Kopplungen loeschen */
 
 /* ATT-Anwendungsfehler: Warteschlange voll, spaeter erneut senden */
 #define ERR_QUEUE_FULL 0x80
@@ -45,17 +49,21 @@ static const struct bt_uuid_128 ds_svc_uuid = BT_UUID_INIT_128(BT_UUID_DS_SVC_VA
 static const struct bt_uuid_128 ds_cmd_uuid = BT_UUID_INIT_128(BT_UUID_DS_CMD_VAL);
 static const struct bt_uuid_128 ds_status_uuid = BT_UUID_INIT_128(BT_UUID_DS_STATUS_VAL);
 
-static const struct gpio_dt_spec btn = GPIO_DT_SPEC_GET(DT_ALIAS(sw0), gpios);
-static const struct gpio_dt_spec led_small = GPIO_DT_SPEC_GET(DT_ALIAS(led0_green), gpios);
-static const struct gpio_dt_spec led_red = GPIO_DT_SPEC_GET(DT_ALIAS(led1_red), gpios);
-static const struct gpio_dt_spec led_green = GPIO_DT_SPEC_GET(DT_ALIAS(led1_green), gpios);
-static const struct gpio_dt_spec led_blue = GPIO_DT_SPEC_GET(DT_ALIAS(led1_blue), gpios);
+#define HAS_BUTTON DT_NODE_EXISTS(DT_ALIAS(ds_button))
+
+#if HAS_BUTTON
+static const struct gpio_dt_spec btn = GPIO_DT_SPEC_GET(DT_ALIAS(ds_button), gpios);
+#endif
+static const struct gpio_dt_spec led_red = GPIO_DT_SPEC_GET(DT_ALIAS(ds_red), gpios);
+static const struct gpio_dt_spec led_green = GPIO_DT_SPEC_GET(DT_ALIAS(ds_green), gpios);
+static const struct gpio_dt_spec led_blue = GPIO_DT_SPEC_GET(DT_ALIAS(ds_blue), gpios);
 
 static struct bt_conn *current_conn;
 static atomic_t secured;
 static atomic_t notify_enabled;
 static atomic_t erasing;
-static int64_t pairing_until;
+/* Nach dem Einstecken ist das Kopplungsfenster offen */
+static int64_t pairing_until = PAIRING_WINDOW_MS;
 
 struct status {
 	uint8_t flags;
@@ -82,7 +90,7 @@ static int bond_count(void)
 	return n;
 }
 
-/* Koppeln ist nur im Auslieferungszustand oder nach Tastendruck erlaubt */
+/* Koppeln ist nur ohne Kopplungen oder im Kopplungsfenster erlaubt */
 static bool pairing_allowed(void)
 {
 	return bond_count() == 0 || k_uptime_get() < pairing_until;
@@ -139,6 +147,7 @@ static void status_ccc_changed(const struct bt_gatt_attr *attr, uint16_t value)
 
 static ssize_t cmd_write(struct bt_conn *conn, const struct bt_gatt_attr *attr, const void *buf,
 			 uint16_t len, uint16_t offset, uint8_t flags);
+static struct k_work erase_bonds_work;
 
 BT_GATT_SERVICE_DEFINE(ds_svc,
 	BT_GATT_PRIMARY_SERVICE(&ds_svc_uuid),
@@ -177,6 +186,10 @@ static ssize_t cmd_write(struct bt_conn *conn, const struct bt_gatt_attr *attr, 
 			return BT_GATT_ERR(BT_ATT_ERR_INVALID_ATTRIBUTE_LEN);
 		}
 		typer_set_delay(data[1]);
+		break;
+	case CMD_UNPAIR:
+		atomic_set(&erasing, 1);
+		k_work_submit(&erase_bonds_work);
 		break;
 	default:
 		return BT_GATT_ERR(BT_ATT_ERR_NOT_SUPPORTED);
@@ -268,9 +281,8 @@ static K_WORK_DEFINE(erase_bonds_work, erase_bonds_work_handler);
 
 /* --- Taste & LEDs ---------------------------------------------------- */
 
-static void leds(bool small, bool r, bool g, bool b)
+static void leds(bool r, bool g, bool b)
 {
-	gpio_pin_set_dt(&led_small, small);
 	gpio_pin_set_dt(&led_red, r);
 	gpio_pin_set_dt(&led_green, g);
 	gpio_pin_set_dt(&led_blue, b);
@@ -283,9 +295,11 @@ static void ui_loop(void)
 
 	for (;;) {
 		int64_t now = k_uptime_get();
-		bool down = gpio_pin_get_dt(&btn) > 0;
 		bool blink = (tick / 5) % 2; /* 500 ms Takt */
 		bool fast = tick % 2;        /* 100 ms Takt */
+
+#if HAS_BUTTON
+		bool down = gpio_pin_get_dt(&btn) > 0;
 
 		/* Taste auswerten */
 		if (down && pressed_at < 0) {
@@ -301,20 +315,21 @@ static void ui_loop(void)
 			}
 			pressed_at = -1;
 		}
+#endif
 
 		/* LED-Anzeige */
 		if (atomic_get(&erasing) || (pressed_at >= 0 && now - pressed_at >= ERASE_HOLD_MS)) {
-			leds(false, true, false, false);         /* rot: Kopplungen loeschen */
+			leds(true, false, false);         /* rot: Kopplungen loeschen */
 		} else if (typer_busy() && !typer_usb_ready()) {
-			leds(false, blink, false, false);        /* rot blinkend: kein USB */
+			leds(blink, false, false);        /* rot blinkend: kein USB */
 		} else if (typer_busy()) {
-			leds(fast, false, false, false);         /* flackert: tippt */
+			leds(false, fast, false);         /* gruen flackernd: tippt */
 		} else if (pairing_allowed() && !atomic_get(&secured)) {
-			leds(false, false, false, blink);        /* blau blinkend: koppelbereit */
+			leds(false, false, blink);        /* blau blinkend: koppelbereit */
 		} else if (atomic_get(&secured)) {
-			leds(true, false, false, false);         /* gruen: verbunden */
+			leds(false, true, false);         /* gruen: verbunden */
 		} else {
-			leds(false, false, false, false);
+			leds(false, false, false);
 		}
 
 		tick++;
@@ -324,14 +339,15 @@ static void ui_loop(void)
 
 int main(void)
 {
+#if HAS_BUTTON
 	gpio_pin_configure_dt(&btn, GPIO_INPUT);
-	gpio_pin_configure_dt(&led_small, GPIO_OUTPUT_INACTIVE);
+#endif
 	gpio_pin_configure_dt(&led_red, GPIO_OUTPUT_INACTIVE);
 	gpio_pin_configure_dt(&led_green, GPIO_OUTPUT_INACTIVE);
 	gpio_pin_configure_dt(&led_blue, GPIO_OUTPUT_INACTIVE);
 
 	if (typer_init() != 0) {
-		leds(false, true, false, false);
+		leds(true, false, false);
 	}
 
 	bt_conn_auth_cb_register(&auth_cb);
@@ -341,7 +357,7 @@ int main(void)
 		settings_load();
 		k_work_submit(&adv_work);
 	} else {
-		leds(false, true, false, false);
+		leds(true, false, false);
 	}
 
 	ui_loop();

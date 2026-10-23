@@ -1,0 +1,9 @@
+/* Nordic nRF52840 Dongle (PCA10059): RGB-LED und Taste SW1 */
+/ {
+	aliases {
+		ds-red = &led1_red;
+		ds-green = &led1_green;
+		ds-blue = &led1_blue;
+		ds-button = &button0;
+	};
+};
