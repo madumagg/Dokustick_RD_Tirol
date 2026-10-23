@@ -184,6 +184,24 @@ Hinweise:
 - Löscht man ein Konto, das einziger Admin eines Teams ist, wird automatisch das am längsten dabei befindliche Mitglied Team-Admin.
 - Sich selbst kann man weder sperren noch löschen noch die Admin-Rechte entziehen. So bleibt immer mindestens ein App-Admin übrig.
 
+### Datenbank: Medikamente & Krankheiten
+
+Einmalig einrichten: Im Supabase **SQL Editor** den Inhalt von [`supabase/catalog.sql`](supabase/catalog.sql) ausführen (nach `schema.sql` und `admin.sql`).
+
+- **Reiter „Datenbank“:** Medikamente (Handelsname, Wirkstoff, Dosis) und Krankheiten (Name, optionale Abkürzung) ansehen und durchsuchen.
+- **Vorschlagen:** Jeder angemeldete Benutzer kann neue Einträge vorschlagen. Für einen selbst sind sie sofort nutzbar („wartet auf Freigabe“), für alle anderen erst nach der Freigabe durch einen App-Admin.
+- **Doppelte Einträge:** Die App warnt vor ähnlichen Einträgen. Exakte Doppelungen (gleicher Handelsname + Dosis bzw. gleicher Name) lehnt die Datenbank ab.
+- **Admins:**
+  - Am Reiter zeigt ein rotes Abzeichen die offenen Vorschläge an. Mit „Nur offene Vorschläge“ werden sie gefiltert, mit ✓ freigegeben, mit ✎ bearbeitet, mit 🗑 abgelehnt.
+  - Eigene Einträge von Admins sind sofort freigegeben.
+  - **CSV importieren:** Medikamente `Handelsname;Wirkstoff;Dosis`, Krankheiten `Name;Abkürzung`, je eine Zeile pro Eintrag, Kopfzeile optional. Vorhandene Einträge werden übersprungen.
+- **In Bausteinen:** Feldart „Medikamente (Datenbank)“ bzw. „Krankheiten (Datenbank)“ (Syntax `{{Dauermedikation:@med}}`, `{{Vorerkrankungen:@dx}}`).
+  - Im Protokoll ins Suchfeld tippen. Jedes Wort muss vorkommen, „thrombo 100“ findet also „Thrombo ASS 100 mg“, und auch die Suche nach dem Wirkstoff funktioniert. Den gewünschten Treffer antippen, mehrere sind möglich.
+  - Im Text erscheinen nur **Handelsname und Dosis**.
+  - „keine“ und „unbekannt“ stehen immer zur Auswahl. Nicht gefundene Einträge lassen sich als Freitext übernehmen oder gleich „in der Datenbank vorschlagen“.
+  - Die Listen werden auf dem Gerät gespeichert, die Suche funktioniert also auch offline.
+- **Vorlage SAMPLER(R):** *Bausteine → Vorlagen → SAMPLER*. M sucht in den Medikamenten, P in den Krankheiten. Die übrigen Punkte sind Vorschläge zum Anpassen.
+
 ## 5. Gehäuse (3D-Druck)
 
 Beim Konstruieren beachten:

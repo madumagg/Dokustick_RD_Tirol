@@ -10,11 +10,16 @@
  *   {{Name+:a|b|c}}       Mehrfachauswahl
  *   *a                    Vorauswahl, z.B. {{Atmung:*unauffällig|Dyspnoe}}
  *   {{Name?}} / {{Name+?:a|b}}  optional (sonst Pflichtfeld: Senden erst, wenn ausgefuellt)
+ *   {{Name:@med}} / {{Name:@dx}}  Suche in der Medikamente- bzw. Krankheiten-Datenbank (mehrere)
  * Optionen, die mit "kein" beginnen, schliessen bei Mehrfachauswahl die anderen aus.
  */
 
 const FIELD_RE = /\{\{\s*([^}:|]+?)\s*(?::([^}]*))?\}\}/g;
-const FIELD_TYPES = { single: 'Einfachauswahl', multi: 'Mehrfachauswahl', text: 'Text', number: 'Zahl' };
+const FIELD_TYPES = { single: 'Einfachauswahl', multi: 'Mehrfachauswahl', text: 'Text', number: 'Zahl', med: 'Medikamente (Datenbank)', dx: 'Krankheiten (Datenbank)' };
+// Feldarten, deren Wert eine Liste ist
+const isListField = (f) => f.type === 'multi' || f.type === 'med' || f.type === 'dx';
+// Schnellauswahl in Datenbank-Feldern (hebt die anderen Eintraege auf)
+const LOOKUP_QUICK = ['keine', 'unbekannt'];
 
 const TEMPLATES = [
   { category: 'ABCDE', title: 'A – Atemwege', body: 'A – Atemwege: {{Atemwege:frei und gesichert|gefährdet}}. Maßnahmen: {{Maßnahmen A+:*keine Maßnahmen erforderlich|Wendltubus|Guedeltubus|Larynxtubus|Endotrachealtubus|i-gel Larynxmaske}}.' },
@@ -22,6 +27,13 @@ const TEMPLATES = [
   { category: 'ABCDE', title: 'C – Kreislauf', body: 'C – Kreislauf: {{Kreislauf:*stabil|instabil}}, RR {{RR}} mmHg, HF {{HF:#}}/min, Rekap.-Zeit {{Rekap:*< 2 s|> 2 s}}, Haut {{Haut:*rosig, warm, trocken|blass|kaltschweißig|zyanotisch|marmoriert}}. Maßnahmen: {{Maßnahmen C+:*keine Maßnahmen erforderlich|i.v.-Zugang|i.o.-Zugang|Volumengabe|Blutstillung|Tourniquet|Beckenschlinge}}.' },
   { category: 'ABCDE', title: 'D – Neurologie', body: 'D – Neurologie: GCS {{GCS:15|14|13|12|11|10|9|8|7|6|5|4|3}}, Pupillen {{Pupillen:*isokor, lichtreagibel|anisokor|lichtstarr}}, BZ {{BZ:#}} mg/dl, FAST {{FAST:*unauffällig|auffällig}}. Maßnahmen: {{Maßnahmen D+:*keine Maßnahmen erforderlich|Glukosegabe|Stroke-Voranmeldung}}.' },
   { category: 'ABCDE', title: 'E – Exposure', body: 'E – Exposure: {{Befund E:*keine weiteren Auffälligkeiten|Verletzungen (siehe Freitext)}}, Temp. {{Temp:#}} °C. Maßnahmen: {{Maßnahmen E+:*keine Maßnahmen erforderlich|Wärmeerhalt|Immobilisation|Wundversorgung|Schienung}}.' },
+  { category: 'SAMPLER', title: 'S – Symptome', body: 'S – Symptome: {{Symptome}}.' },
+  { category: 'SAMPLER', title: 'A – Allergien', body: 'A – Allergien: {{Allergien+:keine bekannt|unbekannt|Penicillin|Pflaster|Latex|Kontrastmittel}}.' },
+  { category: 'SAMPLER', title: 'M – Medikation', body: 'M – Dauermedikation: {{Dauermedikation:@med}}.' },
+  { category: 'SAMPLER', title: 'P – Patientengeschichte', body: 'P – Vorerkrankungen: {{Vorerkrankungen:@dx}}.' },
+  { category: 'SAMPLER', title: 'L – Letzte Mahlzeit', body: 'L – Letzte Mahlzeit/Ausscheidung: {{Letzte Mahlzeit}}.' },
+  { category: 'SAMPLER', title: 'E – Ereignis', body: 'E – Ereignis: {{Ereignis}}.' },
+  { category: 'SAMPLER', title: 'R – Risikofaktoren', body: 'R – Risikofaktoren: {{Risikofaktoren+:keine bekannt|Rauchen|Diabetes|Hypertonie|Adipositas|Schwangerschaft}}.' },
   { category: 'Allgemein', title: 'Vitalparameter', body: 'RR {{RR}} mmHg, HF {{HF:#}}/min, SpO2 {{SpO2:#}} %, AF {{AF:#}}/min, BZ {{BZ:#}} mg/dl, Temp. {{Temp:#}} °C, GCS {{GCS:15|14|13|12|11|10|9|8|7|6|5|4|3}}' },
   { category: 'Allgemein', title: 'Schmerz', body: 'Schmerz NRS {{NRS:0|1|2|3|4|5|6|7|8|9|10}}/10, Lokalisation {{Lokalisation}}.' },
 ];
@@ -38,6 +50,7 @@ function parseField(rawName, rawOpt) {
   }
   const opt = (rawOpt || '').trim();
   if (opt === '#') return { name, type: 'number', optional, options: [], defaults: [] };
+  if (opt === '@med' || opt === '@dx') return { name, type: opt.slice(1), optional, options: [], defaults: [] };
   if (!opt) return { name, type: 'text', optional, options: [], defaults: [] };
   const parts = opt.split('|').map((o) => o.trim()).filter(Boolean);
   const options = parts.map((o) => o.replace(/^\*/, '').trim());
@@ -47,7 +60,7 @@ function parseField(rawName, rawOpt) {
 
 // Was an einem Feld fehlt: null = in Ordnung
 function fieldProblem(f, v) {
-  const text = f.type === 'multi' ? (Array.isArray(v) ? v.join('') : '') : String(v || '').trim();
+  const text = isListField(f) ? (Array.isArray(v) ? v.join('') : '') : String(v || '').trim();
   if (!text) return f.optional ? null : 'fehlt';
   if (f.type === 'number' && !/^-?\d+([.,]\d+)?$/.test(text)) return 'keine Zahl';
   return null;
@@ -72,18 +85,19 @@ function fieldToken(f) {
   const name = cleanName(f.name) + (f.type === 'multi' ? '+' : '') + (f.optional ? '?' : '');
   if (f.type === 'text') return `{{${name}}}`;
   if (f.type === 'number') return `{{${name}:#}}`;
+  if (f.type === 'med' || f.type === 'dx') return `{{${cleanName(f.name)}${f.optional ? '?' : ''}:@${f.type}}}`;
   const opts = f.options.map(cleanOption).filter(Boolean).map((o) => (f.defaults.includes(o) ? '*' + o : o));
   return `{{${name}:${opts.join('|')}}}`;
 }
 
 function initialValues(tpl) {
   const v = {};
-  for (const f of formFields(tpl)) v[f.name] = f.type === 'multi' ? [...f.defaults] : (f.defaults[0] || '');
+  for (const f of formFields(tpl)) v[f.name] = isListField(f) ? [...f.defaults] : (f.defaults[0] || '');
   return v;
 }
 
 function fieldValueText(f, v) {
-  if (f.type === 'multi') return (Array.isArray(v) ? v : []).join(', ');
+  if (isListField(f)) return (Array.isArray(v) ? v : []).join(', ');
   return v || '';
 }
 
@@ -133,7 +147,7 @@ function fillTemplate(tpl, values) {
 // Kurzansicht fuer Listen: Felder als [Name]
 const templatePreview = (tpl) => tpl.replace(FIELD_RE, (_, n, o) => `[${parseField(n, o).name}]`);
 
-const isExclusive = (o) => /^kein/i.test(o);
+const isExclusive = (o) => /^(kein|unbekannt|nicht erhebbar)/i.test(o);
 
 /* ================= Protokoll (Schreiben) ================= */
 
@@ -306,6 +320,7 @@ function renderFieldInput(f, values, onChange) {
     label.dataset.problem = problem || '';
     nodes.forEach((n) => n.classList.toggle('missing', !!problem));
   };
+  if (f.type === 'med' || f.type === 'dx') return renderLookup(f, values, onChange, label, mark);
   if (f.type === 'text' || f.type === 'number') {
     const input = el('input', { type: 'text', inputmode: f.type === 'number' ? 'decimal' : null, autocomplete: 'off', value: values[f.name] || '',
       oninput: (e) => { values[f.name] = e.target.value; mark(input); onChange(); } });
@@ -344,6 +359,69 @@ function renderFieldInput(f, values, onChange) {
   };
   draw();
   return el('div', { class: 'field compact', 'data-field': f.name }, label, chips);
+}
+
+// Suchfeld fuer Medikamente/Krankheiten: Treffer antippen, mehrere sammeln
+function renderLookup(f, values, onChange, label, mark) {
+  const C = CATALOGS[f.type];
+  const chips = el('div', { class: 'chips' });
+  const sugg = el('div', { class: 'sugg' });
+  const input = el('input', {
+    type: 'search', autocomplete: 'off', enterkeyhint: 'done',
+    placeholder: f.type === 'med' ? 'Handelsname oder Wirkstoff suchen …' : 'Krankheit oder Abkürzung suchen …',
+  });
+  const list = () => (Array.isArray(values[f.name]) ? values[f.name] : []);
+  const set = (arr) => { values[f.name] = arr; drawChips(); mark(input); onChange(); };
+  const add = (v) => {
+    v = v.trim();
+    if (!v) return;
+    set(LOOKUP_QUICK.includes(v) ? [v] : [...list().filter((x) => !LOOKUP_QUICK.includes(x) && x !== v), v]);
+    input.value = '';
+    drawSugg();
+  };
+  const drawChips = () => {
+    const sel = list();
+    chips.replaceChildren(
+      // "keine"/"unbekannt" nur anbieten, solange nichts anderes gewaehlt ist
+      ...LOOKUP_QUICK.filter((q) => !sel.length || sel.includes(q)).map((q) => el('button', {
+        type: 'button', class: 'chip' + (sel.includes(q) ? ' sel' : ''), onclick: () => (sel.includes(q) ? set([]) : add(q)),
+      }, q)),
+      ...sel.filter((x) => !LOOKUP_QUICK.includes(x)).map((x) => el('button', {
+        type: 'button', class: 'chip sel', title: 'Entfernen', 'aria-label': x + ' entfernen', onclick: () => set(list().filter((y) => y !== x)),
+      }, x, el('span', { class: 'chip-x' }, '✕'))));
+  };
+  const drawSugg = () => {
+    const q = input.value.trim();
+    sugg.replaceChildren();
+    if (!q) return;
+    const taken = new Set(list());
+    const hits = catalog.search(f.type, q, 8).filter((e) => !taken.has(C.label(e)));
+    for (const e of hits) {
+      sugg.append(el('button', { type: 'button', class: 'sugg-item', onclick: () => add(C.label(e)) },
+        el('span', { class: 'grow' }, C.label(e), C.detail(e) ? el('span', { class: 'help' }, ' · ' + C.detail(e)) : null),
+        !e.approved ? el('span', { class: 'badge warn' }, 'Vorschlag') : null));
+    }
+    const exact = hits.some((e) => normText(C.label(e)) === normText(q));
+    if (!exact) {
+      sugg.append(el('div', { class: 'row sugg-free' },
+        el('button', { type: 'button', class: 'btn small', onclick: () => add(q) }, `„${q}“ als Freitext übernehmen`),
+        cloud.account && catalog.available !== false ? el('button', { type: 'button', class: 'btn small', onclick: async () => {
+          const e = await catalog.edit(f.type, null, f.type === 'med' ? { trade_name: q } : { name: q });
+          if (e) add(C.label(e));
+        } }, 'In Datenbank vorschlagen …') : null));
+    }
+    if (!hits.length && !catalog[f.type].length) sugg.append(el('p', { class: 'help', style: 'margin:4px 0 0' }, cloud.account ? 'Die Datenbank ist noch leer.' : 'Für die Datenbank-Suche anmelden (Einstellungen → Konto).'));
+  };
+  input.addEventListener('input', drawSugg);
+  input.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const first = sugg.querySelector('.sugg-item');
+    if (first) first.click(); else add(input.value);
+  });
+  drawChips();
+  mark(input);
+  return el('div', { class: 'field compact', 'data-field': f.name }, label, chips, input, sugg);
 }
 
 /* ================= Pruefen vor dem Senden ================= */

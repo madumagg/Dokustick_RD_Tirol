@@ -197,7 +197,7 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 6px; font-
 nav {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
   background: var(--surface); border-top: 1px solid var(--border);
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  display: grid; grid-template-columns: repeat(4, 1fr);
   padding-bottom: env(safe-area-inset-bottom);
 }
 nav button { border: 0; background: none; padding: 8px 4px 10px; min-height: 60px; color: var(--muted); font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
@@ -253,6 +253,18 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 #virtualOut { margin-top: 14px; border-left: 4px solid var(--warn); }
 .vscreen { white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; background: var(--surface-2); border-radius: 10px; padding: 10px 12px; max-height: 40vh; overflow: auto; }
 .vkey { display: inline-block; padding: 0 5px; margin: 0 1px; border-radius: 5px; border: 1px solid var(--border); background: var(--surface); font-size: 12px; color: var(--accent); }
+
+.seg.seg-2 { grid-template-columns: repeat(2, 1fr); }
+.nav-ico { position: relative; display: inline-flex; }
+.nav-badge { position: absolute; top: -4px; right: -10px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--danger); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+.acts .ok-act { color: var(--ok); font-weight: 700; }
+.sugg { display: grid; gap: 4px; margin-top: 6px; }
+.sugg:empty { display: none; }
+.sugg-item { display: flex; align-items: center; gap: 8px; text-align: left; border: 1px solid var(--border); background: var(--surface); border-radius: 10px; padding: 8px 10px; min-height: 44px; }
+.sugg-item:active { background: var(--accent-soft); }
+.sugg-free { margin-top: 2px; }
+.chip-x { margin-left: 6px; opacity: .8; }
+.field.compact input[type=search] { margin-top: 6px; }
 
 #toast {
   position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom)); transform: translateX(-50%);
@@ -320,6 +332,15 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
       <button class="btn primary" id="modAdd">＋ Neu</button>
     </div>
     <div id="modList"></div>
+  </section>
+
+  <!-- Datenbank: Medikamente & Krankheiten -->
+  <section id="tab-db" hidden>
+    <div class="seg seg-2" id="dbTabs" role="tablist">
+      <button role="tab" data-kind="med" aria-selected="true">Medikamente</button>
+      <button role="tab" data-kind="dx" aria-selected="false">Krankheiten</button>
+    </div>
+    <div id="dbBody"></div>
   </section>
 
   <!-- Einstellungen -->
@@ -419,6 +440,8 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Schreiben</button>
   <button role="tab" data-tab="modules" aria-selected="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Bausteine</button>
+  <button role="tab" data-tab="db" aria-selected="false">
+    <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 20.5 3.5 13.5a4.95 4.95 0 1 1 7-7l7 7a4.95 4.95 0 1 1-7 7Z"/><path d="m8.5 8.5 7 7"/></svg><span class="nav-badge" id="dbNavBadge" hidden></span></span>Datenbank</button>
   <button role="tab" data-tab="settings" aria-selected="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>Einstellungen</button>
 </nav>
@@ -427,13 +450,14 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 <dialog id="dlg2"><form method="dialog" id="dlg2Form"></form></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=17"></script>
-<script src="vendor/supabase.js?v=17"></script>
-<script src="app.js?v=17"></script>
-<script src="compose.js?v=17"></script>
-<script src="cloud.js?v=17"></script>
-<script src="admin.js?v=17"></script>
-<script src="virtual.js?v=17"></script>
+<script src="config.js?v=18"></script>
+<script src="vendor/supabase.js?v=18"></script>
+<script src="app.js?v=18"></script>
+<script src="compose.js?v=18"></script>
+<script src="catalog.js?v=18"></script>
+<script src="cloud.js?v=18"></script>
+<script src="admin.js?v=18"></script>
+<script src="virtual.js?v=18"></script>
 <script>boot(); $('#adminOpen').addEventListener('click', () => admin.open());</script>
 </body>
 </html>

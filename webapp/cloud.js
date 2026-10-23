@@ -85,6 +85,7 @@ const cloud = {
     store.save('appInfo', data);
     this.render();
     renderStatus(); // Admin-Status beeinflusst die Verbinden-Schaltflaeche
+    catalog.render();
   },
 
   onAuth(event, session) {
@@ -103,7 +104,7 @@ const cloud = {
     const prev = this.account;
     if (prev && !acc) {
       // Beim Abmelden die Kontodaten von diesem Geraet entfernen
-      for (const k of ['items', 'teams', 'settingsDirty', 'lastSync']) store.remove(`u.${prev.id}.${k}`);
+      for (const k of ['items', 'teams', 'settingsDirty', 'lastSync', 'catalog']) store.remove(`u.${prev.id}.${k}`);
     }
     this.account = acc;
     store.save('account', acc);
@@ -111,6 +112,7 @@ const cloud = {
     this.teams = []; this.lastSync = null; this.error = null;
     loadItems();
     if (acc) this.loadTeams();
+    catalog.load();
     renderAll();
     if (acc) this.sync();
   },
@@ -158,6 +160,8 @@ const cloud = {
       await this.pullItems(acc);
       await this.pullSettings(acc);
       await this.loadInfo();
+      // Datenbank-Fehler sollen die uebrige Synchronisation nicht stoeren
+      await catalog.pull().catch(() => {});
       const first = !this.lastSync;
       this.lastSync = Date.now();
       store.save(this.key('lastSync'), this.lastSync);

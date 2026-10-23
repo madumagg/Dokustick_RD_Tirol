@@ -3,7 +3,7 @@
 /* ================= Konstanten ================= */
 
 // Wird mit tools/version.sh zusammen mit sw.js und index.html erhoeht
-const APP_VERSION = '17';
+const APP_VERSION = '18';
 
 const SVC_UUID = '6e7a0001-4b3c-4f8e-9a1d-5c2b7d0a4e01';
 const CMD_UUID = '6e7a0002-4b3c-4f8e-9a1d-5c2b7d0a4e01';
@@ -20,7 +20,8 @@ const KEYS = {
 const TOKEN_RE = /\{(SHIFT\+TAB|TAB|ENTER|ESC|BACKSPACE|DEL|HOME|END|RIGHT|LEFT|DOWN|UP|PAUSE(?::(\d+))?|DATUM|ZEIT)\}/g;
 
 // Zeichen, die ohne Entsprechung auf der deutschen Tastatur ersetzt werden
-const NORMALIZE = { '≥': '>=', '≤': '<=', '±': '+/-', '×': 'x', '÷': ':', '→': '->', '←': '<-', '•': '-', '·': '-', '½': '1/2', '¼': '1/4', '¾': '3/4', '‰': ' Promille' };
+// ® und ™ stehen oft in Handelsnamen, haben aber keine Taste
+const NORMALIZE = { '®': '', '™': '', '©': '', '≥': '>=', '≤': '<=', '±': '+/-', '×': 'x', '÷': ':', '→': '->', '←': '<-', '•': '-', '·': '-', '½': '1/2', '¼': '1/4', '¾': '3/4', '‰': ' Promille' };
 // Zeichen, die die Firmware tippen kann (zusaetzlich zu druckbarem ASCII)
 const SUPPORTED = new Set([...'\n\täöüÄÖÜß§°²³€µμ´áéíóúÁÉÍÓÚàèìòùâêîôû   “”„‘’‚–—−…']);
 
@@ -768,5 +769,6 @@ function boot() {
     });
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((r) => r.update()).catch(() => {});
   }
+  catalog.load(); // gespeicherte Datenbank fuer die Offline-Suche
   cloud.start();
 }
