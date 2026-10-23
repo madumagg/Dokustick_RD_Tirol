@@ -1,5 +1,5 @@
 // Offline-Cache: die App funktioniert auch ohne Internet (z.B. im Funkloch).
-const CACHE = 'dokustick-v4';
+const CACHE = 'dokustick-v5';
 const FILES = ['./', './index.html', './app.js', './cloud.js', './config.js', './vendor/supabase.js', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {

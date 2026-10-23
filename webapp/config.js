@@ -3,6 +3,6 @@
 // Der publishable-Schluessel ist oeffentlich; die Daten schuetzen die Zugriffsregeln der Datenbank.
 // Leer lassen = App funktioniert ohne Konto (nur lokale Speicherung).
 window.DOKUSTICK_CONFIG = {
-  supabaseUrl: '',
+  supabaseUrl: 'https://kplefdmhbnztaelsslka.supabase.co',
   supabaseAnonKey: 'sb_publishable_0YiqvVYKc8ZUAI_aEi_j1w_Bj7IlGDO',
 };
