@@ -9,7 +9,7 @@
  */
 
 // Einstellungen, die mit dem Konto mitwandern (Darstellung bleibt pro Geraet)
-const SYNCED_SETTINGS = ['delay', 'lang', 'voiceCmds', 'replacements', 'clearAfter'];
+const SYNCED_SETTINGS = ['delay', 'lang', 'voiceCmds', 'replacements'];
 const ITEM_COLS = 'id,kind,title,category,body,sort,deleted,team_id,updated_at';
 
 const AUTH_ERRORS = [
@@ -84,6 +84,7 @@ const cloud = {
     this.info = data;
     store.save('appInfo', data);
     this.render();
+    renderStatus(); // Admin-Status beeinflusst die Verbinden-Schaltflaeche
   },
 
   onAuth(event, session) {

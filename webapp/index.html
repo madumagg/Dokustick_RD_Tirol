@@ -147,6 +147,7 @@ body.drag-on { user-select: none; -webkit-user-select: none; cursor: grabbing; }
 .pick-list { display: grid; gap: 6px; margin-top: 6px; }
 .pick { display: flex; align-items: center; gap: 10px; text-align: left; border: 1px solid var(--border); background: var(--surface); border-radius: 12px; padding: 10px 12px; min-height: 48px; }
 .pick:active { background: var(--accent-soft); }
+.pick[disabled] { opacity: .5; }
 .pick-n { color: var(--accent); font-weight: 700; white-space: nowrap; }
 .fields-box { background: var(--surface-2); border-radius: 12px; padding: 10px 12px; margin: -4px 0 12px; }
 .fields-box .chip { background: var(--surface); }
@@ -226,6 +227,12 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 .announce { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 12px; background: var(--accent-soft); color: var(--text); }
 #adminBody .card + .card { margin-top: 8px; }
 
+.end-zone { margin-top: 28px; padding-top: 16px; border-top: 1px dashed var(--border); }
+.btn.danger-fill { background: var(--danger); border-color: var(--danger); color: #fff; font-weight: 600; }
+#virtualOut { margin-top: 14px; border-left: 4px solid var(--warn); }
+.vscreen { white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; background: var(--surface-2); border-radius: 10px; padding: 10px 12px; max-height: 40vh; overflow: auto; }
+.vkey { display: inline-block; padding: 0 5px; margin: 0 1px; border-radius: 5px; border: 1px solid var(--border); background: var(--surface); font-size: 12px; color: var(--accent); }
+
 #toast {
   position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom)); transform: translateX(-50%);
   background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 15px;
@@ -268,10 +275,12 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
         <option value="{DATUM}">Datum</option>
         <option value="{ZEIT}">Uhrzeit</option>
       </select>
-      <span class="grow"></span>
-      <button class="btn" id="clearBtn">Leeren</button>
     </div>
     <div class="write-bar"><button class="btn big primary" id="sendBtn">Alles senden ⟶</button></div>
+    <div id="virtualOut" class="card pad" hidden></div>
+    <div class="end-zone">
+      <button class="btn big danger" id="endBtn">Einsatz beenden und Bausteine zurücksetzen</button>
+    </div>
   </section>
 
   <!-- Bausteine -->
@@ -332,7 +341,6 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 
     <h2>Allgemein</h2>
     <div class="card pad">
-      <label class="check"><input type="checkbox" id="clearAfter"> Editor nach dem Senden leeren</label>
       <label class="field" style="margin-top:6px"><span>Darstellung</span>
         <select id="theme">
           <option value="">Wie System</option>
@@ -399,6 +407,7 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 <script src="compose.js"></script>
 <script src="cloud.js"></script>
 <script src="admin.js"></script>
+<script src="virtual.js"></script>
 <script>boot(); $('#adminOpen').addEventListener('click', () => admin.open());</script>
 </body>
 </html>

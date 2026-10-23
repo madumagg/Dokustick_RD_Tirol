@@ -1,6 +1,6 @@
 // Offline-Cache: die App funktioniert auch ohne Internet (z.B. im Funkloch).
-const CACHE = 'dokustick-v9';
-const FILES = ['./', './index.html', './app.js', './compose.js', './cloud.js', './admin.js', './config.js', './vendor/supabase.js', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
+const CACHE = 'dokustick-v10';
+const FILES = ['./', './index.html', './app.js', './compose.js', './cloud.js', './admin.js', './virtual.js', './config.js', './vendor/supabase.js', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));

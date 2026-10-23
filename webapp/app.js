@@ -38,7 +38,7 @@ const DEFAULT_FORMS = [
   { title: 'Kurzbefund', body: 'Pat. {{Bewusstsein:wach, orientiert|wach, desorientiert|somnolent|soporös|komatös}}.\nAtmung: {{Atmung:unauffällig|Dyspnoe|Tachypnoe|Bradypnoe}}.\nHaut: {{Haut:rosig, warm, trocken|blass|kaltschweißig|zyanotisch}}.\nSchmerz NRS {{NRS:#}}/10.' },
   { title: 'Felder mit Tab füllen', body: '{{Feld 1}}{TAB}{{Feld 2}}{TAB}{{Feld 3}}' },
 ];
-const DEFAULT_SETTINGS = { delay: 5, lang: 'de-AT', voiceCmds: true, replacements: '', clearAfter: false, theme: '' };
+const DEFAULT_SETTINGS = { delay: 5, lang: 'de-AT', voiceCmds: true, replacements: '', theme: '' };
 
 /* ================= Hilfsfunktionen ================= */
 
@@ -353,15 +353,18 @@ function renderStatus() {
   area.replaceChildren();
   const s = ble.status;
   dot.className = 'dot' + (ble.connected ? (sendJob || (s && s.typing) ? ' busy' : ' on') : '');
-  txt.textContent = ble.connecting ? 'Verbinde …' : ble.connected ? 'Verbunden' : 'Nicht verbunden';
+  const virtual = !!(ble.device && ble.device.virtual);
+  txt.textContent = ble.connecting ? 'Verbinde …' : ble.connected ? (virtual ? 'Virtueller Dongle' : 'Verbunden') : 'Nicht verbunden';
   btn.textContent = ble.connected ? 'Trennen' : 'Verbinden';
   btn.className = 'btn small' + (ble.connected ? '' : ' primary');
   btn.disabled = ble.connecting;
-  $('#fwVer').textContent = s ? 'Version ' + s.version : '–';
+  $('#fwVer').textContent = s ? (virtual ? 'virtuell' : 'Version ' + s.version) : '–';
+  if (typeof renderVirtual === 'function') renderVirtual();
 
-  if (!navigator.bluetooth) {
+  if (!navigator.bluetooth && !virtual) {
     area.append(el('div', { class: 'note err' }, 'Dieser Browser unterstützt kein Web Bluetooth. Android: Chrome verwenden. iPhone: die kostenlose App „Bluefy“ verwenden. Die Seite muss über https geöffnet werden.'));
-    btn.disabled = true;
+    // App-Admins koennen trotzdem den virtuellen Dongle verwenden
+    btn.disabled = !(cloud.account && cloud.info.is_admin);
     return;
   }
   if (!ble.connected || !s) return;
@@ -377,7 +380,8 @@ function renderStatus() {
   }
 }
 
-$('#connBtn').addEventListener('click', () => (ble.connected ? disconnect() : connect()));
+// connectMenu (virtual.js) bietet App-Admins zusaetzlich den virtuellen Dongle an
+$('#connBtn').addEventListener('click', () => (ble.connected ? disconnect() : connectMenu()));
 
 /* ================= Diktat ================= */
 
@@ -615,7 +619,6 @@ function renderSettings() {
   $('#lang').value = settings.lang;
   $('#voiceCmds').checked = settings.voiceCmds;
   $('#replacements').value = settings.replacements;
-  $('#clearAfter').checked = settings.clearAfter;
   $('#theme').value = settings.theme;
 }
 
@@ -628,7 +631,6 @@ $('#delay').addEventListener('change', (e) => { settings.delay = Number(e.target
 $('#lang').addEventListener('change', (e) => { settings.lang = e.target.value; saveSettings(); });
 $('#voiceCmds').addEventListener('change', (e) => { settings.voiceCmds = e.target.checked; saveSettings(); });
 $('#replacements').addEventListener('change', (e) => { settings.replacements = e.target.value; saveSettings(); });
-$('#clearAfter').addEventListener('change', (e) => { settings.clearAfter = e.target.checked; saveSettings(); });
 $('#theme').addEventListener('change', (e) => { settings.theme = e.target.value; store.save('settings', settings); applyTheme(); });
 $('#unpairBtn').addEventListener('click', async () => {
   if (!ble.connected) return toast('Nicht mit dem Dongle verbunden', 'err');

@@ -96,7 +96,8 @@ Bausteine können **Auswahlfelder** enthalten, z. B. beim ABCDE-Schema:
 - **Ins Protokoll:** Tippt man einen interaktiven Baustein an, landet er im Fenster *Schreiben* als Karte mit Auswahl-Knöpfen. Einfache Bausteine ohne Felder werden wie bisher sofort getippt. ↧ legt jeden Baustein ins Protokoll.
 - **Im Protokoll:** Optionen antippen, mit „…“ einen eigenen Wert eingeben. Dazwischen ist Freitext oder Diktat möglich. Blöcke entfernt man mit ✕.
 - **Verschieben:** Kopfzeile einer Karte gedrückt halten (Touch, ca. ⅓ s) bzw. mit der Maus anklicken und an die neue Stelle ziehen. Mit dem Griff ⠿ geht es auch sofort, am Bildschirmrand scrollt die Seite mit. Per Tastatur: Griff auswählen und Pfeiltasten drücken.
-- **Senden:** „Alles senden“ tippt das ganze Protokoll. ⟶ an einer Karte sendet nur diesen Block.
+- **Senden:** „Alles senden“ tippt das ganze Protokoll und lässt es stehen. ⟶ an einer Karte sendet nur diesen Block.
+- **Einsatz beenden:** Der Knopf ganz unten setzt nach einer Sicherheitsabfrage alle Bausteine im Protokoll zurück und löscht den Freitext. Die gespeicherten Bausteine bleiben erhalten.
 - **Leere Messwerte fallen weg:** Ohne Wert wird aus „RR … mmHg, HF 80/min“ einfach „HF 80/min“. Noch nicht beantwortete Auswahlfelder sind orange markiert („offen“).
 - **Mehrfachauswahl:** Optionen, die mit „kein“ beginnen (z. B. „keine Maßnahmen erforderlich“), heben die anderen auf und umgekehrt.
 - **Felder anlegen:** Baustein bearbeiten (✎) → **＋ Feld**: Name, Art (Einfachauswahl, Mehrfachauswahl, Text, Zahl), Auswahlmöglichkeiten und Vorauswahl festlegen. Vorhandene Felder antippen, um sie zu ändern.
@@ -163,6 +164,8 @@ Für App-Admins gibt es unter *Einstellungen → Administration* eine Verwaltung
 | Benutzer | suchen, Passwort-Reset senden, sperren/entsperren, zum App-Admin machen, Konto löschen |
 | Teams | alle Teams sehen, anlegen, umbenennen, löschen; Mitglieder per E-Mail hinzufügen, entfernen, Rollen ändern; Beitrittscode erneuern |
 | Einstellungen | Registrierung offen / nur bestimmte E-Mail-Domains / geschlossen; Standard-Team für neue Benutzer; Hinweis an alle |
+
+**Virtueller Dongle (nur App-Admins):** Beim Verbinden wählbar, auch in Browsern ohne Bluetooth. Er wertet die gesendeten Daten genauso aus wie die Firmware: Zeichen ohne Taste fallen weg, „–“ wird zu „-“. Im Schreiben-Fenster zeigt er an, was getippt würde, und speichert das mit **Als PDF speichern** als Testprotokoll.
 
 Hinweise:
 - Gesperrte Benutzer werden sofort abgemeldet und können sich nicht mehr anmelden.

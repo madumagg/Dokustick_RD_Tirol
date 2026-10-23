@@ -559,12 +559,25 @@ function openTemplates() {
 
 /* ================= Schreiben: Bedienelemente ================= */
 
-$('#sendBtn').addEventListener('click', () => {
-  if (send(docText()) && settings.clearAfter) clearDoc();
-});
-$('#clearBtn').addEventListener('click', () => {
-  if (docIsEmpty() || confirm('Protokoll leeren?')) clearDoc();
-});
+// "Alles senden" laesst das Protokoll stehen; geloescht wird erst mit "Einsatz beenden"
+$('#sendBtn').addEventListener('click', () => send(docText()));
+
+function endMission() {
+  const dlg = $('#dlg');
+  openDialog('Einsatz beenden?', [
+    el('p', {}, 'Bist du sicher? Alle Bausteine im Protokoll werden zurückgesetzt und der Freitext gelöscht. Das kann nicht rückgängig gemacht werden.'),
+    el('p', { class: 'help' }, 'Deine gespeicherten Bausteine bleiben natürlich erhalten.'),
+  ], {
+    saveLabel: 'Ja, Einsatz beenden',
+    onSave: () => {
+      clearDoc();
+      window.scrollTo(0, 0);
+      toast('Einsatz beendet – Protokoll zurückgesetzt');
+    },
+  });
+  dlg.querySelector('button[type=submit]').classList.replace('primary', 'danger-fill');
+}
+$('#endBtn').addEventListener('click', endMission);
 $('#addBlockBtn').addEventListener('click', openPicker);
 $('#tokenSel').addEventListener('change', (e) => {
   const v = e.target.value;
