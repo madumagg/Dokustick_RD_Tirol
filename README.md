@@ -12,7 +12,8 @@ Handy (Web-App)  ──Bluetooth LE──▶  nRF52840 Dongle  ──USB-Tastatu
 |---|---|
 | `firmware/` | Firmware (Zephyr RTOS) für **Makerdiary nRF52840 MDK USB Dongle** und **Nordic nRF52840 Dongle (PCA10059)** |
 | `firmware/out/` | Fertig kompilierte Firmware zum Aufspielen |
-| `webapp/` | Weboberfläche (eine HTML-Datei, als App installierbar, funktioniert offline) |
+| `webapp/` | Weboberfläche (als App installierbar, funktioniert offline) |
+| `supabase/schema.sql` | Datenbank-Schema für Konto & Teams |
 
 ## 1. Firmware aufspielen
 
@@ -94,7 +95,47 @@ Web Bluetooth funktioniert nur über **https**. Am einfachsten ist **GitHub Page
 | `{{HF:#}}` | Zahlenfeld |
 | `{{Haut:rosig\|blass\|zyanotisch}}` | Auswahl-Chips, freie Eingabe weiterhin möglich |
 
-## 4. Gehäuse (3D-Druck)
+## 4. Konto & Teams (optional)
+
+Mit einem Konto werden Textbausteine, Formulare und Einstellungen in der Cloud gesichert und auf allen Geräten synchronisiert. In **Teams** (z. B. eine Wache) teilen sich mehrere Personen gemeinsame Bausteine. Admins pflegen sie, alle Mitglieder können sie nutzen. Ohne Konto funktioniert die App wie bisher, dann wird nur lokal gespeichert.
+
+Die Daten liegen bei **Supabase** (kostenloser Tarif, Server in Frankfurt).
+
+### Einmalige Einrichtung
+
+1. Auf https://supabase.com kostenlos registrieren und **New project** anlegen:
+   - Name: `dokustick`
+   - Region: **Central EU (Frankfurt)**
+   - Datenbank-Passwort: ein sicheres Passwort wählen und gut aufheben
+2. Links **SQL Editor** → **New query**, den Inhalt von [`supabase/schema.sql`](supabase/schema.sql) einfügen und **Run** klicken.
+3. **Authentication → URL Configuration**:
+   - **Site URL:** `https://madumagg.github.io/Dokustick_RD_Tirol/webapp/`
+   - **Redirect URLs:** dieselbe Adresse hinzufügen
+4. **Authentication → Sign In / Providers → Email**: „Confirm email“ eingeschaltet lassen und die minimale Passwortlänge auf **8** setzen.
+5. **Project Settings → API**: **Project URL** und den **anon public** Key in [`webapp/config.js`](webapp/config.js) eintragen.
+
+Der anon-Key darf öffentlich im Code stehen. Die Daten werden durch die Zugriffsregeln der Datenbank geschützt.
+
+### Bedienung
+
+- **Konto:** *Einstellungen → Konto* → Registrieren, dann den Link in der Bestätigungs-E-Mail öffnen.
+- **Erste Anmeldung:** Die App fragt, ob die bisher lokal gespeicherten Bausteine ins Konto übernommen werden sollen.
+- **Team erstellen:** *Einstellungen → Teams → Team erstellen*. Du bist dann Admin und bekommst einen 8-stelligen Beitrittscode.
+- **Team beitreten:** *Team beitreten* → Code eingeben.
+- **Team-Bausteine anlegen** (nur Admins): beim Bearbeiten unter „Speichern in“ das Team auswählen.
+  - Team-Bausteine tragen ein Team-Abzeichen.
+  - Mitglieder können sie nutzen und mit ⧉ als eigene Kopie speichern, aber nicht ändern.
+- **Offline:** Alles funktioniert weiter. Änderungen werden hochgeladen, sobald wieder Internet da ist. Das Wolken-Symbol im Kopf zeigt den Status: grün = synchron, gelb = wartet, rot = Fehler.
+- **Abmelden** entfernt die Kontodaten von diesem Gerät. In der Cloud bleiben sie erhalten.
+
+### Gut zu wissen
+
+- Im kostenlosen Supabase-Tarif wird ein Projekt **nach 7 Tagen ohne Nutzung pausiert**. Die App läuft dann lokal weiter, synchronisiert aber nicht mehr. Im Supabase-Dashboard lässt es sich mit einem Klick wieder starten. Bei regelmäßiger Nutzung passiert das nicht.
+- Der eingebaute E-Mail-Versand von Supabase schafft nur wenige Mails pro Stunde. Das reicht für eine Wache. Für viele Registrierungen auf einmal unter *Authentication → Emails* einen eigenen SMTP-Server eintragen.
+- Will niemand Neues mehr dazukommen, kann man unter *Authentication → Sign In / Providers* „Allow new users to sign up“ ausschalten.
+- In Bausteine und Formulare gehören **keine Patientendaten**. Ausgefüllte Formulare und der Editor-Text werden nie hochgeladen.
+
+## 5. Gehäuse (3D-Druck)
 
 Beim Konstruieren beachten:
 - Der Makerdiary-Dongle wird bereits mit Gehäuse geliefert.
@@ -106,7 +147,7 @@ Beim Konstruieren beachten:
 
 ## Datenschutz
 
-- Textbausteine, Formulare und Einstellungen liegen nur lokal im Browser des Handys. Ausgefüllte Formulare und der Editor-Inhalt werden nicht gespeichert.
+- Ohne Konto liegen Textbausteine, Formulare und Einstellungen nur lokal im Browser des Handys. Mit Konto werden sie zusätzlich bei Supabase (Frankfurt) gespeichert. Ausgefüllte Formulare und der Editor-Inhalt werden nie gespeichert oder hochgeladen.
 - Die Bluetooth-Verbindung ist verschlüsselt, und nur gekoppelte Handys werden angenommen.
 - **Diktat:** Die Spracherkennung des Browsers läuft je nach Gerät über Server von Google bzw. Apple. Keine identifizierenden Patientendaten diktieren.
 - Vor dem Einsatz an dienstlichen Geräten mit der zuständigen IT abklären, ob USB-Tastaturen erlaubt sind.
