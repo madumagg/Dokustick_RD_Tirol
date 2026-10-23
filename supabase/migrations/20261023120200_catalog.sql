@@ -1,7 +1,7 @@
 -- =====================================================================
 -- DokuStick: Medikamente- und Krankheiten-Datenbank
 --
--- Nach schema.sql und admin.sql im Supabase "SQL Editor" ausfuehren.
+-- Nach 20261023120000_schema.sql und 20261023120100_admin.sql im Supabase "SQL Editor" ausfuehren.
 -- Kann gefahrlos mehrmals ausgefuehrt werden.
 --
 -- Regeln:

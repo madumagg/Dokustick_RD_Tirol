@@ -3,7 +3,7 @@
 /*
  * Administration der gesamten App (nur fuer App-Admins sichtbar).
  * Alle Aktionen laufen ueber Datenbankfunktionen, die selbst pruefen,
- * ob der Aufrufer App-Admin ist (siehe supabase/admin.sql).
+ * ob der Aufrufer App-Admin ist (siehe supabase/migrations/*_admin.sql).
  */
 
 const fmtDate = (s) => (s ? new Date(s).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '–');

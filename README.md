@@ -13,7 +13,9 @@ Handy (Web-App)  ──Bluetooth LE──▶  nRF52840 Dongle  ──USB-Tastatu
 | `firmware/` | Firmware (Zephyr RTOS) für **Makerdiary nRF52840 MDK USB Dongle** und **Nordic nRF52840 Dongle (PCA10059)** |
 | `firmware/out/` | Fertig kompilierte Firmware zum Aufspielen |
 | `webapp/` | Weboberfläche (als App installierbar, funktioniert offline) |
-| `supabase/schema.sql` | Datenbank-Schema für Konto & Teams |
+| `supabase/migrations/` | Datenbank-Schema (Konto, Teams, Administration, Medikamente & Krankheiten) |
+| `tests/` | Automatische Tests, siehe [`tests/README.md`](tests/README.md) |
+| `docs/ARCHITEKTUR.md` | Technischer Aufbau für Entwickler |
 
 ## 1. Firmware aufspielen
 
@@ -138,7 +140,7 @@ Die Daten liegen bei **Supabase** (kostenloser Tarif, Server in Frankfurt).
    - Name: `dokustick`
    - Region: **Central EU (Frankfurt)**
    - Datenbank-Passwort: ein sicheres Passwort wählen und gut aufheben
-2. Links **SQL Editor** → **New query**, den Inhalt von [`supabase/schema.sql`](supabase/schema.sql) einfügen und **Run** klicken.
+2. Links **SQL Editor** → **New query**, den Inhalt von [`supabase/migrations/20261023120000_schema.sql`](supabase/migrations/20261023120000_schema.sql) einfügen und **Run** klicken.
 3. **Authentication → URL Configuration**:
    - **Site URL:** `https://madumagg.github.io/Dokustick_RD_Tirol/webapp/`
    - **Redirect URLs:** dieselbe Adresse hinzufügen
@@ -168,7 +170,7 @@ Der anon-Key darf öffentlich im Code stehen. Die Daten werden durch die Zugriff
 
 ### Administration
 
-Für App-Admins gibt es unter *Einstellungen → Administration* eine Verwaltung der gesamten App. Einmalig einrichten: Im Supabase **SQL Editor** den Inhalt von [`supabase/admin.sql`](supabase/admin.sql) ausführen (nach `schema.sql`). Der **zuerst registrierte Benutzer** wird dabei automatisch App-Admin.
+Für App-Admins gibt es unter *Einstellungen → Administration* eine Verwaltung der gesamten App. Einmalig einrichten: Im Supabase **SQL Editor** den Inhalt von [`supabase/migrations/20261023120100_admin.sql`](supabase/migrations/20261023120100_admin.sql) ausführen (nach der Schema-Migration). Der **zuerst registrierte Benutzer** wird dabei automatisch App-Admin.
 
 | Bereich | Funktionen |
 |---|---|
@@ -186,7 +188,7 @@ Hinweise:
 
 ### Datenbank: Medikamente & Krankheiten
 
-Einmalig einrichten: Im Supabase **SQL Editor** den Inhalt von [`supabase/catalog.sql`](supabase/catalog.sql) ausführen (nach `schema.sql` und `admin.sql`).
+Einmalig einrichten: Im Supabase **SQL Editor** den Inhalt von [`supabase/migrations/20261023120200_catalog.sql`](supabase/migrations/20261023120200_catalog.sql) ausführen (nach den anderen beiden).
 
 - **Reiter „Datenbank“:** Medikamente (Handelsname, Wirkstoff, Dosis) und Krankheiten (Name, optionale Abkürzung) ansehen und durchsuchen.
 - **Vorschlagen:** Jeder angemeldete Benutzer kann neue Einträge vorschlagen. Für einen selbst sind sie sofort nutzbar („wartet auf Freigabe“), für alle anderen erst nach der Freigabe durch einen App-Admin.
@@ -225,6 +227,13 @@ Beim Konstruieren beachten:
 - Die Bluetooth-Verbindung ist verschlüsselt, und nur gekoppelte Handys werden angenommen.
 - **Diktat:** Die Spracherkennung des Browsers läuft je nach Gerät über Server von Google bzw. Apple. Keine identifizierenden Patientendaten diktieren.
 - Vor dem Einsatz an dienstlichen Geräten mit der zuständigen IT abklären, ob USB-Tastaturen erlaubt sind.
+
+## Mitentwickeln
+
+- **Aufbau und Datenmodell:** [`docs/ARCHITEKTUR.md`](docs/ARCHITEKTUR.md), Regeln fürs gemeinsame Arbeiten (auch für Claude Code) in [`CLAUDE.md`](CLAUDE.md).
+- **Tests:** `cd tests && npm install && npm run db:start && npm test`, Details in [`tests/README.md`](tests/README.md).
+- **Datenbank-Änderungen** sind neue Dateien in `supabase/migrations/`. Sie werden lokal getestet und erst danach in der echten Datenbank im SQL-Editor ausgeführt.
+- **Veröffentlichen:** `main` ist sofort live. Vorher `tools/version.sh` ausführen und testen.
 
 ## Firmware selbst bauen
 

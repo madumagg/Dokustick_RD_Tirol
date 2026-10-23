@@ -3,7 +3,7 @@
 /* ================= Konstanten ================= */
 
 // Wird mit tools/version.sh zusammen mit sw.js und index.html erhoeht
-const APP_VERSION = '0.18';
+const APP_VERSION = '0.19';
 
 const SVC_UUID = '6e7a0001-4b3c-4f8e-9a1d-5c2b7d0a4e01';
 const CMD_UUID = '6e7a0002-4b3c-4f8e-9a1d-5c2b7d0a4e01';
@@ -760,7 +760,7 @@ function boot() {
 
   $('#appVer').textContent = APP_VERSION;
   $('#hdrVer').textContent = 'v' + APP_VERSION;
-  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) {
     // Neue Version uebernommen -> einmal neu laden (Protokoll bleibt in der Sitzung erhalten)
     const hadController = !!navigator.serviceWorker.controller;
     let reloading = false;

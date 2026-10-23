@@ -1,7 +1,7 @@
 'use strict';
 
 /*
- * Medikamente- und Krankheiten-Datenbank (siehe supabase/catalog.sql).
+ * Medikamente- und Krankheiten-Datenbank (siehe supabase/migrations/*_catalog.sql).
  *
  * Die Listen werden beim Synchronisieren geladen und auf dem Geraet gespeichert,
  * damit die Suche in den Bausteinen auch ohne Internet funktioniert.
@@ -40,7 +40,7 @@ const normText = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
 const catalog = {
   med: [],
   dx: [],
-  available: null, // false = Tabellen fehlen (catalog.sql nicht ausgefuehrt)
+  available: null, // false = Tabellen fehlen (Katalog-Migration nicht eingespielt)
   view: 'med',
   onlyPending: false,
   query: '',
@@ -220,7 +220,7 @@ const catalog = {
       return;
     }
     if (this.available === false) {
-      box.replaceChildren(el('div', { class: 'note warn' }, 'Die Datenbank ist noch nicht eingerichtet. Ein Admin muss einmalig supabase/catalog.sql im Supabase-SQL-Editor ausführen.'));
+      box.replaceChildren(el('div', { class: 'note warn' }, 'Die Datenbank ist noch nicht eingerichtet. Ein Admin muss einmalig die Migration supabase/migrations/20261023120200_catalog.sql im Supabase-SQL-Editor ausführen.'));
       return;
     }
     const kind = this.view, C = CATALOGS[kind];

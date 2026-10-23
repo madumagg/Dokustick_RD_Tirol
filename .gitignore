@@ -1,1 +1,5 @@
 firmware/build/
+# Supabase CLI (lokal)
+supabase/.branches/
+supabase/.temp/
+supabase/snippets/

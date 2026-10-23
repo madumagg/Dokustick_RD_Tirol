@@ -1,7 +1,7 @@
 -- =====================================================================
--- DokuStick: Administration (Erweiterung zu schema.sql)
+-- DokuStick: Administration (Erweiterung zum Schema)
 --
--- Nach schema.sql im Supabase "SQL Editor" ausfuehren.
+-- Nach 20261023120000_schema.sql im Supabase "SQL Editor" ausfuehren.
 -- Kann gefahrlos mehrmals ausgefuehrt werden.
 --
 -- Der zuerst registrierte Benutzer wird automatisch App-Admin,

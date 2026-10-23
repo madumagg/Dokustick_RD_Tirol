@@ -76,7 +76,7 @@ const cloud = {
     this.loadInfo();
   },
 
-  // App-Einstellungen vom Server (fehlt admin.sql, bleibt alles beim Alten)
+  // App-Einstellungen vom Server (fehlt die Admin-Migration, bleibt alles beim Alten)
   async loadInfo() {
     if (!this.sb || !navigator.onLine) return;
     const { data, error } = await this.sb.rpc('app_info');
