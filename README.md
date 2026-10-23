@@ -50,6 +50,16 @@ Web Bluetooth funktioniert nur über **https**. Am einfachsten ist **GitHub Page
 - **iPhone/iPad:** Safari kann kein Web Bluetooth. Nutze dort die kostenlose App **Bluefy** und öffne die Seite darin.
 - **Windows/macOS/Linux:** Chrome oder Edge (praktisch zum Testen)
 
+### iPhone & iPad
+
+Safari kann auf iPhone und iPad kein Bluetooth für Webseiten. Deshalb läuft DokuStick dort in der kostenlosen App **[Bluefy – Web BLE Browser](https://apps.apple.com/app/id1492822055)**:
+
+1. Bluefy aus dem App Store installieren.
+2. In Bluefy `https://madumagg.github.io/Dokustick_RD_Tirol/` öffnen. Öffnet man die Seite in Safari, zeigt die App beide Schritte mit „Bluefy laden“ und „Link kopieren“ direkt an.
+3. **Diktat:** Falls der 🎤-Knopf in Bluefy nicht funktioniert, die Diktierfunktion der Bildschirmtastatur verwenden (Mikrofon-Taste).
+
+**iPad ohne SIM-Karte:** Die Verbindung zum Dongle läuft über Bluetooth und braucht **kein Internet**. Internet über einen Hotspot (z. B. vom Diensthandy) ist nur für die Synchronisierung von Konto und Teams, für das Diktat und zum ersten Laden der Seite nötig. Ohne Internet werden Änderungen an Bausteinen gesammelt und später hochgeladen.
+
 ## 3. Erste Schritte
 
 1. Den Dongle am Zielgerät einstecken. Die LED blinkt blau, der Dongle ist koppelbereit.

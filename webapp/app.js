@@ -214,6 +214,20 @@ const ble = {
 let sendJob = null; // { total, sent, cancelled }
 let sendChain = Promise.resolve();
 
+// iPadOS meldet sich wie ein Mac, hat aber einen Touchscreen
+const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const BLUEFY_URL = 'https://apps.apple.com/app/id1492822055';
+
+async function copyAppLink() {
+  const url = location.href.split('#')[0];
+  try {
+    await navigator.clipboard.writeText(url);
+    toast('Link kopiert – in Bluefy oben in die Adresszeile einfügen');
+  } catch {
+    prompt('Diesen Link in Bluefy öffnen:', url);
+  }
+}
+
 const isAuthError = (e) => /auth|encrypt|insufficient|pair/i.test(String(e && (e.message || e)));
 
 function parseStatus(dv) {
@@ -362,7 +376,16 @@ function renderStatus() {
   if (typeof renderVirtual === 'function') renderVirtual();
 
   if (!navigator.bluetooth && !virtual) {
-    area.append(el('div', { class: 'note err' }, 'Dieser Browser unterstützt kein Web Bluetooth. Android: Chrome verwenden. iPhone: die kostenlose App „Bluefy“ verwenden. Die Seite muss über https geöffnet werden.'));
+    if (IS_IOS) {
+      // Safari auf iPhone/iPad kann kein Web Bluetooth -> Weg ueber die App Bluefy zeigen
+      area.append(el('div', { class: 'note warn' },
+        el('div', {}, 'Safari kann auf iPhone und iPad kein Bluetooth für Webseiten. Öffne DokuStick deshalb in der kostenlosen App „Bluefy“.'),
+        el('div', { class: 'row', style: 'margin-top:6px' },
+          el('a', { class: 'btn small', href: BLUEFY_URL, target: '_blank', rel: 'noopener' }, '1. Bluefy laden'),
+          el('button', { type: 'button', class: 'btn small', onclick: copyAppLink }, '2. Link kopieren'))));
+    } else {
+      area.append(el('div', { class: 'note err' }, 'Dieser Browser unterstützt kein Web Bluetooth. Android: Chrome verwenden. iPhone/iPad: die kostenlose App „Bluefy“ verwenden. Die Seite muss über https geöffnet werden.'));
+    }
     // App-Admins koennen trotzdem den virtuellen Dongle verwenden
     btn.disabled = !(cloud.account && cloud.info.is_admin);
     return;
@@ -429,7 +452,12 @@ function updateMicBtn() {
 }
 
 function startDictation() {
-  if (!SpeechRec) return toast('Spracheingabe wird von diesem Browser nicht unterstützt', 'err');
+  if (!SpeechRec) {
+    if (!IS_IOS) return toast('Spracheingabe wird von diesem Browser nicht unterstützt', 'err');
+    // Auf iPhone/iPad geht die Diktierfunktion der Tastatur immer
+    activeTextArea().focus();
+    return toast('Tippe auf das Mikrofon 🎤 der Bildschirmtastatur, um zu diktieren.');
+  }
   rec = new SpeechRec();
   rec.lang = settings.lang;
   // Einzelne Saetze + automatischer Neustart ist auf Android zuverlaessiger als continuous
