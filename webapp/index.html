@@ -379,8 +379,10 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
         <li><b>LEDs:</b> blau blinkend = koppelbereit · grün = verbunden · grün flackernd = tippt · rot blinkend = nicht am Zielgerät eingesteckt.</li>
         <li><b>Verbindung klappt nicht mehr</b> (z.&nbsp;B. nach Löschen der Kopplungen): „DokuStick“ in den Bluetooth-Einstellungen des Handys entfernen und neu verbinden.</li>
       </ul>
-      <p>Firmware: <span id="fwVer">–</span></p>
+      <p>Firmware: <span id="fwVer">–</span> · App-Version: <span id="appVer">–</span></p>
       <button class="btn danger" id="unpairBtn">Alle Kopplungen löschen</button>
+      <p class="help" style="margin-bottom:6px">Funktioniert etwas nach einem Update nicht wie beschrieben? Dann die App komplett neu laden:</p>
+      <button class="btn" id="hardReloadBtn">App neu laden</button>
     </div>
   </section>
   <!-- Administration (nur fuer App-Admins) -->
@@ -412,13 +414,13 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 <dialog id="dlg2"><form method="dialog" id="dlg2Form"></form></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js"></script>
-<script src="vendor/supabase.js"></script>
-<script src="app.js"></script>
-<script src="compose.js"></script>
-<script src="cloud.js"></script>
-<script src="admin.js"></script>
-<script src="virtual.js"></script>
+<script src="config.js?v=15"></script>
+<script src="vendor/supabase.js?v=15"></script>
+<script src="app.js?v=15"></script>
+<script src="compose.js?v=15"></script>
+<script src="cloud.js?v=15"></script>
+<script src="admin.js?v=15"></script>
+<script src="virtual.js?v=15"></script>
 <script>boot(); $('#adminOpen').addEventListener('click', () => admin.open());</script>
 </body>
 </html>

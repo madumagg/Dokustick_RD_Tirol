@@ -2,6 +2,9 @@
 
 /* ================= Konstanten ================= */
 
+// Wird mit tools/version.sh zusammen mit sw.js und index.html erhoeht
+const APP_VERSION = '15';
+
 const SVC_UUID = '6e7a0001-4b3c-4f8e-9a1d-5c2b7d0a4e01';
 const CMD_UUID = '6e7a0002-4b3c-4f8e-9a1d-5c2b7d0a4e01';
 const STAT_UUID = '6e7a0003-4b3c-4f8e-9a1d-5c2b7d0a4e01';
@@ -668,6 +671,15 @@ $('#unpairBtn').addEventListener('click', async () => {
   ble.userDisconnect = true;
   try { await writeCmd(new Uint8Array([CMD_UNPAIR])); toast('Kopplungen gelöscht'); } catch (e) { toast('Fehlgeschlagen: ' + e.message, 'err'); }
 });
+// Notfall: Offline-Speicher leeren und frisch laden (Daten und Anmeldung bleiben erhalten)
+$('#hardReloadBtn').addEventListener('click', async () => {
+  try {
+    const regs = (await navigator.serviceWorker?.getRegistrations()) || [];
+    await Promise.all(regs.map((r) => r.unregister()));
+    await Promise.all((await caches.keys()).map((k) => caches.delete(k)));
+  } catch { /* egal */ }
+  location.replace(location.pathname + '?neu=' + Date.now());
+});
 $('#testBtn').addEventListener('click', () => send('Test äöü ÄÖÜ ß @ € {[]} \\ | ~ ^ ° ² µ 123'));
 
 // Beim Export bleiben nur Inhalte; Besitz und Sync-Status gehen nicht mit
@@ -743,8 +755,15 @@ function boot() {
     }).catch(() => {});
   }
 
+  $('#appVer').textContent = APP_VERSION;
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    // Neue Version uebernommen -> einmal neu laden (Protokoll bleibt in der Sitzung erhalten)
+    const hadController = !!navigator.serviceWorker.controller;
+    let reloading = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (hadController && !reloading && !sendJob) { reloading = true; location.reload(); }
+    });
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((r) => r.update()).catch(() => {});
   }
   cloud.start();
 }

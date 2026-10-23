@@ -194,6 +194,13 @@ Beim Konstruieren beachten:
   - Die **RESET-Taste** (seitlich) braucht man nur für Firmware-Updates. Ein kleines Loch für eine Büroklammer reicht.
 - Die Abmessungen am besten selbst mit dem Messschieber nehmen. Auf Printables und Thingiverse gibt es auch fertige Gehäuse für den „nRF52840 Dongle“ als Ausgangspunkt.
 
+## Updates
+
+- Ist Internet da, lädt die App immer die neueste Version. Ist eine neue Version verfügbar, während die App offen ist, lädt sie sich selbst neu. Das Protokoll bleibt dabei erhalten.
+- Die installierte Version steht unter *Einstellungen → Dongle → App-Version*.
+- Klemmt etwas nach einem Update: *Einstellungen → Dongle → **App neu laden***. Das leert den Offline-Speicher. Anmeldung, Bausteine und Einstellungen bleiben erhalten.
+- Für Entwickler: Vor jedem Veröffentlichen die Version mit `tools/version.sh <nummer>` erhöhen.
+
 ## Datenschutz
 
 - Ohne Konto liegen Textbausteine, Formulare und Einstellungen nur lokal im Browser des Handys. Mit Konto werden sie zusätzlich bei Supabase (Frankfurt) gespeichert. Ausgefüllte Formulare und der Editor-Inhalt werden nie gespeichert oder hochgeladen.
