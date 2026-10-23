@@ -196,7 +196,8 @@ Einmalig einrichten: Im Supabase **SQL Editor** den Inhalt von [`supabase/migrat
 - **Admins:**
   - Am Reiter zeigt ein rotes Abzeichen die offenen Vorschläge an. Mit „Nur offene Vorschläge“ werden sie gefiltert, mit ✓ freigegeben, mit ✎ bearbeitet, mit 🗑 abgelehnt.
   - Eigene Einträge von Admins sind sofort freigegeben.
-  - **CSV importieren:** Medikamente `Handelsname;Wirkstoff;Dosis`, Krankheiten `Name;Abkürzung`, je eine Zeile pro Eintrag, Kopfzeile optional. Vorhandene Einträge werden übersprungen.
+  - **CSV importieren:** Medikamente `Handelsname;Wirkstoff;Dosis`, Krankheiten `Name;Abkürzung`, je eine Zeile pro Eintrag, Kopfzeile optional. Vorhandene Einträge werden übersprungen. Eine Startliste mit 53 Volkskrankheiten liegt in [`data/`](data/).
+  - **CSV exportieren:** Speichert alle freigegebenen Einträge im selben Format, z. B. als Sicherung oder zum Weitergeben.
 - **In Bausteinen:** Feldart „Medikamente (Datenbank)“ bzw. „Krankheiten (Datenbank)“ (Syntax `{{Dauermedikation:@med}}`, `{{Vorerkrankungen:@dx}}`).
   - Im Protokoll ins Suchfeld tippen. Jedes Wort muss vorkommen, „thrombo 100“ findet also „Thrombo ASS 100 mg“, und auch die Suche nach dem Wirkstoff funktioniert. Den gewünschten Treffer antippen, mehrere sind möglich.
   - Im Text erscheinen nur **Handelsname und Dosis**.

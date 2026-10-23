@@ -199,6 +199,21 @@ const catalog = {
     input.click();
   },
 
+  // Gleiches Format wie der Import (Semikolon, Kopfzeile), damit Listen gesichert und wieder eingespielt werden koennen
+  exportCsv(kind) {
+    const C = CATALOGS[kind];
+    const cell = (v) => (/[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v);
+    const rows = this[kind].filter((e) => e.approved).map((e) => C.fields.map((f) => cell(String(e[f.key] || ''))).join(';'));
+    const csv = '\uFEFF' + [C.csv.join(';'), ...rows].join('\r\n') + '\r\n';
+    const d = new Date(), pad = (n) => String(n).padStart(2, '0');
+    const a = el('a', {
+      href: URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })),
+      download: `dokustick-${C.title.toLowerCase()}-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.csv`,
+    });
+    document.body.append(a); a.click(); a.remove();
+    toast(`${rows.length} ${C.title} exportiert`);
+  },
+
   /* ---------- Reiter "Datenbank" ---------- */
 
   render() {
@@ -248,7 +263,8 @@ const catalog = {
         el('label', { class: 'check grow', style: 'min-height:36px' },
           el('input', { type: 'checkbox', checked: this.onlyPending, onchange: (e) => { this.onlyPending = e.target.checked; this.render(); } }),
           `Nur offene Vorschläge (${pend[kind]})`),
-        el('button', { type: 'button', class: 'btn small', onclick: () => this.importCsv(kind) }, 'CSV importieren')) : null,
+        el('button', { type: 'button', class: 'btn small', onclick: () => this.importCsv(kind) }, 'CSV importieren'),
+        el('button', { type: 'button', class: 'btn small', onclick: () => this.exportCsv(kind) }, 'CSV exportieren')) : null,
       el('p', { class: 'help', style: 'margin:0 0 10px' }, `${this[kind].filter((e) => e.approved).length} freigegeben` + (pend[kind] ? ` · ${pend[kind]} ${this.isAdmin ? 'offen' : 'eigene Vorschläge offen'}` : '')),
       list);
   },

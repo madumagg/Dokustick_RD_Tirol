@@ -5,10 +5,11 @@ export const title = 'Kopfzeile auf allen Bildschirmbreiten';
 
 export default async function (t) {
   const ok = (c, m) => t.ok(c, m);
-  for (const width of [320, 360, 375, 390, 414, 430, 820]) {
+  // Auch mit kuenftigen, breiteren Versionsnummern pruefen
+  for (const [width, ver] of [[320, null], [360, null], [375, null], [390, null], [390, 'v0.88'], [390, 'v1.10'], [414, null], [430, 'v0.88'], [820, null]]) {
     const p = await newDevice(t, { name: `Kopf ${width}`, viewport: { width, height: 700 } });
     // Angemeldeten Zustand nachbilden: Wolke sichtbar (breiteste Variante)
-    await p.evaluate(() => { const d = document.querySelector('#syncDot'); d.hidden = false; d.className = 'sync on'; });
+    await p.evaluate((v) => { const d = document.querySelector('#syncDot'); d.hidden = false; d.className = 'sync on'; if (v) document.querySelector('#hdrVer').textContent = v; }, ver);
     const r = await p.evaluate(() => {
       const bar = document.querySelector('header .bar');
       const btn = document.querySelector('#connBtn').getBoundingClientRect();

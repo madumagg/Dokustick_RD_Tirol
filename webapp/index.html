@@ -211,11 +211,11 @@ dialog h3 { margin: 0 0 14px; }
 
 .badge { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; vertical-align: 2px; background: var(--accent-soft); color: var(--accent); }
 .sync { display: inline-flex; color: var(--muted); }
-.ver { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0; white-space: nowrap; }
+.ver { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0; white-space: nowrap; font-variant-numeric: tabular-nums; }
 /* Handys: Kopfzeile etwas kompakter */
 @media (max-width: 430px) {
   .bar { gap: 8px; }
-  .brand { gap: 6px; font-size: 17px; }
+  .brand { gap: 5px; font-size: 16px; }
   .pill { font-size: 12px; gap: 5px; }
   #connBtn { padding: 6px 10px; }
 }
@@ -455,14 +455,14 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 <dialog id="dlg2"><form method="dialog" id="dlg2Form"></form></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=0.19"></script>
-<script src="vendor/supabase.js?v=0.19"></script>
-<script src="app.js?v=0.19"></script>
-<script src="compose.js?v=0.19"></script>
-<script src="catalog.js?v=0.19"></script>
-<script src="cloud.js?v=0.19"></script>
-<script src="admin.js?v=0.19"></script>
-<script src="virtual.js?v=0.19"></script>
+<script src="config.js?v=0.20"></script>
+<script src="vendor/supabase.js?v=0.20"></script>
+<script src="app.js?v=0.20"></script>
+<script src="compose.js?v=0.20"></script>
+<script src="catalog.js?v=0.20"></script>
+<script src="cloud.js?v=0.20"></script>
+<script src="admin.js?v=0.20"></script>
+<script src="virtual.js?v=0.20"></script>
 <script>boot(); $('#adminOpen').addEventListener('click', () => admin.open());</script>
 </body>
 </html>

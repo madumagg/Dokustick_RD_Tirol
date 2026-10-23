@@ -1,6 +1,6 @@
 import path from 'node:path';
-import { writeFileSync } from 'node:fs';
-import { newDevice, login } from '../lib/harness.mjs';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { newDevice, login, ROOT } from '../lib/harness.mjs';
 
 export const needsCloud = true;
 export const title = 'Medikamente & Krankheiten: Vorschlag, Freigabe, Import, Suche im Protokoll';
@@ -58,6 +58,18 @@ export default async function (t) {
   await A.waitForSelector('#toast >> text=importiert');
   ok((await A.textContent('#toast')).startsWith('2 neu importiert, 1 übersprungen'), 'CSV-Import: ' + await A.textContent('#toast'));
   await A.screenshot({ path: t.out + '/a1-db-admin.png' });
+  // Mitgelieferte Liste (data/) laesst sich importieren; bei wiederholtem Lauf wird alles uebersprungen
+  const [chooser2] = await Promise.all([A.waitForEvent('filechooser'), A.click('#dbBody >> text=CSV importieren')]);
+  await chooser2.setFiles(path.join(ROOT, 'data', 'krankheiten-volkskrankheiten.csv'));
+  await A.waitForFunction(() => /importiert, \d+ übersprungen/.test(document.querySelector('#toast').textContent) && !document.querySelector('#toast').textContent.startsWith('2 neu'));
+  const m = (await A.textContent('#toast')).match(/(\d+) neu importiert, (\d+) übersprungen/);
+  ok(m && Number(m[1]) + Number(m[2]) === 53, 'Mitgelieferte Liste data/krankheiten-volkskrankheiten.csv: ' + (m && m[0]));
+  ok(await A.evaluate(() => catalog.search('dx', 'pavk').some((e) => e.name === 'Periphere arterielle Verschlusskrankheit')), 'Suche nach Abkürzung „pavk“ findet pAVK');
+  // Export: gleiches Format wie der Import, nur freigegebene Eintraege
+  const [dl] = await Promise.all([A.waitForEvent('download'), A.click('#dbBody >> text=CSV exportieren')]);
+  const exported = readFileSync(await dl.path(), 'utf8');
+  ok(/^dokustick-krankheiten-\d{4}-\d\d-\d\d\.csv$/.test(dl.suggestedFilename()) && exported.startsWith('\uFEFFName;Abkürzung\r\n') && exported.includes(`Diabetes mellitus Typ 2 ${s};DM2`) && exported.includes(`${dx1};KHK`),
+    'CSV-Export: ' + dl.suggestedFilename() + ', enthält importierte und angelegte Einträge');
 
   // --- Benutzer V nutzt die Datenbank im Protokoll
   const V = await device('V');
