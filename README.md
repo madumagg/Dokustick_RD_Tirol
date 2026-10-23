@@ -108,7 +108,8 @@ Bausteine können **Auswahlfelder** enthalten, z. B. beim ABCDE-Schema:
 - **Verschieben:** Kopfzeile einer Karte gedrückt halten (Touch, ca. ⅓ s) bzw. mit der Maus anklicken und an die neue Stelle ziehen. Mit dem Griff ⠿ geht es auch sofort, am Bildschirmrand scrollt die Seite mit. Per Tastatur: Griff auswählen und Pfeiltasten drücken.
 - **Senden:** „Alles senden“ tippt das ganze Protokoll und lässt es stehen. Zwischen den Blöcken steht automatisch eine Leerzeile (abschaltbar unter *Einstellungen → Tippen*, z. B. für einzeilige Felder). ⟶ an einer Karte sendet nur diesen Block.
 - **Einsatz beenden:** Der Knopf ganz unten setzt nach einer Sicherheitsabfrage alle Bausteine im Protokoll zurück und löscht den Freitext. Die gespeicherten Bausteine bleiben erhalten.
-- **Leere Messwerte fallen weg:** Ohne Wert wird aus „RR … mmHg, HF 80/min“ einfach „HF 80/min“. Noch nicht beantwortete Auswahlfelder sind orange markiert („offen“).
+- **Pflichtfelder:** Alle Felder sind standardmäßig Pflichtfelder. Fehlende Angaben werden rot markiert („fehlt“, bei Zahlenfeldern mit Text „keine Zahl“), die Karte bekommt einen roten Rand und ein Abzeichen wie „2 fehlen“. Beim Senden erscheint dann die Meldung **„Fehlende Angaben“** mit allen offenen Feldern, und **es wird nichts gesendet**. „Zum ersten fehlenden Feld“ springt direkt dorthin. Freitext wird nicht geprüft.
+- **Optionale Felder:** Im Feld-Editor den Haken „Pflichtfeld“ entfernen, z. B. für Werte, die nicht immer gemessen werden. Bleibt ein optionaler Messwert leer, fällt er samt Beschriftung weg: Aus „RR … mmHg, HF 80/min“ wird „HF 80/min“.
 - **Mehrfachauswahl:** Optionen, die mit „kein“ beginnen (z. B. „keine Maßnahmen erforderlich“), heben die anderen auf und umgekehrt.
 - **Felder anlegen:** Baustein bearbeiten (✎) → **＋ Feld**: Name, Art (Einfachauswahl, Mehrfachauswahl, Text, Zahl), Auswahlmöglichkeiten und Vorauswahl festlegen. Vorhandene Felder antippen, um sie zu ändern.
 - **Vorlagen:** *Bausteine → Vorlagen* enthält das ABCDE-Schema (A nach Vorgabe, B–E als anpassbare Vorschläge) sowie Vitalparameter und Schmerz.
@@ -123,6 +124,7 @@ Für Fortgeschrittene, so sieht ein Feld im Text aus:
 | `{{Haut:rosig\|blass\|zyanotisch}}` | Einfachauswahl |
 | `{{Maßnahmen+:keine\|O2-Gabe\|Beatmung}}` | Mehrfachauswahl |
 | `*` vor einer Option | Vorauswahl, z. B. `{{Atmung:*unauffällig\|Dyspnoe}}` |
+| `?` nach dem Namen | optional, z. B. `{{BZ?:#}}` oder `{{Maßnahmen+?:…}}` |
 
 ## 4. Konto & Teams (optional)
 

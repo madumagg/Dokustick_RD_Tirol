@@ -141,8 +141,16 @@ body.drag-on { user-select: none; -webkit-user-select: none; cursor: grabbing; }
 .field.compact { margin-bottom: 10px; }
 .field.compact > span { font-weight: 600; color: var(--text); font-size: 14px; }
 .chip.more { min-width: 40px; color: var(--muted); }
-.field.compact > span.open { color: var(--warn); }
-.field.compact > span.open::after { content: ' · offen'; font-weight: 400; font-size: 12px; }
+.field.compact > span.missing { color: var(--danger); }
+.field.compact > span.missing::after { content: ' · ' attr(data-problem); font-weight: 600; font-size: 12px; }
+.field.compact input.missing { border: 2px solid var(--danger); }
+.chips.missing .chip:not(.sel) { border-color: var(--danger); }
+.block-mod.incomplete { border-left-color: var(--danger); }
+.block-head .badge.bad { margin-left: 8px; }
+.missing-list { padding-left: 18px; margin: 0; }
+.missing-list li { margin: 4px 0; }
+@keyframes flash { 0%, 100% { background: transparent; } 30% { background: var(--danger-soft); } }
+.field.flash { animation: flash 1.2s ease 2; border-radius: 10px; }
 .preview.small { font-size: 14px; padding: 8px 10px; color: var(--muted); }
 .write-bar { position: sticky; bottom: calc(68px + env(safe-area-inset-bottom)); padding-top: 12px; z-index: 5; }
 .pick-list { display: grid; gap: 6px; margin-top: 6px; }

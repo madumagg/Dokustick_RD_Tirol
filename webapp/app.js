@@ -613,7 +613,7 @@ function field(label, ...inputs) {
 }
 
 // Dialog mit Formular; ohne onSave nur mit "Schliessen"
-function openDialog(title, content, { onSave, onDelete, saveLabel = 'Speichern' } = {}) {
+function openDialog(title, content, { onSave, onDelete, saveLabel = 'Speichern', cancelLabel = 'Abbrechen' } = {}) {
   const dlg = $('#dlg'), form = $('#dlgForm');
   form.replaceChildren(
     el('h3', {}, title),
@@ -623,7 +623,7 @@ function openDialog(title, content, { onSave, onDelete, saveLabel = 'Speichern' 
         if (confirm('Wirklich löschen?')) { onDelete(); dlg.close(); }
       } }, 'Löschen') : null,
       el('span', { class: 'grow' }),
-      el('button', { type: 'button', class: 'btn', onclick: () => dlg.close() }, onSave ? 'Abbrechen' : 'Schließen'),
+      el('button', { type: 'button', class: 'btn', onclick: () => dlg.close() }, onSave ? cancelLabel : 'Schließen'),
       onSave ? el('button', { type: 'submit', class: 'btn primary' }, saveLabel) : null));
   form.onsubmit = async (e) => {
     e.preventDefault();

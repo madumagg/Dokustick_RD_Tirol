@@ -9,6 +9,7 @@
  *   {{Name:a|b|c}}        Einfachauswahl
  *   {{Name+:a|b|c}}       Mehrfachauswahl
  *   *a                    Vorauswahl, z.B. {{Atmung:*unauffällig|Dyspnoe}}
+ *   {{Name?}} / {{Name+?:a|b}}  optional (sonst Pflichtfeld: Senden erst, wenn ausgefuellt)
  * Optionen, die mit "kein" beginnen, schliessen bei Mehrfachauswahl die anderen aus.
  */
 
@@ -29,16 +30,30 @@ const TEMPLATES = [
 
 function parseField(rawName, rawOpt) {
   let name = rawName.trim();
-  const multi = name.endsWith('+');
-  if (multi) name = name.slice(0, -1).trim();
+  let multi = false, optional = false;
+  // Kennzeichen am Namensende: + = Mehrfachauswahl, ? = optional
+  while (/[+?]$/.test(name)) {
+    if (name.endsWith('+')) multi = true; else optional = true;
+    name = name.slice(0, -1).trim();
+  }
   const opt = (rawOpt || '').trim();
-  if (opt === '#') return { name, type: 'number', options: [], defaults: [] };
-  if (!opt) return { name, type: 'text', options: [], defaults: [] };
+  if (opt === '#') return { name, type: 'number', optional, options: [], defaults: [] };
+  if (!opt) return { name, type: 'text', optional, options: [], defaults: [] };
   const parts = opt.split('|').map((o) => o.trim()).filter(Boolean);
   const options = parts.map((o) => o.replace(/^\*/, '').trim());
   const defaults = parts.filter((o) => o.startsWith('*')).map((o) => o.slice(1).trim());
-  return { name, type: multi ? 'multi' : 'single', options, defaults: multi ? defaults : defaults.slice(0, 1) };
+  return { name, type: multi ? 'multi' : 'single', optional, options, defaults: multi ? defaults : defaults.slice(0, 1) };
 }
+
+// Was an einem Feld fehlt: null = in Ordnung
+function fieldProblem(f, v) {
+  const text = f.type === 'multi' ? (Array.isArray(v) ? v.join('') : '') : String(v || '').trim();
+  if (!text) return f.optional ? null : 'fehlt';
+  if (f.type === 'number' && !/^-?\d+([.,]\d+)?$/.test(text)) return 'keine Zahl';
+  return null;
+}
+
+const blockProblems = (b) => formFields(b.tpl).map((f) => ({ f, problem: fieldProblem(f, b.values[f.name]) })).filter((x) => x.problem);
 
 // Alle Felder eines Bausteins (gleicher Name = gleiches Feld)
 function formFields(tpl) {
@@ -50,15 +65,15 @@ function formFields(tpl) {
   return [...fields.values()];
 }
 
-const cleanName = (s) => s.replace(/[{}:|+]/g, '').trim();
+const cleanName = (s) => s.replace(/[{}:|+?]/g, '').trim();
 const cleanOption = (s) => s.replace(/[{}|]/g, '').replace(/^\*/, '').trim();
 
 function fieldToken(f) {
-  const name = cleanName(f.name);
+  const name = cleanName(f.name) + (f.type === 'multi' ? '+' : '') + (f.optional ? '?' : '');
   if (f.type === 'text') return `{{${name}}}`;
   if (f.type === 'number') return `{{${name}:#}}`;
   const opts = f.options.map(cleanOption).filter(Boolean).map((o) => (f.defaults.includes(o) ? '*' + o : o));
-  return `{{${name}${f.type === 'multi' ? '+' : ''}:${opts.join('|')}}}`;
+  return `{{${name}:${opts.join('|')}}}`;
 }
 
 function initialValues(tpl) {
@@ -138,7 +153,8 @@ function saveDoc() {
 
 const blockText = (b) => (b.type === 'text' ? b.text : fillTemplate(b.tpl, b.values));
 // Bloecke getrennt durch eine Leerzeile (abschaltbar fuer einzeilige Zielfelder)
-const docText = () => doc.map(blockText).filter((t) => t.trim()).join(settings.blankLine ? '\n\n' : '\n');
+const joinBlocks = (blocks) => blocks.map(blockText).filter((t) => t.trim()).join(settings.blankLine ? '\n\n' : '\n');
+const docText = () => joinBlocks(doc);
 const docIsEmpty = () => !doc.some((b) => b.type === 'module' || b.text.trim());
 
 function clearDoc() {
@@ -255,12 +271,21 @@ function renderTextBlock(b) {
 
 function renderModuleBlock(b) {
   const pre = el('div', { class: 'preview small' });
-  const update = () => { saveDoc(); renderPreviewInto(pre, expandDynamic(blockText(b))); };
+  const missing = el('span', { class: 'badge bad' });
   const card = el('div', { class: 'block block-mod card', 'data-block': b.id });
+  const update = () => {
+    saveDoc();
+    renderPreviewInto(pre, expandDynamic(blockText(b)));
+    // Unvollstaendige Karten rot markieren
+    const n = blockProblems(b).length;
+    card.classList.toggle('incomplete', n > 0);
+    missing.hidden = !n;
+    missing.textContent = n === 1 ? '1 fehlt' : `${n} fehlen`;
+  };
   const head = el('div', { class: 'block-head' },
     grip(b, card),
-    el('strong', { class: 'grow' }, b.title),
-    el('button', { type: 'button', title: 'Nur diesen Block senden', 'aria-label': 'Nur diesen Block senden', onclick: () => send(blockText(b)) }, '⟶'),
+    el('strong', { class: 'grow' }, b.title, missing),
+    el('button', { type: 'button', title: 'Nur diesen Block senden', 'aria-label': 'Nur diesen Block senden', onclick: () => sendChecked([b]) }, '⟶'),
     el('button', { type: 'button', title: 'Entfernen', 'aria-label': 'Entfernen', onclick: () => removeBlock(b) }, '✕'));
   // Kopfzeile gedrueckt halten (Touch) bzw. ziehen (Maus) verschiebt die Karte
   enableDrag(head, b, card);
@@ -271,18 +296,27 @@ function renderModuleBlock(b) {
 
 // Eingabe fuer ein Feld: Knoepfe fuer Auswahl, Eingabefeld fuer Text/Zahl
 function renderFieldInput(f, values, onChange) {
+  const label = el('span', {}, f.name,
+    f.type === 'multi' ? el('small', { class: 'help' }, ' · mehrere möglich') : null,
+    f.optional ? el('small', { class: 'help' }, ' · optional') : null);
+  // Fehlende Pflichtangaben rot markieren (Text kommt per CSS aus data-problem)
+  const mark = (...nodes) => {
+    const problem = fieldProblem(f, values[f.name]);
+    label.classList.toggle('missing', !!problem);
+    label.dataset.problem = problem || '';
+    nodes.forEach((n) => n.classList.toggle('missing', !!problem));
+  };
   if (f.type === 'text' || f.type === 'number') {
-    return el('label', { class: 'field compact' }, el('span', {}, f.name),
-      el('input', { type: 'text', inputmode: f.type === 'number' ? 'decimal' : null, autocomplete: 'off', value: values[f.name] || '',
-        oninput: (e) => { values[f.name] = e.target.value; onChange(); } }));
+    const input = el('input', { type: 'text', inputmode: f.type === 'number' ? 'decimal' : null, autocomplete: 'off', value: values[f.name] || '',
+      oninput: (e) => { values[f.name] = e.target.value; mark(input); onChange(); } });
+    mark(input);
+    return el('label', { class: 'field compact', 'data-field': f.name }, label, input);
   }
   const chips = el('div', { class: 'chips' });
-  const label = el('span', {}, f.name, f.type === 'multi' ? el('small', { class: 'help' }, ' · mehrere möglich') : null);
   const selected = () => (f.type === 'multi' ? (Array.isArray(values[f.name]) ? values[f.name] : []) : [values[f.name]].filter(Boolean));
   const draw = () => {
     const sel = selected();
-    // Noch nichts gewaehlt -> Feld hervorheben, damit es nicht vergessen wird
-    label.classList.toggle('open', !sel.length);
+    mark(chips);
     const custom = sel.filter((v) => !f.options.includes(v));
     chips.replaceChildren(
       ...[...f.options, ...custom].map((o) => el('button', {
@@ -309,7 +343,36 @@ function renderFieldInput(f, values, onChange) {
     onChange();
   };
   draw();
-  return el('div', { class: 'field compact' }, label, chips);
+  return el('div', { class: 'field compact', 'data-field': f.name }, label, chips);
+}
+
+/* ================= Pruefen vor dem Senden ================= */
+
+// Sendet nur, wenn alle Pflichtfelder der Bausteine ausgefuellt sind
+function sendChecked(blocks) {
+  const missing = blocks.filter((b) => b.type === 'module').map((b) => ({ b, list: blockProblems(b) })).filter((x) => x.list.length);
+  if (!missing.length) return send(joinBlocks(blocks));
+  const total = missing.reduce((n, x) => n + x.list.length, 0);
+  openDialog('Fehlende Angaben', [
+    el('p', {}, total === 1 ? 'Eine Angabe fehlt noch. Es wurde nichts gesendet.' : `${total} Angaben fehlen noch. Es wurde nichts gesendet.`),
+    el('ul', { class: 'missing-list' }, missing.map(({ b, list }) => el('li', {},
+      el('b', {}, b.title), ': ',
+      list.map(({ f, problem }) => (problem === 'fehlt' ? f.name : `${f.name} (${problem})`)).join(', ')))),
+  ], {
+    saveLabel: 'Zum ersten fehlenden Feld',
+    cancelLabel: 'Schließen',
+    // Erst nach dem Schliessen der Meldung springen (vorher ist der Rest der Seite gesperrt)
+    onSave: () => setTimeout(() => {
+      const first = missing[0];
+      const node = document.querySelector(`[data-block="${first.b.id}"] [data-field="${CSS.escape(first.list[0].f.name)}"]`);
+      if (!node) return;
+      showTab('write');
+      node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      node.classList.remove('flash'); void node.offsetWidth; node.classList.add('flash');
+      node.querySelector('input')?.focus({ preventScroll: true });
+    }, 50),
+  });
+  return false;
 }
 
 /* ================= Verschieben per Ziehen ================= */
@@ -455,7 +518,7 @@ function fieldEditor(bodyArea) {
         el('button', { type: 'button', class: 'btn small primary', onclick: () => openFieldBuilder(bodyArea, null, draw) }, '＋ Feld')),
       fields.length ? el('div', { class: 'chips' }, fields.map((f) => el('button', {
         type: 'button', class: 'chip', onclick: () => openFieldBuilder(bodyArea, f, draw),
-      }, `${f.name} · ${FIELD_TYPES[f.type]}`))) : null);
+      }, `${f.name} · ${FIELD_TYPES[f.type]}${f.optional ? ' · optional' : ''}`))) : null);
   };
   bodyArea.addEventListener('input', draw);
   draw();
@@ -464,7 +527,8 @@ function fieldEditor(bodyArea) {
 
 function openFieldBuilder(bodyArea, field0, onDone) {
   const dlg = $('#dlg2'), form = $('#dlg2Form');
-  const f = field0 ? { ...field0, options: [...field0.options], defaults: [...field0.defaults] } : { name: '', type: 'single', options: [], defaults: [] };
+  const f = field0 ? { ...field0, options: [...field0.options], defaults: [...field0.defaults] } : { name: '', type: 'single', optional: false, options: [], defaults: [] };
+  const required = el('input', { type: 'checkbox', checked: !f.optional });
   const name = el('input', { type: 'text', required: true, value: f.name, placeholder: 'z. B. Atemwege' });
   const type = el('select', {}, Object.entries(FIELD_TYPES).map(([k, v]) => el('option', { value: k, selected: f.type === k }, v)));
   const opts = el('textarea', { rows: 6, placeholder: 'frei und gesichert\ngefährdet' }, f.options.join('\n'));
@@ -494,6 +558,7 @@ function openFieldBuilder(bodyArea, field0, onDone) {
     el('h3', {}, field0 ? 'Feld bearbeiten' : 'Neues Feld'),
     field('Name', name),
     field('Art', type),
+    el('label', { class: 'check', style: 'margin-top:-6px' }, required, 'Pflichtfeld – Senden erst, wenn ausgefüllt'),
     el('p', { class: 'help', style: 'margin-top:-6px' }, 'Einfachauswahl = genau eine Option · Mehrfachauswahl = mehrere Optionen (z. B. Maßnahmen). Optionen, die mit „kein“ beginnen, heben die anderen auf.'),
     optField,
     defField,
@@ -511,7 +576,7 @@ function openFieldBuilder(bodyArea, field0, onDone) {
 
   form.onsubmit = (e) => {
     e.preventDefault();
-    const nf = { name: cleanName(name.value), type: type.value, options: readOpts(), defaults: f.defaults };
+    const nf = { name: cleanName(name.value), type: type.value, optional: !required.checked, options: readOpts(), defaults: f.defaults };
     if (!nf.name) return toast('Bitte einen Namen eingeben', 'err');
     if ((nf.type === 'single' || nf.type === 'multi') && nf.options.length < 2) return toast('Mindestens zwei Auswahlmöglichkeiten eintragen', 'err');
     const token = fieldToken(nf);
@@ -561,7 +626,7 @@ function openTemplates() {
 /* ================= Schreiben: Bedienelemente ================= */
 
 // "Alles senden" laesst das Protokoll stehen; geloescht wird erst mit "Einsatz beenden"
-$('#sendBtn').addEventListener('click', () => send(docText()));
+$('#sendBtn').addEventListener('click', () => sendChecked(doc));
 
 function endMission() {
   const dlg = $('#dlg');
