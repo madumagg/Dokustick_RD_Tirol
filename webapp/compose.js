@@ -330,7 +330,7 @@ function renderFieldInput(f, values, onChange) {
     const box = el('label', { class: 'field compact', 'data-field': f.name }, label, input);
     if (f.type === 'number') return box;
     // Hinweise ausserhalb des <label>, sonst loesen die Knoepfe darin doppelt aus
-    hint = spell.hint(() => values[f.name] || '', (v) => { values[f.name] = input.value = v; mark(input); onChange(); });
+    hint = spell.hint(() => values[f.name] || '', (v) => { values[f.name] = input.value = v; mark(input); onChange(); }, FIELD_SPELL);
     return el('div', {}, box, hint.box);
   }
   const chips = el('div', { class: 'chips' });
@@ -435,17 +435,20 @@ function renderLookup(f, values, onChange, label, mark) {
 /* ================= Pruefen vor dem Senden ================= */
 
 // Sendet nur, wenn alle Pflichtfelder der Bausteine ausgefuellt sind
-// Vom Benutzer geschriebener Text eines Blocks (Freitext und Textfelder, keine Auswahlen)
-const typedTexts = (b) => (b.type === 'text' ? [b.text] : formFields(b.tpl).filter((f) => f.type === 'text').map((f) => String(b.values[f.name] || '')));
+// Vom Benutzer geschriebener Text eines Blocks (Freitext und Textfelder, keine Auswahlen) mit Pruefoptionen
+const typedTexts = (b) => (b.type === 'text' ? [[b.text, {}]]
+  : formFields(b.tpl).filter((f) => f.type === 'text').map((f) => [String(b.values[f.name] || ''), FIELD_SPELL]));
+// Textfelder stehen meist nach "Name:" -> der Anfang darf klein sein
+const FIELD_SPELL = { sentenceStart: false };
 
 function sendChecked(blocks, { spellChecked = false } = {}) {
   const missing = blocks.filter((b) => b.type === 'module').map((b) => ({ b, list: blockProblems(b) })).filter((x) => x.list.length);
   if (!missing.length) {
     // Moegliche Rechtschreibfehler: Hinweis, aber Senden bleibt moeglich
-    const typos = spellChecked ? [] : [...new Set(blocks.flatMap(typedTexts).flatMap((t) => spell.check(t).map((e) => e.word)))];
+    const typos = spellChecked ? [] : [...new Set(blocks.flatMap(typedTexts).flatMap(([t, o]) => spell.check(t, o).map((e) => spell.label(e))))];
     if (!typos.length) return send(joinBlocks(blocks));
     openDialog('Mögliche Rechtschreibfehler', [
-      el('p', {}, typos.length === 1 ? 'Dieses Wort ist vielleicht falsch geschrieben:' : `Diese ${typos.length} Wörter sind vielleicht falsch geschrieben:`),
+      el('p', {}, typos.length === 1 ? 'Hier ist vielleicht etwas falsch geschrieben:' : `Hier sind ${typos.length} Stellen vielleicht falsch geschrieben:`),
       el('p', { class: 'chips' }, typos.map((w) => el('span', { class: 'chip spell-chip' }, w))),
       el('p', { class: 'help' }, 'Zum Korrigieren die markierten Wörter unter dem Text antippen.'),
     ], {

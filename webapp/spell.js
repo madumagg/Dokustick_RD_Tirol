@@ -22,12 +22,29 @@ entrundet Meningismus Hemiparese Einkoten Präsynkope kaltschweißig marmoriert 
 Vollelektrolytlösung Schaufeltrage Stifneck Spineboard nachgefordert Laienreanimation Thoraxkompression Thoraxkompressionen
 defibrilliert immobilisiert reanimiert reanimationspflichtig`;
 
+// Nach diesen Woertern ist ein grosses Wort meist ein Hauptwort ("beim Gehen", "das Gute", "alles Gute")
+const NOMINAL_BEFORE = new Set(`der die das dem den des ein eine einem einen einer eines am im zum zur vom beim ins ans aufs ums durchs fürs
+übers alles etwas nichts viel viele wenig kein keine keinem keinen keiner sein seine ihr ihre mein meine dein deine unser unsere
+dieses diesem dieser diese diesen jedes jeder`.split(/\s+/));
+// Abkuerzungen, nach denen der Satz weitergeht ("Pat. ist wach", "ca. 2 h")
+const MID_ABBR = new Set('pat ca bzw evtl ggf inkl exkl dr hr fr li re bds vs lt'.split(' '));
+// Hoefliche Anrede, mitten im Satz gross richtig
+const FORMAL = new Set('Sie Ihnen Ihr Ihre Ihrem Ihren Ihrer Ihres'.split(' '));
+// Doppelt erlaubt: "die Frau, die die Tür ..."
+const DOUBLE_OK = new Set(['der', 'die', 'das', 'dem', 'den', 'des', 'sie', 'es']);
+const capFirst = (w) => w[0].toUpperCase() + w.slice(1);
+const lowFirst = (w) => w[0].toLowerCase() + w.slice(1);
+const isLowerStart = (w) => w[0] !== w[0].toUpperCase();
+
 const spell = {
   h: null,              // Hunspell-Instanz
   loading: null,
   failed: false,
   extra: new Set(),     // Woerter aus Bausteinen, Datenbank, eigenem Woerterbuch (klein geschrieben)
+  extraExact: new Set(), // dieselben in Originalschreibweise
+  extraCased: new Set(), // Schreibweise verbindlich (Datenbank, eigenes Woerterbuch, Rettungsdienst-Woerter)
   extraSig: '',
+  stemCache: new Map(),
   inHunspell: new Set(), // fuer Vorschlaege an Hunspell uebergebene Zusatzwoerter
   ignored: new Set(),   // "Diesmal ignorieren" (bis zum Neuladen)
   cache: new Map(),     // Wort -> richtig?
@@ -69,11 +86,18 @@ const spell = {
       RD_WORDS,
     ];
     this.extra = new Set();
-    for (const s of sources) for (const w of String(s || '').match(SPELL_WORD) || []) this.extra.add(w.toLowerCase());
-    // Hunspell kennt sie dann auch fuer Vorschlaege (z.B. "Larynxtubs" -> "Larynxtubus")
+    this.extraExact = new Set();
+    for (const s of sources) for (const w of String(s || '').match(SPELL_WORD) || []) { this.extra.add(w.toLowerCase()); this.extraExact.add(w); }
+    // Bausteintexte zaehlen hier nicht: dort steht am Satzanfang jedes Wort gross
+    this.extraCased = new Set();
+    for (const s of [...catalog.med.flatMap((e) => [e.trade_name, e.ingredient]), ...catalog.dx.map((e) => e.name), ...dict, RD_WORDS]) {
+      for (const w of String(s || '').match(SPELL_WORD) || []) this.extraCased.add(w);
+    }
+    // Unbekannte Woerter kennt Hunspell dann auch fuer Vorschlaege (z.B. "Larynxtubs" -> "Larynxtubus").
+    // Bekannte nicht hinzufuegen: "Wach" aus einem Titel wuerde sonst als Hauptwort gelten.
     if (this.h) {
       for (const s of sources) for (const w of String(s || '').match(SPELL_WORD) || []) {
-        if (w.length > 3 && !this.inHunspell.has(w)) { this.inHunspell.add(w); this.h.addWord(w); }
+        if (w.length > 3 && !this.inHunspell.has(w) && !this.h.testSpelling(w)) { this.inHunspell.add(w); this.h.addWord(w); }
       }
     }
     this.cache.clear();
@@ -91,23 +115,83 @@ const spell = {
     return r;
   },
 
-  // Vermutlich falsch geschriebene Woerter: [{ word, index }]
-  check(text) {
+  stems(w) {
+    let r = this.stemCache.get(w);
+    if (!r) { r = this.h.stemWord(w); this.stemCache.set(w, r); }
+    return r;
+  },
+
+  // Stellung im Satz: 'start' (Satzanfang), 'mid' (mitten im Satz) oder 'free' (beides moeglich,
+  // z.B. nach Doppelpunkt, nach Abkuerzungen wie "Pat.", nach Zahlen, in Aufzaehlungen)
+  position(t, prev, i, sentenceStart) {
+    const gap = t.slice(prev ? prev.end : 0, i);
+    if (gap.includes('\n')) return /\S/.test(gap.slice(gap.lastIndexOf('\n') + 1)) ? 'free' : 'start';
+    if (!prev) return !/\S/.test(gap) && sentenceStart ? 'start' : 'free';
+    if (/[!?]/.test(gap)) return 'start';
+    if (/[:;"„“”(–]/.test(gap) || /\s-\s/.test(gap) || /\d/.test(gap)) return 'free';
+    if (gap.includes('.')) {
+      const p = prev.word;
+      if (MID_ABBR.has(p.toLowerCase())) return 'mid';
+      // Hunspell akzeptiert jedes Wort auch mit Punkt; Abkuerzung = nur mit Punkt gueltig ("usw.")
+      const abbr = p.length <= 3 || /\p{Lu}/u.test(p.slice(1)) || (this.h.testSpelling(p + '.') && !this.h.testSpelling(p));
+      return abbr ? 'free' : 'start';
+    }
+    return 'mid';
+  },
+
+  // Gross/Klein: liefert die richtige Schreibweise oder null
+  caseFix(w, pos, prevWord) {
+    if (pos === 'free' || this.ignored.has(w) || this.extraCased.has(w)) return null;
+    if (pos === 'start') return isLowerStart(w) ? capFirst(w) : null;
+    if (isLowerStart(w)) {
+      // Nur ueber Bausteine/Datenbank bekannt und dort nur gross geschrieben ("larynxtubus")
+      return !this.h.testSpelling(w) && this.extraExact.has(capFirst(w)) && !this.extraExact.has(w) ? capFirst(w) : null;
+    }
+    if (FORMAL.has(w) || NOMINAL_BEFORE.has((prevWord || '').toLowerCase())) return null;
+    // Gemeldet wird nur, was es klein als Wort gibt und was das Woerterbuch nicht als Hauptwort kennt
+    // (z.B. "Ist", "Wach", "Bewusstlos"); "Übergabe" gibt es klein nicht -> Hauptwort
+    const low = lowFirst(w);
+    if (!this.h.testSpelling(low)) return null;
+    const st = this.stems(w);
+    if (!st.length || !st.every(isLowerStart)) return null;
+    // Hauptwoerter aus Verben ("bei Eintreffen", "Erbrechen", "Schwindel beim Aufstehen")
+    if (/(en|ern|eln)$/.test(w) && st.includes(low)) return null;
+    return low;
+  },
+
+  // Moegliche Fehler: [{ word, index, kind, fix, from }]
+  //   kind 'spell' = unbekanntes Wort, 'case' = Gross/Klein (fix = richtige Schreibweise),
+  //   'double' = doppeltes Wort (from = Ende des ersten, ab dort wird geloescht)
+  // sentenceStart: false fuer Textfelder in Bausteinen (stehen meist nach "Name:")
+  check(text, { sentenceStart = true } = {}) {
     if (!this.enabled || !this.h || !text) return [];
     this.updateExtra();
     // Sondertasten wie {TAB} nicht pruefen (Laenge bleibt, damit die Positionen stimmen)
     const t = text.replace(/\{[^}\n]*\}/g, (m) => ' '.repeat(m.length));
     const out = [];
+    let prev = null;
     for (const m of t.matchAll(SPELL_WORD)) {
       const w = m[0], i = m.index, before = t[i - 1] || '', after = t[i + w.length] || '';
-      if (w.length < 3) continue;
+      const pos = this.position(t, prev, i, sentenceStart);
+      const last = prev;
+      prev = { word: w, end: i + w.length };
       if (/\d/.test(before) || /\d/.test(after)) continue;          // SpO2, 3x, 12mg
       if (/\p{Lu}/u.test(w.slice(1))) continue;                       // Abkuerzungen: RTW, GCS, pAVK
-      if (after === '.' && this.h.testSpelling(w + '.')) continue;    // ca., bzw.
-      if (!this.okWord(w)) out.push({ word: w, index: i });
+      if (last && pos === 'mid' && last.word.toLowerCase() === w.toLowerCase() && !DOUBLE_OK.has(w.toLowerCase()) && !this.ignored.has(w)) {
+        out.push({ word: w, index: i, kind: 'double', from: last.end });
+        continue;
+      }
+      if (w.length < 3) { const c = this.h.testSpelling(w) && this.caseFix(w, pos, last && last.word); if (c) out.push({ word: w, index: i, kind: 'case', fix: c }); continue; }
+      const known = (after === '.' && this.h.testSpelling(w + '.')) || this.okWord(w);   // "ca." gilt als bekannt
+      if (!known) { out.push({ word: w, index: i, kind: 'spell' }); continue; }
+      const c = this.caseFix(w, pos, last && last.word);
+      if (c) out.push({ word: w, index: i, kind: 'case', fix: c });
     }
     return out;
   },
+
+  // Anzeige eines Fehlers (Hinweis und Rueckfrage vor dem Senden)
+  label(e) { return e.kind === 'case' ? `${e.word} → ${e.fix}` : e.kind === 'double' ? `${e.word} ${e.word}` : e.word; },
 
   suggest(word) { return this.h ? this.h.getSpellingSuggestions(word).slice(0, 6) : []; },
 
@@ -128,16 +212,17 @@ const spell = {
   /* ---------- Hinweiszeile unter einem Eingabefeld ---------- */
 
   // get/set lesen und schreiben den Text; liefert { box, refresh }
-  hint(get, set) {
+  hint(get, set, opts = {}) {
     const box = el('div', { class: 'spell', hidden: true });
     let timer = null;
     const draw = () => {
-      const errs = this.check(get());
+      const errs = this.check(get(), opts);
       box.hidden = !errs.length;
-      const words = [...new Set(errs.map((e) => e.word))];
+      // Unbekannte Woerter nur einmal zeigen (Korrektur gilt fuer alle), Gross/Klein und doppelte je Stelle
+      const shown = errs.filter((e, n) => e.kind !== 'spell' || errs.findIndex((x) => x.kind === 'spell' && x.word === e.word) === n);
       box.replaceChildren(
         el('span', { class: 'spell-l' }, 'Rechtschreibung?'),
-        ...words.map((w) => el('button', { type: 'button', class: 'chip spell-chip', title: 'Korrigieren', onclick: () => this.fix(w, get, set) }, w)));
+        ...shown.map((e) => el('button', { type: 'button', class: 'chip spell-chip k-' + e.kind, title: 'Korrigieren', onclick: () => this.fix(e, get, set, opts) }, this.label(e))));
     };
     const refresh = (delay = 0) => { clearTimeout(timer); timer = setTimeout(draw, delay); };
     const h = { box, refresh };
@@ -150,18 +235,34 @@ const spell = {
     for (const h of this.hints) { if (h.box.isConnected) h.refresh(); else this.hints.delete(h); }
   },
 
-  fix(word, get, set) {
+  fix(err, get, set, opts = {}) {
     const dlg = $('#dlg2'), form = $('#dlg2Form');
-    const choose = (by) => { set(this.replaceWord(get(), word, by)); dlg.close(); this.refreshAll(); };
-    const sugg = this.suggest(word);
+    const word = err.word;
+    // Gross/Klein und doppelte Woerter: genau diese Stelle aendern (im aktuellen Text neu suchen)
+    const atSpot = (change) => {
+      const text = get();
+      const cur = this.check(text, opts).filter((x) => x.kind === err.kind && x.word === word)
+        .sort((a, b) => Math.abs(a.index - err.index) - Math.abs(b.index - err.index))[0];
+      if (cur) set(change(text, cur));
+    };
+    const choose = (by) => {
+      if (err.kind === 'spell') set(this.replaceWord(get(), word, by));
+      else if (err.kind === 'case') atSpot((t, c) => t.slice(0, c.index) + by + t.slice(c.index + word.length));
+      else atSpot((t, c) => t.slice(0, c.from) + t.slice(c.index + word.length));
+      dlg.close();
+      this.refreshAll();
+    };
+    const sugg = err.kind === 'spell' ? this.suggest(word) : [err.kind === 'case' ? err.fix : word];
+    const help = { case: err.fix && isLowerStart(err.fix) ? 'Mitten im Satz klein schreiben.' : 'Groß schreiben (Satzanfang oder Hauptwort).', double: 'Das Wort steht doppelt. Antippen entfernt die Wiederholung.' }[err.kind];
     form.onsubmit = (e) => e.preventDefault();
     form.replaceChildren(
-      el('h3', {}, `„${word}“`),
+      el('h3', {}, err.kind === 'double' ? `„${word} ${word}“` : `„${word}“`),
+      help ? el('p', { class: 'help', style: 'margin-top:0' }, help) : null,
       sugg.length
         ? el('div', { class: 'chips' }, sugg.map((s) => el('button', { type: 'button', class: 'chip', onclick: () => choose(s) }, s)))
         : el('p', { class: 'help' }, 'Keine Vorschläge.'),
       el('div', { class: 'row', style: 'margin-top:14px' },
-        el('button', { type: 'button', class: 'btn', onclick: () => { this.addToDictionary(word); dlg.close(); toast(`„${word}“ ins Wörterbuch aufgenommen`); } }, '＋ Ins Wörterbuch'),
+        err.kind !== 'double' ? el('button', { type: 'button', class: 'btn', onclick: () => { this.addToDictionary(word); dlg.close(); toast(`„${word}“ ins Wörterbuch aufgenommen`); } }, '＋ Ins Wörterbuch') : null,
         el('button', { type: 'button', class: 'btn', onclick: () => { this.ignored.add(word); this.cache.delete(word); dlg.close(); this.refreshAll(); } }, 'Ignorieren')),
       el('div', { class: 'row end', style: 'margin-top:8px' },
         el('button', { type: 'button', class: 'btn', onclick: () => dlg.close() }, 'Abbrechen')));

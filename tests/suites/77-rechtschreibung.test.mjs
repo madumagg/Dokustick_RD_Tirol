@@ -17,6 +17,23 @@ export default async function (t) {
   ok((await words(fine)).length === 0, 'Keine Fehler in: ' + fine + ' → ' + JSON.stringify(await words(fine)));
   ok(JSON.stringify(await words('Der Pateint hat Brustschmerzn und patient')) === '["Pateint","Brustschmerzn","patient"]', 'Erkennt Tippfehler und klein geschriebenes Hauptwort');
 
+  // --- Gross/Klein und doppelte Woerter (ohne Fehlalarme bei ueblichen Saetzen)
+  const labels = (s, o) => p.evaluate(([x, opt]) => spell.check(x, opt).map((e) => spell.label(e)), [s, o]);
+  const correct = ['Pat. bei Eintreffen sitzend aufgefunden. Laut Angehörigen seit ca. 30 min Brustschmerzen.',
+    'Nach Eintreffen des Notarztes Übergabe. Seit dem Aufstehen Erbrechen und Schwindel.',
+    'Beim Gehen Schwindel. Alles Gute! Wir haben Ihnen den Befund mitgegeben.',
+    'Befund: wach, orientiert. Am 3. Tag nach der OP Atemnot.',
+    'Die Ehefrau, die die Rettung alarmiert hat, war anwesend. Pat. klagt über Übelkeit usw. Danach Besserung.'];
+  const falsePos = [];
+  for (const c of correct) { const l = await labels(c); if (l.length) falsePos.push(c + ' → ' + l.join(', ')); }
+  ok(!falsePos.length, 'Keine Fehlalarme bei Groß/Klein in üblichen Sätzen' + (falsePos.length ? ': ' + falsePos.join(' | ') : ''));
+  const cases = [
+    ['der Pat. ist wach.', 'der → Der'], ['Pat. Ist wach.', 'Ist → ist'], ['Er war Bewusstlos und Blass.', 'Bewusstlos → bewusstlos|Blass → blass'],
+    ['Pat. wach. er gibt Schmerzen an.', 'er → Er'], ['Keine allergien bekannt.', 'allergien → Allergien'], ['Schmerzen und und Atemnot.', 'und und'],
+  ];
+  for (const [txt, exp] of cases) ok((await labels(txt)).join('|') === exp, `„${txt}“ → ${exp}`);
+  ok((await labels('wach und orientiert', { sentenceStart: false })).length === 0, 'Textfeld darf klein beginnen („Symptome: wach …“)');
+
   // --- Hinweise unter dem Freitext, Korrektur per Antippen
   const ta = p.locator('.block-text textarea').last();
   await ta.fill('Der Pateint klagt über Brustschmerzn.');
@@ -31,6 +48,16 @@ export default async function (t) {
   await p.locator('#dlg2 .chip:text-is("Brustschmerzen")').click();
   await p.waitForFunction(() => document.querySelector('.block-text .spell').hidden);
   ok(true, 'Alles korrigiert: Hinweis verschwindet');
+
+  // --- Gross/Klein per Antippen: nur die betroffene Stelle aendert sich
+  await ta.fill('Wach seit dem Morgen. Pat. ist Wach und und orientiert.');
+  await hint.locator('.spell-chip.k-case:has-text("Wach → wach")').waitFor();
+  await hint.locator('.spell-chip.k-case:has-text("Wach → wach")').click();
+  await p.locator('#dlg2 .chip:text-is("wach")').click();
+  ok((await ta.inputValue()) === 'Wach seit dem Morgen. Pat. ist wach und und orientiert.', 'Nur das „Wach“ mitten im Satz wird klein, der Satzanfang bleibt');
+  await hint.locator('.spell-chip.k-double').click();
+  await p.locator('#dlg2 .chip:text-is("und")').click();
+  ok((await ta.inputValue()) === 'Wach seit dem Morgen. Pat. ist wach und orientiert.', 'Doppeltes „und“ entfernt');
 
   // --- Eigenes Woerterbuch
   await ta.fill('Übergabe an Dr. Plattnerin.');

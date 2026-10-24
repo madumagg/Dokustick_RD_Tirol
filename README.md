@@ -137,6 +137,17 @@ Eine Protokollvorlage ist eine Gruppe von Bausteinen, die du bei jedem Patienten
   - Medikamente und Krankheiten aus der Datenbank
   - dein eigenes Wörterbuch
 - **Ignoriert werden:** Abkürzungen in Großbuchstaben (RTW, GCS), Wörter mit Zahlen (SpO2) und Sondertasten.
+- **Groß-/Kleinschreibung:** Sie prüft:
+  - großen Satzanfang („der Pat. …“ → „Der“)
+  - klein geschriebene Hauptwörter („allergien“)
+  - groß geschriebene Wörter mitten im Satz, die klein gehören („Pat. Ist Wach“)
+
+  Ausnahmen:
+  - nach Doppelpunkt, nach Abkürzungen wie „Pat.“ und in Aufzählungen ist beides erlaubt
+  - Hauptwörter aus Verben („bei Eintreffen“, „beim Gehen“) und die höfliche Anrede („Ihnen“) gelten als richtig
+  - Textfelder in Bausteinen dürfen klein beginnen, weil sie meist nach „Name:“ stehen
+- **Doppelte Wörter** („und und“) werden gemeldet. „die die“ und „das das“ sind erlaubt.
+- **Keine Grammatik:** Fälle, Kommas und „das/dass“ prüft sie nicht. Das kann offline auf dem Gerät keine verfügbare Bibliothek zuverlässig.
 - **Hinweise:** Unter Freitext und Textfeldern erscheinen mögliche Fehler zum Antippen. Dort kannst du einen Vorschlag übernehmen, das Wort **ins Wörterbuch** aufnehmen oder es **ignorieren**.
 - **Vor dem Senden:** Sind noch mögliche Fehler offen, fragt die App nach. Wählst du „Trotzdem senden“, wird gesendet. Anders als bei fehlenden Pflichtfeldern wird nichts blockiert.
 - **Einstellungen → Rechtschreibung:** Hier schaltest du die Prüfung ein oder aus und bearbeitest das eigene Wörterbuch (ein Wort pro Zeile). Mit Konto wird beides synchronisiert.
