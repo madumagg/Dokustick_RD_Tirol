@@ -84,4 +84,49 @@ export default async function (t) {
   await p.fill('#dlg2 textarea', 'Finger\nOhr');
   await p.click('#dlg2 button[type=submit]');
   ok((await p.inputValue('#dlg textarea[name=text]')).startsWith('SpO2 {{SpO2:#}}, {{Messung:Finger|Ohr}} %'), 'Direkt hinter einem Feld: Komma statt Ankleben');
+
+  // --- Fall aus der Praxis: Feld klebte vor der Ueberschrift, nach dem Verschieben verschmolzen zwei Abschnitte
+  const L = '{{Lagerung+:Sitzend im Tragstuhl|Liegend|erhöhter Oberkörper}}';
+  const M = '{{Maßnahmen E+:*keine Maßnahmen erforderlich|Wärmeerhalt}}';
+  const exposure = `${L} E – Exposure: {{Befund E:*keine weiteren Auffälligkeiten|Verletzungen (siehe Freitext)}}, Temp. {{Temp?}} °C. Maßnahmen: ${M}.`;
+  await p.click('#dlg >> text=Abbrechen');
+  await p.evaluate((b) => { putItem(newItem('module', { title: 'E Lagerung', body: b })); renderModules(); }, exposure);
+  await p.click('#modList .mod:has-text("E Lagerung") button[title=Bearbeiten]');
+  const eTexts = (await rows.locator('span.grow').allTextContents()).map((x) => x.trim());
+  ok(JSON.stringify(eTexts) === JSON.stringify(['[Lagerung]', 'E – Exposure: [Befund E]', 'Temp. [Temp] °C', 'Maßnahmen: [Maßnahmen E]']),
+    'Feld vor der Überschrift ist ein eigener Abschnitt: ' + eTexts.join(' | '));
+  await rows.first().locator('.grip').focus();
+  for (let i = 0; i < 3; i++) {
+    await p.keyboard.press('ArrowDown');
+    // Fokus wandert nach dem Neuzeichnen mit (setTimeout), erst dann weiter
+    await p.waitForFunction((k) => document.activeElement.closest('.piece') === document.querySelectorAll('#dlg .piece-list .piece')[k], i + 1, { timeout: 2000 });
+  }
+  const moved = await p.inputValue('#dlg textarea[name=text]');
+  ok(moved === `E – Exposure: {{Befund E:*keine weiteren Auffälligkeiten|Verletzungen (siehe Freitext)}}, Temp. {{Temp?}} °C, Maßnahmen: ${M}. ${L}.`, 'Lagerung ans Ende verschoben: ' + moved.replace(/\{\{[^}]*\}\}/g, '[F]'));
+  ok(await rows.count() === 4 && (await rows.last().locator('span.grow').textContent()).trim() === '[Lagerung]', 'Nichts zusammengelegt, weiterhin 4 Abschnitte');
+  const merged = await p.evaluate(() => {
+    const bodies = [...TEMPLATES.map((t) => t.body), document.querySelector('#dlg textarea[name=text]').value, 'Pat. wach, orientiert. kreislaufstabil {{K:ja|nein}}. Haut {{H:rosig|blass}}.'];
+    let bad = 0, n = 0;
+    for (const body of bodies) {
+      const count = splitPieces(body).pieces.length;
+      for (let i = 0; i < count; i++) for (let j = 0; j < count; j++) {
+        if (i === j) continue;
+        const parts = splitPieces(body);
+        const [x] = parts.pieces.splice(i, 1); parts.pieces.splice(j, 0, x);
+        parts.seps = stableSeps(parts);
+        n++;
+        if (splitPieces(joinPieces(parts)).pieces.length !== count) bad++;
+      }
+    }
+    return { bad, n };
+  });
+  ok(merged.bad === 0, `Alle Vorlagen: ${merged.n} Verschiebungen, keine legt Abschnitte zusammen`);
+
+  // ＋ Feld ohne vorher ins Textfeld zu tippen (Cursor am Anfang): ans Ende statt vor die Ueberschrift
+  await p.evaluate(() => { const ta = document.querySelector('#dlg textarea[name=text]'); ta.value = 'E – Exposure: {{Befund:a|b}}.'; ta.dispatchEvent(new Event('input')); ta.setSelectionRange(0, 0); });
+  await p.click('#dlg >> text=＋ Feld');
+  await p.fill('#dlg2 input[type=text]', 'Lagerung');
+  await p.fill('#dlg2 textarea', 'Liegend\nSitzend');
+  await p.click('#dlg2 button[type=submit]');
+  ok(await p.inputValue('#dlg textarea[name=text]') === 'E – Exposure: {{Befund:a|b}}, {{Lagerung:Liegend|Sitzend}}.', 'Cursor am Anfang: neues Feld ans Ende vor den Punkt: ' + await p.inputValue('#dlg textarea[name=text]'));
 }

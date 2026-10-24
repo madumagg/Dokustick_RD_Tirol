@@ -25,7 +25,7 @@ export default async function (t) {
   const note = O.locator('#newsNote .note');
   ok(await note.count() === 1 && (await note.textContent()).startsWith(`Neu in Version ${ver}:`) && (await note.textContent()).includes('…'), 'Nach Update von 0.27: Hinweis mit der neuesten Version');
   await O.screenshot({ path: t.out + '/support-neu-hinweis.png' });
-  await note.locator('text=Mehr').click();
+  await note.locator('button:text-is("Mehr")').click();
   const versions = await O.locator('#dlg .news h2').allTextContents();
   ok(versions[0].startsWith('Version ' + ver) && versions.some((v) => v.startsWith('Version 0.28')), '„Mehr“ zeigt alle Neuerungen: ' + versions.slice(0, 3).join(', '));
   await O.click('#dlg >> text=Schließen');

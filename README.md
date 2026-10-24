@@ -123,7 +123,8 @@ Bausteine können **Auswahlfelder** enthalten, z. B. beim ABCDE-Schema:
 - **Reihenfolge ändern:** Im Baustein-Editor stehen unter den Feldern die Abschnitte des Bausteins, jeweils ein Feld samt Beschriftung und Einheit, z. B. „HF [HF]/min“.
   - Am Griff ⠿ an die gewünschte Stelle ziehen, per Tastatur mit den Pfeiltasten.
   - Getrennt wird an Zeilenumbruch, Komma, Semikolon und Satzende. Die Satzzeichen bleiben an ihrer Stelle, damit der Text danach stimmt.
-  - Kleben zwei Felder direkt aneinander („…}}{{…“), sind sie getrennte Abschnitte. Beim Verschieben kommt ein Komma dazwischen.
+  - Kleben zwei Felder direkt aneinander („…}}{{…“) oder steht ein Feld direkt vor einer Beschriftung („[Lagerung] E – Exposure: …“), sind sie getrennte Abschnitte. Beim Verschieben kommt ein Komma dazwischen.
+  - „＋ Feld“ fügt an der Cursorposition ein. Hat man noch nicht ins Textfeld getippt, kommt das neue Feld ans Ende.
   - Neue Felder („＋ Feld“) bekommen automatisch ein Komma bzw. Leerzeichen, wenn der Cursor direkt an einem anderen Feld oder Wort steht. Fester Text hinter einem Feld wird ein eigener Satz, damit er nicht mit einem leeren optionalen Feld wegfällt.
 - **Fester Text:** **＋ Feld** → Art **„Fester Text (immer mitschreiben)“** setzt einen Text an der Cursor-Stelle in den Baustein, z. B. „Pat. über Risiken aufgeklärt.“ Er wird immer mitgeschrieben. Genauso gut kann man ihn direkt ins Feld „Text“ des Bausteins tippen.
 - **Vorlagen:** *Bausteine → Vorlagen* enthält:
