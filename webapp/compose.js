@@ -680,7 +680,7 @@ function openTemplates() {
   const exists = (t) => listItems().some((i) => i.title === t.title && !i.team_id);
   const target = el('select', {},
     el('option', { value: '' }, 'Meine eigenen'),
-    ...cloud.teams.filter((t) => t.role === 'admin').map((t) => el('option', { value: t.id }, 'Team: ' + t.name)));
+    ...cloud.adminTargets().map((t) => el('option', { value: t.id }, t.label)));
   const addTpl = (t) => { putItem(newItem('module', { ...t, team_id: target.value || null })); renderModules(); };
   const list = el('div', {});
   const draw = () => {
@@ -699,7 +699,7 @@ function openTemplates() {
   draw();
   openDialog('Vorlagen', [
     el('p', { class: 'help', style: 'margin-top:0' }, 'Fertige interaktive Bausteine zum Übernehmen. Danach kannst du sie frei anpassen (✎). B–E sind Vorschläge.'),
-    cloud.teams.some((t) => t.role === 'admin') ? field('Hinzufügen zu', target) : null,
+    cloud.adminTargets().length ? field('Hinzufügen zu', target) : null,
     list]);
 }
 

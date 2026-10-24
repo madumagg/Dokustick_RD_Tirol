@@ -66,7 +66,7 @@ export default async function (t) {
   ok(await B.page.isVisible('#modList .badge:has-text("RK Wache Test")'), 'B: sieht Team-Baustein mit Team-Abzeichen');
   ok(!(await B.page.isVisible('#modList button[title=Bearbeiten]')), 'B: kein Bearbeiten-Knopf bei Team-Baustein');
   await B.page.screenshot({ path: t.out + '/12-team-bausteine.png' });
-  await B.page.click('#modList button[title="Als eigene Kopie speichern"]');
+  await B.page.click('#modList .mod:has-text("Team Übergabe") button[title="Als eigene Kopie speichern"]');
   await waitSynced(B.page);
   ok(await count('items', (q) => q.eq('owner_id', uidB).eq('title', 'Team Übergabe')) === 1, 'B: eigene Kopie gespeichert');
 
@@ -119,7 +119,8 @@ export default async function (t) {
   await A2.page.fill('#accountCard input[type=password]', 'geheim123');
   await A2.page.click('#accountCard >> text=Anmelden');
   await waitSynced(A2.page);
-  const a2 = await A2.page.evaluate(() => ({ n: listItems('module').length + listItems('form').length, delay: settings.delay, teams: cloud.teams.length }));
+  // Ohne Standard-Bereich zaehlen (den sehen alle, er haengt von anderen Tests ab)
+  const a2 = await A2.page.evaluate(() => ({ n: listItems().filter((i) => !cloud.isStandard(i.team_id)).length, delay: settings.delay, teams: cloud.teams.length }));
   ok(a2.n === 19 && a2.delay === 17 && a2.teams === 1, `A2: ${a2.n} Eintraege, Verzoegerung ${a2.delay}, ${a2.teams} Team (ohne Import-Frage)`);
 
   // --- Abmelden

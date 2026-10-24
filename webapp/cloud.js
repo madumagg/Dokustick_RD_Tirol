@@ -9,7 +9,7 @@
  */
 
 // Einstellungen, die mit dem Konto mitwandern (Darstellung bleibt pro Geraet)
-const SYNCED_SETTINGS = ['delay', 'lang', 'voiceCmds', 'replacements', 'blankLine'];
+const SYNCED_SETTINGS = ['delay', 'lang', 'voiceCmds', 'replacements', 'blankLine', 'defaultProtocol'];
 const ITEM_COLS = 'id,kind,title,category,body,sort,deleted,team_id,updated_at';
 
 const AUTH_ERRORS = [
@@ -45,8 +45,18 @@ const cloud = {
 
   get enabled() { return !!this.sb; },
 
-  isAdmin(teamId) { return this.teams.some((t) => t.id === teamId && t.role === 'admin'); },
-  teamName(teamId) { const t = this.teams.find((x) => x.id === teamId); return t ? t.name : 'Team'; },
+  // Standard-Bereich: Eintraege fuer alle angemeldeten Benutzer, gepflegt von App-Admins
+  get standardTeam() { return (this.account && this.info.standard_team) || null; },
+  isStandard(teamId) { return !!teamId && teamId === this.info.standard_team; },
+  isAdmin(teamId) { return this.teams.some((t) => t.id === teamId && t.role === 'admin') || (this.isStandard(teamId) && !!this.info.is_admin); },
+  teamName(teamId) { if (this.isStandard(teamId)) return 'Standard'; const t = this.teams.find((x) => x.id === teamId); return t ? t.name : 'Team'; },
+  // Wohin darf man speichern? Teams, in denen man Admin ist, und als App-Admin der Standard-Bereich
+  adminTargets() {
+    return [
+      ...(this.standardTeam && this.info.is_admin ? [{ id: this.standardTeam, label: 'Standard (für alle)' }] : []),
+      ...this.teams.filter((t) => t.role === 'admin').map((t) => ({ id: t.id, label: 'Team: ' + t.name })),
+    ];
+  },
   adminTeamOr(v) { return this.isAdmin(v) ? v : null; },
   key(name) { return `u.${this.account.id}.${name}`; },
   pending() {

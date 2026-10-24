@@ -42,7 +42,7 @@ const DEFAULT_FORMS = [
   { title: 'Kurzbefund', body: 'Pat. {{Bewusstsein:wach, orientiert|wach, desorientiert|somnolent|soporös|komatös}}.\nAtmung: {{Atmung:unauffällig|Dyspnoe|Tachypnoe|Bradypnoe}}.\nHaut: {{Haut:rosig, warm, trocken|blass|kaltschweißig|zyanotisch}}.\nSchmerz NRS {{NRS:#}}/10.' },
   { title: 'Felder mit Tab füllen', body: '{{Feld 1}}{TAB}{{Feld 2}}{TAB}{{Feld 3}}' },
 ];
-const DEFAULT_SETTINGS = { delay: 5, lang: 'de-AT', voiceCmds: true, replacements: '', blankLine: true, theme: '' };
+const DEFAULT_SETTINGS = { delay: 5, lang: 'de-AT', voiceCmds: true, replacements: '', blankLine: true, theme: '', defaultProtocol: null };
 
 /* ================= Hilfsfunktionen ================= */
 
@@ -136,8 +136,8 @@ function loadItems() {
 
 function saveItems() { store.save(itemsKey(), items); }
 
-// Bausteine und (fruehere) Formulare werden gemeinsam angezeigt
-const listItems = (kind) => items.filter((i) => (!kind || i.kind === kind) && !i.deleted).sort((a, b) => a.sort - b.sort);
+// Bausteine und (fruehere) Formulare werden gemeinsam angezeigt; Protokollvorlagen nur mit listItems('protocol')
+const listItems = (kind) => items.filter((i) => (kind ? i.kind === kind : i.kind !== 'protocol') && !i.deleted).sort((a, b) => a.sort - b.sort);
 
 function canEdit(it) { return !it.team_id || cloud.isAdmin(it.team_id); }
 
@@ -505,11 +505,13 @@ $('#micBtn').addEventListener('click', () => (listening ? stopDictation() : star
 // Filter "Alle / Meine / Team X", nur sichtbar, wenn man in einem Team ist
 function renderScopeSelect(sel, onChange) {
   const teams = cloud.teams;
-  sel.hidden = !teams.length;
+  const std = cloud.standardTeam && items.some((i) => i.team_id === cloud.standardTeam && !i.deleted);
+  sel.hidden = !teams.length && !std;
   const cur = sel.value || 'all';
   sel.replaceChildren(
     el('option', { value: 'all' }, 'Alle'),
     el('option', { value: 'mine' }, 'Meine'),
+    std ? el('option', { value: cloud.standardTeam }, 'Standard') : null,
     ...teams.map((t) => el('option', { value: t.id }, t.name)));
   sel.value = [...sel.options].some((o) => o.value === cur) ? cur : 'all';
   sel.onchange = onChange;
@@ -522,16 +524,17 @@ function inScope(it, scope) {
 }
 
 function teamBadge(it) {
-  return it.team_id ? el('span', { class: 'badge' }, cloud.teamName(it.team_id)) : null;
+  if (!it.team_id) return null;
+  return el('span', { class: 'badge' + (cloud.isStandard(it.team_id) ? ' std' : '') }, cloud.teamName(it.team_id));
 }
 
-// Auswahl, wo ein Eintrag gespeichert wird (nur fuer Team-Admins relevant)
+// Auswahl, wo ein Eintrag gespeichert wird (nur fuer Team-Admins und App-Admins relevant)
 function ownerField(it) {
-  const adminTeams = cloud.teams.filter((t) => t.role === 'admin');
-  if (!cloud.account || !adminTeams.length) return null;
+  const targets = cloud.adminTargets();
+  if (!cloud.account || !targets.length) return null;
   return field('Speichern in', el('select', { name: 'owner' },
     el('option', { value: '' }, 'Meine eigenen'),
-    ...adminTeams.map((t) => el('option', { value: t.id, selected: it.team_id === t.id }, 'Team: ' + t.name))));
+    ...targets.map((t) => el('option', { value: t.id, selected: it.team_id === t.id }, t.label))));
 }
 
 function copyToMine(it) {
@@ -685,8 +688,9 @@ $('#hardReloadBtn').addEventListener('click', async () => {
 });
 $('#testBtn').addEventListener('click', () => send('Test äöü ÄÖÜ ß @ € {[]} \\ | ~ ^ ° ² µ 123'));
 
-// Beim Export bleiben nur Inhalte; Besitz und Sync-Status gehen nicht mit
-const exportable = (it) => ({ kind: it.kind, title: it.title, category: it.category, body: it.body });
+// Beim Export bleiben nur Inhalte; Besitz und Sync-Status gehen nicht mit.
+// Die ID braucht der Import, um die Bausteine in Protokollvorlagen zuzuordnen.
+const exportable = (it) => ({ id: it.id, kind: it.kind, title: it.title, category: it.category, body: it.body });
 
 $('#exportBtn').addEventListener('click', () => {
   const data = JSON.stringify({ app: 'dokustick', version: 2, items: items.filter((i) => !i.deleted).map(exportable), settings }, null, 2);
@@ -698,7 +702,13 @@ $('#importBtn').addEventListener('click', () => $('#importFile').click());
 // Ersetzt die eigenen Eintraege; Team-Eintraege bleiben unberuehrt
 function replaceOwnItems(newList) {
   for (const it of items.filter((i) => !i.team_id && !i.deleted)) removeItem(it);
-  newList.forEach((x, i) => putItem(newItem(x.kind, { title: x.title || '', category: x.category || '', body: x.body || '', sort: Date.now() + i })));
+  // Neue IDs; Verweise in Protokollvorlagen auf mitimportierte Bausteine umstellen
+  const created = newList.map((x, i) => newItem(x.kind, { title: x.title || '', category: x.category || '', body: x.body || '', sort: Date.now() + i }));
+  const newId = new Map(newList.map((x, i) => [x.id, created[i].id]).filter(([old]) => old));
+  for (const it of created) {
+    if (it.kind === 'protocol') it.body = protocols.body(protocols.ids(it).map((id) => newId.get(id) || id));
+    putItem(it);
+  }
 }
 
 $('#importFile').addEventListener('change', async (e) => {
@@ -714,7 +724,7 @@ $('#importFile').addEventListener('change', async (e) => {
       ...(data.forms || []).map((f) => ({ kind: 'form', title: f.name, body: f.tpl })),
     ];
     if (!confirm('Deine eigenen Textbausteine und Formulare werden ersetzt. Fortfahren?')) return;
-    replaceOwnItems(list.filter((x) => x.kind === 'module' || x.kind === 'form'));
+    replaceOwnItems(list.filter((x) => ['module', 'form', 'protocol'].includes(x.kind)));
     Object.assign(settings, data.settings || {});
     saveSettings(); renderAll(); toast('Import erfolgreich');
   } catch (err) {
@@ -739,6 +749,7 @@ document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click
 
 function renderItems() {
   renderModules();
+  protocols.renderButton();
 }
 
 function renderAll() {

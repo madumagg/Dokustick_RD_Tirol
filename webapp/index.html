@@ -243,6 +243,10 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 
 .badge.bad { background: var(--danger-soft); color: var(--danger); }
 .badge.warn { background: var(--warn-soft); color: var(--warn); }
+.split { display: inline-flex; }
+.split .btn:first-child { border-radius: 12px 0 0 12px; }
+.split .btn + .btn { border-radius: 0 12px 12px 0; border-left: 0; padding: 0 10px; }
+.badge.std { background: transparent; color: var(--ok); border: 1px solid var(--ok); }
 .seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: var(--surface-2); border-radius: 12px; padding: 4px; margin-bottom: 16px; }
 .seg button { border: 0; background: none; border-radius: 9px; padding: 8px 4px; min-height: 40px; font-size: 14px; color: var(--muted); }
 .seg button[aria-selected=true] { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: var(--shadow); }
@@ -304,6 +308,10 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
     <div class="interim" id="interim"></div>
     <div class="row">
       <button class="btn primary" id="addBlockBtn">＋ Baustein</button>
+      <span class="split">
+        <button class="btn" id="protoBtn" title="Protokollvorlage einfügen">📋 Protokoll</button>
+        <button class="btn" id="protoMenu" title="Protokollvorlage wählen oder bearbeiten" aria-label="Protokollvorlage wählen">▾</button>
+      </span>
       <button class="btn" id="micBtn" title="Diktat starten">🎤 Diktat</button>
       <select id="tokenSel" class="btn" style="width:auto" aria-label="Taste einfügen">
         <option value="">＋ Taste …</option>
@@ -333,6 +341,7 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
     </div>
     <div class="row" style="margin-bottom:12px">
       <button class="btn" id="modTemplates">Vorlagen</button>
+      <button class="btn" id="modProtocols">📋 Protokollvorlagen</button>
       <span class="grow"></span>
       <button class="btn primary" id="modAdd">＋ Neu</button>
     </div>
@@ -459,6 +468,7 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 <script src="vendor/supabase.js?v=0.22"></script>
 <script src="app.js?v=0.22"></script>
 <script src="compose.js?v=0.22"></script>
+<script src="protocols.js?v=0.22"></script>
 <script src="catalog.js?v=0.22"></script>
 <script src="cloud.js?v=0.22"></script>
 <script src="admin.js?v=0.22"></script>

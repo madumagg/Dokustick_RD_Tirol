@@ -37,7 +37,7 @@ for (const file of files) {
   if (suite.needsCloud && cloud !== true) { results.push({ name, skipped: true }); console.log(`\n=== ${name}: übersprungen (braucht Supabase)`); continue; }
   console.log(`\n=== ${name}${suite.title ? ' – ' + suite.title : ''}`);
   const t = {
-    browser, base: `http://127.0.0.1:${config.port}`, config, adminId, out: OUT, errors: [], passed: 0, failed: 0,
+    browser, base: `http://127.0.0.1:${config.port}`, config, adminId, cloud: cloud === true, out: OUT, errors: [], passed: 0, failed: 0,
     ok(cond, msg) { console.log((cond ? '  OK    ' : '  FAIL  ') + msg); cond ? this.passed++ : this.failed++; },
   };
   const started = Date.now();
