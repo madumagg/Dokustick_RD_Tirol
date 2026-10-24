@@ -27,7 +27,7 @@ export default async function (t) {
   await O.screenshot({ path: t.out + '/support-neu-hinweis.png' });
   await note.locator('text=Mehr').click();
   const versions = await O.locator('#dlg .news h2').allTextContents();
-  ok(versions.length >= 3 && versions[1].startsWith('Version 0.29'), '„Mehr“ zeigt alle Neuerungen: ' + versions.slice(0, 3).join(', '));
+  ok(versions[0].startsWith('Version ' + ver) && versions.some((v) => v.startsWith('Version 0.28')), '„Mehr“ zeigt alle Neuerungen: ' + versions.slice(0, 3).join(', '));
   await O.click('#dlg >> text=Schließen');
   ok(await note.count() === 0 && await O.evaluate(() => store.load('newsSeen')) === ver, 'Gelesen: Hinweis weg');
   await O.reload();

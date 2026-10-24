@@ -255,7 +255,7 @@ const spell = {
     const sugg = err.kind === 'spell' ? this.suggest(word) : [err.kind === 'case' ? err.fix : word];
     const help = { case: err.fix && isLowerStart(err.fix) ? 'Mitten im Satz klein schreiben.' : 'Groß schreiben (Satzanfang oder Hauptwort).', double: 'Das Wort steht doppelt. Antippen entfernt die Wiederholung.' }[err.kind];
     form.onsubmit = (e) => e.preventDefault();
-    form.replaceChildren(
+    form.replaceChildren(...kids(
       el('h3', {}, err.kind === 'double' ? `„${word} ${word}“` : `„${word}“`),
       help ? el('p', { class: 'help', style: 'margin-top:0' }, help) : null,
       sugg.length
@@ -265,7 +265,7 @@ const spell = {
         err.kind !== 'double' ? el('button', { type: 'button', class: 'btn', onclick: () => { this.addToDictionary(word); dlg.close(); toast(`„${word}“ ins Wörterbuch aufgenommen`); } }, '＋ Ins Wörterbuch') : null,
         el('button', { type: 'button', class: 'btn', onclick: () => { this.ignored.add(word); this.cache.delete(word); dlg.close(); this.refreshAll(); } }, 'Ignorieren')),
       el('div', { class: 'row end', style: 'margin-top:8px' },
-        el('button', { type: 'button', class: 'btn', onclick: () => dlg.close() }, 'Abbrechen')));
+        el('button', { type: 'button', class: 'btn', onclick: () => dlg.close() }, 'Abbrechen'))));
     if (!dlg.open) dlg.showModal();
   },
 };

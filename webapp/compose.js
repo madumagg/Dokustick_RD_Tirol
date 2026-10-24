@@ -687,14 +687,14 @@ function fieldEditor(bodyArea) {
   const box = el('div', { class: 'fields-box' });
   const draw = (focusIndex) => {
     const fields = formFields(bodyArea.value);
-    box.replaceChildren(
+    box.replaceChildren(...kids(
       el('div', { class: 'row' },
         el('span', { class: 'grow help' }, fields.length ? `Felder (${fields.length}) – antippen zum Bearbeiten:` : 'Noch keine Felder. Mit Feldern wird der Baustein im Protokoll interaktiv.'),
         el('button', { type: 'button', class: 'btn small primary', onclick: () => openFieldBuilder(bodyArea, null, draw) }, '＋ Feld')),
       fields.length ? el('div', { class: 'chips' }, fields.map((f) => el('button', {
         type: 'button', class: 'chip', onclick: () => openFieldBuilder(bodyArea, f, draw),
       }, `${f.name} · ${FIELD_TYPES[f.type]}${f.optional ? ' · optional' : ''}`))) : null,
-      pieceOrder(bodyArea, focusIndex));
+      pieceOrder(bodyArea, focusIndex)));
   };
   bodyArea.addEventListener('input', (e) => draw(e.detail && e.detail.focusIndex));
   draw();

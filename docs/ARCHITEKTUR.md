@@ -41,6 +41,7 @@ Eine Datei darf Funktionen einer **später** geladenen Datei nur zur Laufzeit au
 
 - Oberflächentexte auf Deutsch mit Umlauten. Code-Kommentare auf Deutsch ohne Umlaute (ae, oe, ue).
 - DOM wird mit `el(tag, props, ...kinder)` gebaut. Benutzerinhalte immer als Text einfügen, nie als HTML.
+- `el()` lässt `null` als Kind weg, die eingebauten `replaceChildren`/`append`/`before`/`after` aber **nicht**: Sie schreiben „null“ als Text in die Seite. Können dort leere Einträge vorkommen (`bedingung ? el(…) : null`), die Liste mit `kids(…)` einpacken: `box.replaceChildren(...kids(a, b ? c : null))`. Die Tests melden „null“/„undefined“ als Text in jeder Testreihe als Fehler.
 - `localStorage` nur über `store.load/save/remove`. Das Präfix `dokustick.` wird automatisch ergänzt, und Fehler (privater Modus) werden abgefangen.
 - Farben nur über die CSS-Variablen in `:root` (heller und dunkler Modus).
 

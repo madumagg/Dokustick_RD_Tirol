@@ -74,7 +74,7 @@ const admin = {
     const b = $('#adminTabs button[data-view=support]');
     if (!b) return;
     const n = support.adminBadge;
-    b.replaceChildren('Support', n ? el('span', { class: 'badge bad' }, String(n)) : null);
+    b.replaceChildren(...kids('Support', n ? el('span', { class: 'badge bad' }, String(n)) : null));
   },
 
   async render_support() {

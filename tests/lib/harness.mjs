@@ -129,6 +129,27 @@ const BLE_MOCK = () => {
   Object.defineProperty(navigator, 'bluetooth', { value: { requestDevice: async () => device } });
 };
 
+// Meldet Text "null"/"undefined" in der Seite: Platzhalter fuer "nichts anzeigen", die an
+// replaceChildren/append statt an el() uebergeben wurden (die schreiben sie als Text hin)
+const NULL_GUARD = () => {
+  const seen = new Set();
+  const report = (n) => {
+    const p = n.parentElement;
+    const where = p ? p.tagName.toLowerCase() + (p.id ? '#' + p.id : '') + (p.className ? '.' + String(p.className).trim().split(/\s+/).join('.') : '') : '?';
+    const ctx = (p && (p.closest('[id]') || p).textContent.replace(/\s+/g, ' ').trim().slice(0, 80)) || '';
+    const key = where + '|' + n.data;
+    if (!seen.has(key)) { seen.add(key); console.error(`NULL-TEXT "${n.data}" in <${where}>: ${ctx}`); }
+  };
+  const bad = (n) => /^(null|undefined)+$/.test(n.data);
+  const scan = (n) => {
+    if (n.nodeType === 3) { if (bad(n)) report(n); return; }
+    if (n.nodeType !== 1) return;
+    const w = document.createTreeWalker(n, NodeFilter.SHOW_TEXT);
+    for (let t = w.nextNode(); t; t = w.nextNode()) if (bad(t)) report(t);
+  };
+  new MutationObserver((muts) => { for (const m of muts) m.addedNodes.forEach(scan); }).observe(document, { childList: true, subtree: true });
+};
+
 /*
  * Neues "Geraet" (eigener Browser-Kontext).
  *   cloud: true -> App spricht mit der Test-Supabase, sonst ohne Konto
@@ -141,10 +162,12 @@ export async function newDevice(t, { name = 'Gerät', cloud = false, ble = false
   const ctx = await t.browser.newContext({ viewport, serviceWorkers: 'block', ...context });
   const cfg = cloud ? `{ supabaseUrl: '${config.supabaseUrl}', supabaseAnonKey: '${config.anonKey}' }` : '{}';
   await ctx.route('**/config.js*', (r) => r.fulfill({ contentType: 'application/javascript', body: `window.DOKUSTICK_CONFIG = ${cfg};` }));
+  await ctx.addInitScript(NULL_GUARD);
   if (ble) await ctx.addInitScript(BLE_MOCK);
   if (init) await ctx.addInitScript(init);
   const page = await ctx.newPage();
   page.on('pageerror', (e) => t.errors.push(`${name}: ${e.message}`));
+  page.on('console', (m) => { if (m.type() === 'error' && m.text().startsWith('NULL-TEXT')) t.errors.push(`${name}: ${m.text()}`); });
   page.on('dialog', (d) => (dialog ? dialog(d) : /übernommen/.test(d.message()) ? d.dismiss() : d.accept(d.type() === 'prompt' ? d.defaultValue() : undefined)));
   await page.goto(t.base + '/index.html');
   page.ctx = ctx;

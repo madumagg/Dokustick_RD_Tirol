@@ -283,7 +283,7 @@ const catalog = {
     };
     search.addEventListener('input', draw);
     draw();
-    box.replaceChildren(
+    box.replaceChildren(...kids(
       el('div', { class: 'row', style: 'margin-bottom:10px' },
         el('div', { class: 'grow', style: 'min-width:180px' }, search),
         el('button', { type: 'button', class: 'btn primary', onclick: () => this.edit(kind).then((e) => {
@@ -297,7 +297,7 @@ const catalog = {
         el('button', { type: 'button', class: 'btn small', onclick: () => this.importCsv(kind) }, 'CSV importieren'),
         el('button', { type: 'button', class: 'btn small', onclick: () => this.exportCsv(kind) }, 'CSV exportieren')) : null,
       el('p', { class: 'help', style: 'margin:0 0 10px' }, `${this[kind].filter((e) => e.approved).length} freigegeben` + (pend[kind] ? ` · ${pend[kind]} ${this.isAdmin ? 'offen' : 'eigene Vorschläge offen'}` : '')),
-      list);
+      list));
   },
 
   entryCard(kind, e) {

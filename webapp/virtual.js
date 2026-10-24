@@ -120,7 +120,7 @@ function renderVirtual() {
     else if (p.t === 'key') screen.append(el('span', { class: 'vkey' }, p.s));
   }
   if (!vdongle.out.length) screen.append(el('span', { class: 'help' }, 'Noch nichts getippt. „Alles senden“ oder einen Baustein senden.'));
-  box.replaceChildren(
+  box.replaceChildren(...kids(
     el('div', { class: 'row', style: 'margin-bottom:8px' },
       el('strong', { class: 'grow' }, 'Virtueller Dongle – Ausgabe'),
       el('span', { class: 'help' }, `${vdongle.keystrokes} Anschläge`)),
@@ -129,7 +129,7 @@ function renderVirtual() {
     el('div', { class: 'row', style: 'margin-top:10px' },
       el('button', { type: 'button', class: 'btn small', onclick: () => vdongle.reset() }, 'Ausgabe leeren'),
       el('span', { class: 'grow' }),
-      el('button', { type: 'button', class: 'btn small primary', onclick: exportVirtualPdf, disabled: !vdongle.out.length }, 'Als PDF speichern')));
+      el('button', { type: 'button', class: 'btn small primary', onclick: exportVirtualPdf, disabled: !vdongle.out.length }, 'Als PDF speichern'))));
 }
 
 /* ---------- PDF ---------- */

@@ -3,7 +3,7 @@
 /* ================= Konstanten ================= */
 
 // Wird mit tools/version.sh zusammen mit sw.js und index.html erhoeht
-const APP_VERSION = '0.30';
+const APP_VERSION = '0.31';
 
 const SVC_UUID = '6e7a0001-4b3c-4f8e-9a1d-5c2b7d0a4e01';
 const CMD_UUID = '6e7a0002-4b3c-4f8e-9a1d-5c2b7d0a4e01';
@@ -68,6 +68,10 @@ function el(tag, props = {}, ...children) {
   for (const c of children.flat()) if (c != null) n.append(c);
   return n;
 }
+
+// Fuer replaceChildren/append/before/after: leere Eintraege (null) weglassen.
+// Die eingebauten Funktionen schreiben null sonst als Text "null" in die Seite.
+const kids = (...list) => list.flat().filter((c) => c != null);
 
 let toastTimer;
 function toast(msg, kind = '') {
@@ -508,11 +512,11 @@ function renderScopeSelect(sel, onChange) {
   const std = cloud.standardTeam && items.some((i) => i.team_id === cloud.standardTeam && !i.deleted);
   sel.hidden = !teams.length && !std;
   const cur = sel.value || 'all';
-  sel.replaceChildren(
+  sel.replaceChildren(...kids(
     el('option', { value: 'all' }, 'Alle'),
     el('option', { value: 'mine' }, 'Meine'),
     std ? el('option', { value: cloud.standardTeam }, 'Standard') : null,
-    ...teams.map((t) => el('option', { value: t.id }, t.name)));
+    teams.map((t) => el('option', { value: t.id }, t.name))));
   sel.value = [...sel.options].some((o) => o.value === cur) ? cur : 'all';
   sel.onchange = onChange;
 }

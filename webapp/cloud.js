@@ -481,7 +481,7 @@ const cloud = {
       };
       const needPw = () => { if (pw.value.length < 8) { toast('Das Passwort muss mindestens 8 Zeichen haben.', 'err'); return false; } return true; };
       const mode = this.info.signup_mode;
-      card.append(
+      card.append(...kids(
         el('p', { class: 'help', style: 'margin-top:0' }, 'Mit einem Konto werden deine Bausteine, Formulare und Einstellungen gesichert und auf all deinen Geräten synchronisiert. Außerdem kannst du Teams beitreten.'),
         mode === 'closed' ? el('p', { class: 'note' }, 'Neue Registrierungen sind derzeit geschlossen.') : null,
         mode === 'domains' ? el('p', { class: 'note' }, 'Registrierung nur mit E-Mail-Adressen von ' + (this.info.allowed_domains || []).map((d) => '@' + d).join(', ') + '.') : null,
@@ -491,7 +491,7 @@ const cloud = {
           el('button', { type: 'button', class: 'btn primary', onclick: (e) => needPw() && run(e.currentTarget, () => this.signIn(email.value.trim(), pw.value)) }, 'Anmelden'),
           el('button', { type: 'button', class: 'btn', onclick: (e) => needPw() && run(e.currentTarget, () => this.signUp(email.value.trim(), pw.value)) }, 'Registrieren'),
           el('span', { class: 'grow' }),
-          el('button', { type: 'button', class: 'btn small linkish', onclick: (e) => run(e.currentTarget, () => this.resetPassword(email.value.trim())) }, 'Passwort vergessen?')));
+          el('button', { type: 'button', class: 'btn small linkish', onclick: (e) => run(e.currentTarget, () => this.resetPassword(email.value.trim())) }, 'Passwort vergessen?'))));
       return;
     }
 

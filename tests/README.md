@@ -33,6 +33,8 @@ Die Zugangsdaten der lokalen Supabase holen sich die Tests automatisch. Weitere 
 
 Screenshots und die Test-PDF landen in `tests/test-output/` (nicht im Git).
 
+In jeder Testreihe gelten als Fehler: JavaScript-Ausnahmen im Browser und Text „null“ oder „undefined“ in der Seite (meist ein leerer Platzhalter, der an `replaceChildren`/`append` statt an `el()` ging, siehe `docs/ARCHITEKTUR.md`).
+
 **Sicherheit:** Die Tests legen Benutzer an, löschen sie und ändern App-Einstellungen. Zeigt `SUPABASE_URL` auf ein Projekt bei supabase.co, verweigern sie den Start. Nur für ein eigenes, leeres **Test-Projekt** lässt sich das mit `ALLOW_REMOTE_TESTS=1` übersteuern.
 
 ## Umgebungsvariablen (optional)

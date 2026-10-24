@@ -12,6 +12,7 @@
 // "Was ist neu": Neuerungen fuer Benutzer pro Version, neueste zuerst.
 // Bei jeder Version mit sichtbaren Neuerungen hier einen Eintrag ergaenzen.
 const NEWS = [
+  { v: '0.31', items: ['Behoben: An einigen Stellen stand „null“, z. B. im Baustein-Editor bei Bausteinen ohne Felder und am Admin-Reiter „Support“.'] },
   { v: '0.30', items: [
     'Support & Feedback in den Einstellungen: Fragen stellen, Fehler melden und Vorschläge einbringen – die Antwort kommt direkt in der App.',
     '💡 Ideen: veröffentlichte Vorschläge ansehen und mit 👍 unterstützen.',
