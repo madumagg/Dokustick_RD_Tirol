@@ -27,7 +27,7 @@ Der Bootloader auf dem Dongle bleibt immer erhalten. Du kannst also jederzeit ei
 2. Erscheint ein USB-Laufwerk (z. B. `MDK-DONGLE` oder ähnlich), hat der Dongle den **UF2-Bootloader**:
    - Öffne darauf die Datei `INFO_UF2.TXT` und sieh nach, was bei **SoftDevice** steht:
      - `S140 …` → `firmware/out/dokustick-makerdiary-uf2-s140.uf2` auf das Laufwerk ziehen
-     - `not found` → `firmware/out/dokustick-makerdiary-uf2-ohne-softdevice.uf2` auf das Laufwerk ziehen
+     - `not found` oder `S132 …` → `firmware/out/dokustick-makerdiary-uf2-ohne-softdevice.uf2` auf das Laufwerk ziehen. `S132 5.1.0` zeigen Makerdiary-Sticks ab Juli 2023 (Bootloader 0.7.1, `Date: Jul 20 2023`): Das ist die ab Werk aufgespielte Bluetooth-Firmware, sie wird dabei ersetzt. Der Bootloader selbst braucht kein SoftDevice.
    - Das Laufwerk verschwindet von selbst, der Dongle startet neu, und die LED blinkt blau.
 3. Erscheint **kein** Laufwerk, hat der Dongle den älteren **Nordic Open Bootloader**. Dann gehst du wie beim Nordic-Dongle vor (siehe unten), mit der Datei `firmware/out/dokustick-makerdiary-open-bootloader.hex`.
 
