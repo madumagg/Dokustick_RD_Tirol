@@ -28,7 +28,8 @@ Der Bootloader auf dem Dongle bleibt immer erhalten. Du kannst also jederzeit ei
    - Öffne darauf die Datei `INFO_UF2.TXT` und sieh nach, was bei **SoftDevice** steht:
      - `S140 …` → `firmware/out/dokustick-makerdiary-uf2-s140.uf2` auf das Laufwerk ziehen
      - `not found` oder `S132 …` → `firmware/out/dokustick-makerdiary-uf2-ohne-softdevice.uf2` auf das Laufwerk ziehen. `S132 5.1.0` zeigen Makerdiary-Sticks ab Juli 2023 (Bootloader 0.7.1, `Date: Jul 20 2023`): Das ist die ab Werk aufgespielte Bluetooth-Firmware, sie wird dabei ersetzt. Der Bootloader selbst braucht kein SoftDevice.
-   - Das Laufwerk verschwindet von selbst, der Dongle startet neu, und die LED blinkt blau.
+   - Während des Aufspielens blinkt die LED schnell rot. Das Laufwerk verschwindet von selbst (sonst den Dongle neu einstecken), die LED leuchtet kurz **rot, grün, blau** und blinkt dann blau.
+   - **Nicht mit TeraCopy oder ähnlichen Kopierprogrammen kopieren**, nur mit dem Explorer oder in der Eingabeaufforderung mit `copy /b datei.uf2 E:\`. Steht danach in `INFO_UF2.TXT` noch dieselbe SoftDevice-Zeile, ist die Datei nicht angekommen.
 3. Erscheint **kein** Laufwerk, hat der Dongle den älteren **Nordic Open Bootloader**. Dann gehst du wie beim Nordic-Dongle vor (siehe unten), mit der Datei `firmware/out/dokustick-makerdiary-open-bootloader.hex`.
 
 ### Nordic nRF52840 Dongle (PCA10059)
@@ -83,6 +84,7 @@ Safari kann auf iPhone und iPad kein Bluetooth für Webseiten. Deshalb läuft Do
 
 | LED | Bedeutung |
 |---|---|
+| kurz rot, grün, blau | Firmware startet (beim Einstecken) |
 | blau blinkend | koppelbereit |
 | grün | verbunden |
 | grün flackernd | tippt gerade |
