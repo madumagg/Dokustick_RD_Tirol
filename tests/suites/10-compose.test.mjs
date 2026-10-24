@@ -130,7 +130,7 @@ export default async function (t) {
   await p.fill('#dlg2 textarea', 'Pat. über Lagerung {{aufgeklärt}}.');
   await p.screenshot({ path: t.out + '/43-fester-text.png' });
   await p.click('#dlg2 button[type=submit]');
-  ok((await p.inputValue('#dlg textarea[name=text]')).endsWith('{{Bemerkung?}} Pat. über Lagerung aufgeklärt.'), 'Fester Text an der Cursor-Stelle eingefügt (Feld-Klammern entfernt)');
+  ok((await p.inputValue('#dlg textarea[name=text]')).endsWith('}}, {{Bemerkung?}}. Pat. über Lagerung aufgeklärt.'), 'Neues Feld mit Komma, fester Text als eigener Satz eingefügt (Feld-Klammern entfernt): ' + await p.inputValue('#dlg textarea[name=text]'));
   await p.click('#dlg button[type=submit]');
   ok(await p.isVisible('#modList .mod:has-text("Lagerung") .badge:has-text("interaktiv")'), 'Neuer interaktiver Baustein gespeichert');
   await p.evaluate(() => addToDoc(listItems().find((i) => i.title === 'Lagerung'), { quiet: true }));

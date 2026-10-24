@@ -55,4 +55,33 @@ export default async function (t) {
   await p.click('nav button[data-tab=write]');
   const labels = await p.locator('.block-mod:has-text("Vitalparameter") [data-field] > span:first-child').allTextContents();
   ok(labels[0].startsWith('GCS') && labels[1].startsWith('RR'), 'Im Protokoll erscheinen die Felder in der neuen Reihenfolge');
+
+  // --- Fall aus der Praxis: neues Feld klebte direkt am Auskultations-Feld ("}}{{")
+  const glued = 'B – Belüftung: Atmung {{Atmung:*unauffällig|Dyspnoe}}, AF {{AF:#}}/min, SpO2 {{SpO2:#}} %, Auskultation {{Auskultation:*seitengleich, vesikulär|Spastik}}{{mit/ohne O2+:mit O2|ohne O2}}. Maßnahmen: {{Maßnahmen B+:*keine Maßnahmen erforderlich|O2-Gabe}}.';
+  await p.click('nav button[data-tab=modules]');
+  await p.evaluate((b) => { putItem(newItem('module', { title: 'B geklebt', body: b })); renderModules(); }, glued);
+  await p.click('#modList .mod:has-text("B geklebt") button[title=Bearbeiten]');
+  const texts = await rows.locator('span.grow').allTextContents();
+  ok(texts.length === 6 && texts[3].trim() === 'Auskultation [Auskultation]' && texts[4].trim() === '[mit/ohne O2]', 'Aneinanderklebende Felder sind eigene Abschnitte: ' + texts.map((x) => x.trim()).join(' | '));
+  await rows.nth(4).locator('.grip').focus();
+  await p.keyboard.press('ArrowUp');
+  const fixed = await p.inputValue('#dlg textarea[name=text]');
+  ok(fixed.includes('SpO2 {{SpO2:#}} %, {{mit/ohne O2+:mit O2|ohne O2}}, Auskultation {{Auskultation:') && fixed.endsWith('}}. Maßnahmen: {{Maßnahmen B+:*keine Maßnahmen erforderlich|O2-Gabe}}.'),
+    'Hinter SpO2 verschoben, Komma ergänzt, Rest unverändert');
+  const out = await p.evaluate((b) => fillTemplate(b, { ...initialValues(b), SpO2: '96', AF: '16', 'mit/ohne O2': ['mit O2'] }), fixed);
+  ok(out === 'B – Belüftung: Atmung unauffällig, AF 16/min, SpO2 96 %, mit O2, Auskultation seitengleich, vesikulär. Maßnahmen: keine Maßnahmen erforderlich.', 'Protokolltext: ' + out);
+
+  // --- ＋ Feld mit Cursor direkt hinter "%": Leerzeichen davor, Komma zum naechsten Abschnitt bleibt
+  await p.evaluate(() => { const ta = document.querySelector('#dlg textarea[name=text]'); ta.value = 'SpO2 {{SpO2:#}} %, AF {{AF:#}}/min'; ta.dispatchEvent(new Event('input')); ta.setSelectionRange(17, 17); });
+  await p.click('#dlg >> text=＋ Feld');
+  await p.fill('#dlg2 input[type=text]', 'O2');
+  await p.fill('#dlg2 textarea', 'mit O2\nohne O2');
+  await p.click('#dlg2 button[type=submit]');
+  ok(await p.inputValue('#dlg textarea[name=text]') === 'SpO2 {{SpO2:#}} % {{O2:mit O2|ohne O2}}, AF {{AF:#}}/min', 'Neues Feld hinter „%“ mit Leerzeichen eingefügt: ' + await p.inputValue('#dlg textarea[name=text]'));
+  await p.evaluate(() => { const ta = document.querySelector('#dlg textarea[name=text]'); ta.setSelectionRange(15, 15); }); // direkt hinter "{{SpO2:#}}"
+  await p.click('#dlg >> text=＋ Feld');
+  await p.fill('#dlg2 input[type=text]', 'Messung');
+  await p.fill('#dlg2 textarea', 'Finger\nOhr');
+  await p.click('#dlg2 button[type=submit]');
+  ok((await p.inputValue('#dlg textarea[name=text]')).startsWith('SpO2 {{SpO2:#}}, {{Messung:Finger|Ohr}} %'), 'Direkt hinter einem Feld: Komma statt Ankleben');
 }

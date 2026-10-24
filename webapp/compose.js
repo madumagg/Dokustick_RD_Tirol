@@ -708,6 +708,8 @@ function fieldEditor(bodyArea) {
  * getrennt an Zeilenumbruechen, ", ", "; " und Satzenden (". " vor Grossbuchstaben),
  * nie innerhalb von Feldern. Die Trennzeichen und das Satzzeichen am Ende bleiben an
  * ihrer Stelle, damit die Zeichensetzung nach dem Umsortieren stimmt.
+ * Direkt aneinanderklebende Felder ("}}{{") sind eigene Abschnitte mit leerem Trennzeichen;
+ * beim Umsortieren wird daraus ", " (siehe pieceOrder).
  */
 function splitPieces(body) {
   const SEP = /[.;,]?[ \t]*\n+[ \t]*|, |; |\. (?=[A-ZÄÖÜ])/y;
@@ -715,7 +717,11 @@ function splitPieces(body) {
   let depth = 0;
   for (let i = 0; i < body.length;) {
     if (body.startsWith('{{', i)) { depth++; pieces[pieces.length - 1] += '{{'; i += 2; continue; }
-    if (depth && body.startsWith('}}', i)) { depth--; pieces[pieces.length - 1] += '}}'; i += 2; continue; }
+    if (depth && body.startsWith('}}', i)) {
+      depth--; pieces[pieces.length - 1] += '}}'; i += 2;
+      if (!depth && body.startsWith('{{', i)) { seps.push(''); pieces.push(''); }
+      continue;
+    }
     if (!depth) {
       SEP.lastIndex = i;
       const m = SEP.exec(body);
@@ -739,6 +745,8 @@ function pieceOrder(bodyArea, focusIndex) {
     if (to < 0 || to >= parts.pieces.length || to === from) return;
     const [p] = parts.pieces.splice(from, 1);
     parts.pieces.splice(to, 0, p);
+    // Aneinanderklebende Felder bekommen beim Umsortieren ein Komma dazwischen
+    parts.seps = parts.seps.map((s) => s || ', ');
     bodyArea.value = joinPieces(parts);
     bodyArea.dispatchEvent(new CustomEvent('input', { detail: { focusIndex: to } }));
   };
@@ -869,8 +877,11 @@ function openFieldBuilder(bodyArea, field0, onDone) {
       // Keine Feld-Klammern im festen Text, sonst entstuende ein Feld
       const text = opts.value.replace(/\{\{|\}\}/g, '');
       if (!text.trim()) return toast('Bitte einen Text eingeben', 'err');
-      const before = bodyArea.value.slice(0, bodyArea.selectionStart ?? bodyArea.value.length);
-      insertAtCursor((before && !/\s$/.test(before) && !/^\s/.test(text) ? ' ' : '') + text);
+      const c = bodyArea.value.slice(0, bodyArea.selectionStart ?? bodyArea.value.length).slice(-1);
+      // Ein neuer Satz hinter einem Feld wird eigener Abschnitt: so faellt er nie mit einem leeren Feld weg
+      const pre = !c || /\s/.test(c) || /^\s/.test(text) ? '' : /[.!?]/.test(c) ? ' '
+        : /^[A-ZÄÖÜ]/.test(text) && /[}\p{L}\d%)]/u.test(c) ? '. ' : ' ';
+      insertAtCursor(pre + text);
       bodyArea.dispatchEvent(new Event('input'));
       dlg.close();
       onDone();
@@ -883,7 +894,12 @@ function openFieldBuilder(bodyArea, field0, onDone) {
     if (field0) {
       bodyArea.value = bodyArea.value.split(field0.token).join(token);
     } else {
-      insertAtCursor(token);
+      // Nicht an ein anderes Feld oder Wort kleben: Komma bzw. Leerzeichen dazwischen
+      const v = bodyArea.value, at = bodyArea.selectionStart ?? v.length;
+      const before = v[at - 1] || '', after = v[(bodyArea.selectionEnd ?? at)] || '';
+      const pre = before === '}' ? ', ' : before && !/[\s(„"]/.test(before) ? ' ' : '';
+      const post = after === '{' ? ', ' : after && !/[\s.,;:!?)\]]/.test(after) ? ' ' : '';
+      insertAtCursor(pre + token + post);
     }
     bodyArea.dispatchEvent(new Event('input'));
     dlg.close();

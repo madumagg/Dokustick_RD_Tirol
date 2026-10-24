@@ -91,7 +91,7 @@ In `sessionStorage` liegen `dokustick.doc` (das Protokoll, bleibt beim Neuladen 
 
 Sondertasten im Text: `{TAB}`, `{SHIFT+TAB}`, `{ENTER}`, `{PAUSE}`, `{PAUSE:ms}`, `{DATUM}`, `{ZEIT}`, Pfeiltasten usw. (`KEYS` in `app.js`).
 
-**Reihenfolge im Editor:** `splitPieces()` zerlegt einen Baustein in Abschnitte (getrennt an Zeilenumbruch, `, `, `; ` und `. ` vor Großbuchstaben, nie in Feldern). `joinPieces()` setzt sie mit den Trennzeichen an ihren ursprünglichen Positionen wieder zusammen. Für jede Vorlage gilt `joinPieces(splitPieces(x)) === x`.
+**Reihenfolge im Editor:** `splitPieces()` zerlegt einen Baustein in Abschnitte (getrennt an Zeilenumbruch, `, `, `; ` und `. ` vor Großbuchstaben, nie in Feldern). `joinPieces()` setzt sie mit den Trennzeichen an ihren ursprünglichen Positionen wieder zusammen. Für jede Vorlage gilt `joinPieces(splitPieces(x)) === x`. Direkt aneinanderklebende Felder (`}}{{`) trennt `splitPieces` mit leerem Trennzeichen; beim Umsortieren wird daraus `, `.
 
 Regeln beim Ausfüllen (`fillTemplate` in `compose.js`):
 - **Leere Felder:** Abschnitte (getrennt durch `, `, `: `, Satzende), deren Felder alle leer sind, fallen weg.
