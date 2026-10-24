@@ -118,7 +118,16 @@ Bausteine können **Auswahlfelder** enthalten, z. B. beim ABCDE-Schema:
 - **Optionale Felder:** Im Feld-Editor den Haken „Pflichtfeld“ entfernen, z. B. für Werte, die nicht immer gemessen werden. Bleibt ein optionaler Messwert leer, fällt er samt Beschriftung weg: Aus „RR … mmHg, HF 80/min“ wird „HF 80/min“.
 - **Mehrfachauswahl:** Optionen, die mit „kein“ beginnen (z. B. „keine Maßnahmen erforderlich“), heben die anderen auf und umgekehrt.
 - **Felder anlegen:** Baustein bearbeiten (✎) → **＋ Feld**: Name, Art (Einfachauswahl, Mehrfachauswahl, Text, Zahl), Auswahlmöglichkeiten und Vorauswahl festlegen. Vorhandene Felder antippen, um sie zu ändern.
-- **Vorlagen:** *Bausteine → Vorlagen* enthält das ABCDE-Schema (A nach Vorgabe, B–E als anpassbare Vorschläge) sowie Vitalparameter und Schmerz.
+- **Vorlagen:** *Bausteine → Vorlagen* enthält:
+  - das ABCDE-Schema (A nach Vorgabe, B–E als anpassbare Vorschläge)
+  - Vitalparameter und Schmerz
+  - unter „Scores“ die **GCS** mit Augen öffnen, Verbal und Motorisch
+
+  Bei der GCS erscheinen im Protokoll nur die gewählten Optionen, das Ergebnis wird automatisch zusammengezählt („Ergebnis: 13 Punkte“).
+- **Punkte zusammenzählen:** Im Feld-Editor gibt es die Art **„Summe der Punkte“**.
+  - Sie addiert die Punkte aller gewählten Optionen im Baustein. Die Punkte stehen in der Option in Klammern, z. B. „Spontan (4 Punkte)“ oder „keine (1 Punkt)“.
+  - Das Ergebnis erscheint erst, wenn in jedem Feld mit Punkten etwas gewählt ist.
+  - So lassen sich auch andere Scores bauen.
 - Das Protokoll bleibt beim Neuladen der Seite erhalten und wird beim Schließen des Browser-Tabs verworfen. Es wird nie hochgeladen.
 
 ### Protokollvorlagen (📋)
@@ -167,6 +176,7 @@ Für Fortgeschrittene, so sieht ein Feld im Text aus:
 | `{{Maßnahmen+:keine\|O2-Gabe\|Beatmung}}` | Mehrfachauswahl |
 | `*` vor einer Option | Vorauswahl, z. B. `{{Atmung:*unauffällig\|Dyspnoe}}` |
 | `?` nach dem Namen | optional, z. B. `{{BZ?:#}}` oder `{{Maßnahmen+?:…}}` |
+| `{{Ergebnis?:=Summe}}` | Summe der Punkte der gewählten Optionen, z. B. bei `{{Augen öffnen:Spontan (4 Punkte)\|…}}` |
 
 ## 4. Konto & Teams (optional)
 

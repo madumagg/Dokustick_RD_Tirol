@@ -87,6 +87,7 @@ In `sessionStorage` liegen `dokustick.doc` (das Protokoll, bleibt beim Neuladen 
 | `*a` | Vorauswahl |
 | `{{Name?…}}` | optional (sonst Pflichtfeld) |
 | `{{Name:@med}}` / `{{Name:@dx}}` | Suche in Medikamenten / Krankheiten (Liste) |
+| `{{Name?:=Summe}}` | Summe der Punkte aller gewählten Optionen im Baustein (`scoreSum`); Punkte stehen in der Option als „(4 Punkte)“, „(1 Punkt)“, „(2 Pkt.)“. Erst gefüllt, wenn jedes Feld mit Punkten gewählt ist. Das `?` lässt ältere App-Versionen das Feld als leere optionale Auswahl behandeln. |
 
 Sondertasten im Text: `{TAB}`, `{SHIFT+TAB}`, `{ENTER}`, `{PAUSE}`, `{PAUSE:ms}`, `{DATUM}`, `{ZEIT}`, Pfeiltasten usw. (`KEYS` in `app.js`).
 

@@ -11,11 +11,14 @@
  *   *a                    Vorauswahl, z.B. {{Atmung:*unauffällig|Dyspnoe}}
  *   {{Name?}} / {{Name+?:a|b}}  optional (sonst Pflichtfeld: Senden erst, wenn ausgefuellt)
  *   {{Name:@med}} / {{Name:@dx}}  Suche in der Medikamente- bzw. Krankheiten-Datenbank (mehrere)
+ *   {{Name?:=Summe}}      Summe der Punkte aller gewaehlten Optionen im Baustein; Punkte stehen
+ *                         in der Option in Klammern, z.B. "Spontan (4 Punkte)" (GCS, Scores).
+ *                         Das "?" sorgt dafuer, dass aeltere App-Versionen das Feld leer lassen.
  * Optionen, die mit "kein" beginnen, schliessen bei Mehrfachauswahl die anderen aus.
  */
 
 const FIELD_RE = /\{\{\s*([^}:|]+?)\s*(?::([^}]*))?\}\}/g;
-const FIELD_TYPES = { single: 'Einfachauswahl', multi: 'Mehrfachauswahl', text: 'Text', number: 'Zahl', med: 'Medikamente (Datenbank)', dx: 'Krankheiten (Datenbank)' };
+const FIELD_TYPES = { single: 'Einfachauswahl', multi: 'Mehrfachauswahl', text: 'Text', number: 'Zahl', med: 'Medikamente (Datenbank)', dx: 'Krankheiten (Datenbank)', sum: 'Summe der Punkte' };
 // Feldarten, deren Wert eine Liste ist
 const isListField = (f) => f.type === 'multi' || f.type === 'med' || f.type === 'dx';
 // Schnellauswahl in Datenbank-Feldern (hebt die anderen Eintraege auf)
@@ -36,6 +39,7 @@ const TEMPLATES = [
   { category: 'SAMPLER', title: 'R – Risikofaktoren', body: 'R – Risikofaktoren: {{Risikofaktoren+:keine bekannt|Rauchen|Diabetes|Hypertonie|Adipositas|Schwangerschaft}}.' },
   { category: 'Allgemein', title: 'Vitalparameter', body: 'RR {{RR}} mmHg, HF {{HF:#}}/min, SpO2 {{SpO2:#}} %, AF {{AF:#}}/min, BZ {{BZ:#}} mg/dl, Temp. {{Temp:#}} °C, GCS {{GCS:15|14|13|12|11|10|9|8|7|6|5|4|3}}' },
   { category: 'Allgemein', title: 'Schmerz', body: 'Schmerz NRS {{NRS:0|1|2|3|4|5|6|7|8|9|10}}/10, Lokalisation {{Lokalisation}}.' },
+  { category: 'Scores', title: 'GCS', body: 'GCS – Augen öffnen: {{Augen öffnen:Spontan (4 Punkte)|auf Ansprache (3 Punkte)|auf Schmerzreiz (2 Punkte)|kein Öffnen (1 Punkt)}}\nVerbal: {{Verbal:orientiert (5 Punkte)|desorientiert (4 Punkte)|einzelne Worte (3 Punkte)|sinnlose Laute (2 Punkte)|keine (1 Punkt)}}\nMotorisch: {{Motorisch:auf Aufforderung (6 Punkte)|gezielte Bewegung (5 Punkte)|ungezielte Bewegung (4 Punkte)|Beugesynergismen (3 Punkte)|Strecksynergismen (2 Punkte)|keine (1 Punkt)}}\nErgebnis: {{Ergebnis?:=Summe}} Punkte' },
 ];
 
 /* ================= Felder ================= */
@@ -51,6 +55,7 @@ function parseField(rawName, rawOpt) {
   const opt = (rawOpt || '').trim();
   if (opt === '#') return { name, type: 'number', optional, options: [], defaults: [] };
   if (opt === '@med' || opt === '@dx') return { name, type: opt.slice(1), optional, options: [], defaults: [] };
+  if (opt.startsWith('=')) return { name, type: 'sum', optional: true, options: [], defaults: [] };
   if (!opt) return { name, type: 'text', optional, options: [], defaults: [] };
   const parts = opt.split('|').map((o) => o.trim()).filter(Boolean);
   const options = parts.map((o) => o.replace(/^\*/, '').trim());
@@ -86,6 +91,7 @@ function fieldToken(f) {
   if (f.type === 'text') return `{{${name}}}`;
   if (f.type === 'number') return `{{${name}:#}}`;
   if (f.type === 'med' || f.type === 'dx') return `{{${cleanName(f.name)}${f.optional ? '?' : ''}:@${f.type}}}`;
+  if (f.type === 'sum') return `{{${cleanName(f.name)}?:=Summe}}`;
   const opts = f.options.map(cleanOption).filter(Boolean).map((o) => (f.defaults.includes(o) ? '*' + o : o));
   return `{{${name}:${opts.join('|')}}}`;
 }
@@ -94,6 +100,25 @@ function initialValues(tpl) {
   const v = {};
   for (const f of formFields(tpl)) v[f.name] = isListField(f) ? [...f.defaults] : (f.defaults[0] || '');
   return v;
+}
+
+// Punkte einer Option: "Spontan (4 Punkte)", "keine (1 Punkt)", "(2 Pkt.)" -> Zahl, sonst null
+function optionPoints(o) {
+  const m = String(o).match(/\((-?\d+)\s*(?:Punkte?|Pkt\.?|P\.?)\)\s*$/i);
+  return m ? Number(m[1]) : null;
+}
+
+// Summe fuer {{…:=Summe}}: erst, wenn in jedem Auswahlfeld mit Punkten etwas gewaehlt ist, sonst null
+function scoreSum(tpl, values) {
+  let total = 0, scored = 0;
+  for (const f of formFields(tpl)) {
+    if ((f.type !== 'single' && f.type !== 'multi') || !f.options.some((o) => optionPoints(o) != null)) continue;
+    scored++;
+    const sel = (Array.isArray(values[f.name]) ? values[f.name] : [values[f.name]]).filter(Boolean);
+    if (!sel.length) return null;
+    for (const o of sel) total += optionPoints(o) || 0;
+  }
+  return scored ? total : null;
 }
 
 function fieldValueText(f, v) {
@@ -122,7 +147,12 @@ function splitSegments(tpl) {
  * z.B. wird aus "RR {{RR}} mmHg, HF {{HF:#}}/min" ohne RR einfach "HF 80/min".
  */
 function fillTemplate(tpl, values) {
-  const valueOf = (n, o) => { const f = parseField(n, o); return fieldValueText(f, values[f.name]); };
+  let sum;
+  const valueOf = (n, o) => {
+    const f = parseField(n, o);
+    if (f.type === 'sum') { if (sum === undefined) sum = scoreSum(tpl, values); return sum == null ? '' : String(sum); }
+    return fieldValueText(f, values[f.name]);
+  };
   const allEmpty = (seg) => {
     const fields = [...seg.matchAll(FIELD_RE)];
     return fields.length > 0 && fields.every((m) => !valueOf(m[1], m[2]).trim());
@@ -327,6 +357,8 @@ function renderModuleBlock(b) {
     renderPreviewInto(pre, expandDynamic(blockText(b)));
     // Unvollstaendige Karten rot markieren
     const n = blockProblems(b).length;
+    const sum = scoreSum(b.tpl, b.values);
+    card.querySelectorAll('[data-sum]').forEach((o) => { o.textContent = sum == null ? '– (noch nicht alles gewählt)' : `${sum} Punkte`; });
     card.classList.toggle('incomplete', n > 0);
     missing.hidden = !n;
     missing.textContent = n === 1 ? '1 fehlt' : `${n} fehlen`;
@@ -356,6 +388,8 @@ function renderFieldInput(f, values, onChange) {
     nodes.forEach((n) => n.classList.toggle('missing', !!problem));
   };
   if (f.type === 'med' || f.type === 'dx') return renderLookup(f, values, onChange, label, mark);
+  // Summe: nur Anzeige, wird in renderModuleBlock bei jeder Aenderung neu berechnet
+  if (f.type === 'sum') return el('div', { class: 'field compact', 'data-field': f.name }, el('span', {}, f.name), el('output', { class: 'sum-val', 'data-sum': '' }));
   if (f.type === 'text' || f.type === 'number') {
     let hint = null;
     const input = el('input', { type: 'text', inputmode: f.type === 'number' ? 'decimal' : null, autocomplete: 'off', value: values[f.name] || '',
@@ -678,9 +712,13 @@ function openFieldBuilder(bodyArea, field0, onDone) {
   // Kein <label>: Knoepfe darin wuerden beim Neuzeichnen doppelt ausgeloest
   const defField = el('div', { class: 'field' }, el('span', {}, 'Vorauswahl (optional, antippen)'), defBox);
   const readOpts = () => opts.value.split('\n').map(cleanOption).filter(Boolean);
+  const reqLabel = el('label', { class: 'check', style: 'margin-top:-6px' }, required, 'Pflichtfeld – Senden erst, wenn ausgefüllt');
+  const sumHelp = el('p', { class: 'help', style: 'margin-top:-6px' }, 'Zählt die Punkte der gewählten Optionen in diesem Baustein zusammen. Die Punkte stehen in den Optionen der anderen Felder in Klammern, z. B. „Spontan (4 Punkte)“ oder „keine (1 Punkt)“. Im Text erscheint nur die Zahl, also z. B. „Ergebnis: [Feld] Punkte“.');
   const drawDefaults = () => {
     const isChoice = type.value === 'single' || type.value === 'multi';
     optField.hidden = defField.hidden = !isChoice;
+    reqLabel.hidden = type.value === 'sum';
+    sumHelp.hidden = type.value !== 'sum';
     const list = readOpts();
     f.defaults = f.defaults.filter((d) => list.includes(d));
     if (type.value === 'single') f.defaults = f.defaults.slice(0, 1);
@@ -699,7 +737,8 @@ function openFieldBuilder(bodyArea, field0, onDone) {
     el('h3', {}, field0 ? 'Feld bearbeiten' : 'Neues Feld'),
     field('Name', name),
     field('Art', type),
-    el('label', { class: 'check', style: 'margin-top:-6px' }, required, 'Pflichtfeld – Senden erst, wenn ausgefüllt'),
+    reqLabel,
+    sumHelp,
     el('p', { class: 'help', style: 'margin-top:-6px' }, 'Einfachauswahl = genau eine Option · Mehrfachauswahl = mehrere Optionen (z. B. Maßnahmen). Optionen, die mit „kein“ beginnen, heben die anderen auf.'),
     optField,
     defField,
