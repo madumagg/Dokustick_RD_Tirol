@@ -705,21 +705,34 @@ function openFieldBuilder(bodyArea, field0, onDone) {
   const f = field0 ? { ...field0, options: [...field0.options], defaults: [...field0.defaults] } : { name: '', type: 'single', optional: false, options: [], defaults: [] };
   const required = el('input', { type: 'checkbox', checked: !f.optional });
   const name = el('input', { type: 'text', required: true, value: f.name, placeholder: 'z. B. Atemwege' });
-  const type = el('select', {}, Object.entries(FIELD_TYPES).map(([k, v]) => el('option', { value: k, selected: f.type === k }, v)));
+  // "Fester Text" ist kein Feld: der Text kommt direkt in den Baustein und wird immer mitgeschrieben
+  const type = el('select', {}, Object.entries(FIELD_TYPES).map(([k, v]) => el('option', { value: k, selected: f.type === k }, v)),
+    field0 ? null : el('option', { value: 'fixed' }, 'Fester Text (immer mitschreiben)'));
   const opts = el('textarea', { rows: 6, placeholder: 'frei und gesichert\ngefährdet' }, f.options.join('\n'));
   const defBox = el('div', { class: 'chips' });
   const optField = field('Auswahlmöglichkeiten (eine pro Zeile)', opts);
+  const nameField = field('Name', name);
   // Kein <label>: Knoepfe darin wuerden beim Neuzeichnen doppelt ausgeloest
   const defField = el('div', { class: 'field' }, el('span', {}, 'Vorauswahl (optional, antippen)'), defBox);
   const readOpts = () => opts.value.split('\n').map(cleanOption).filter(Boolean);
   const reqLabel = el('label', { class: 'check', style: 'margin-top:-6px' }, required, 'Pflichtfeld – Senden erst, wenn ausgefüllt');
   const sumHelp = el('p', { class: 'help', style: 'margin-top:-6px' }, 'Zählt die Punkte der gewählten Optionen in diesem Baustein zusammen. Die Punkte stehen in den Optionen der anderen Felder in Klammern, z. B. „Spontan (4 Punkte)“ oder „keine (1 Punkt)“. Im Text erscheint nur die Zahl, also z. B. „Ergebnis: [Feld] Punkte“.');
+  const fixedHelp = el('p', { class: 'help', style: 'margin-top:-6px' }, 'Dieser Text steht fest im Baustein und wird immer mitgeschrieben, z. B. „Pat. über Risiken aufgeklärt.“ Er kommt an die Stelle, an der der Cursor im Baustein-Text stand.');
+  const choiceHelp = el('p', { class: 'help', style: 'margin-top:-6px' }, 'Einfachauswahl = genau eine Option · Mehrfachauswahl = mehrere Optionen (z. B. Maßnahmen). Optionen, die mit „kein“ beginnen, heben die anderen auf.');
   const drawDefaults = () => {
+    const fixed = type.value === 'fixed';
+    choiceHelp.hidden = fixed || type.value === 'sum';
     const isChoice = type.value === 'single' || type.value === 'multi';
-    optField.hidden = defField.hidden = !isChoice;
-    reqLabel.hidden = type.value === 'sum';
+    optField.hidden = !isChoice && !fixed;
+    defField.hidden = !isChoice;
+    optField.firstChild.textContent = fixed ? 'Text' : 'Auswahlmöglichkeiten (eine pro Zeile)';
+    opts.placeholder = fixed ? 'z. B. Pat. über Risiken aufgeklärt.' : 'frei und gesichert\ngefährdet';
+    nameField.hidden = fixed;
+    name.required = !fixed;
+    fixedHelp.hidden = !fixed;
+    reqLabel.hidden = type.value === 'sum' || fixed;
     sumHelp.hidden = type.value !== 'sum';
-    const list = readOpts();
+    const list = isChoice ? readOpts() : [];
     f.defaults = f.defaults.filter((d) => list.includes(d));
     if (type.value === 'single') f.defaults = f.defaults.slice(0, 1);
     defBox.replaceChildren(...list.map((o) => el('button', {
@@ -735,11 +748,12 @@ function openFieldBuilder(bodyArea, field0, onDone) {
 
   form.replaceChildren(
     el('h3', {}, field0 ? 'Feld bearbeiten' : 'Neues Feld'),
-    field('Name', name),
+    nameField,
     field('Art', type),
     reqLabel,
     sumHelp,
-    el('p', { class: 'help', style: 'margin-top:-6px' }, 'Einfachauswahl = genau eine Option · Mehrfachauswahl = mehrere Optionen (z. B. Maßnahmen). Optionen, die mit „kein“ beginnen, heben die anderen auf.'),
+    fixedHelp,
+    choiceHelp,
     optField,
     defField,
     el('div', { class: 'row', style: 'margin-top:8px' },
@@ -754,8 +768,23 @@ function openFieldBuilder(bodyArea, field0, onDone) {
       el('button', { type: 'submit', class: 'btn primary' }, field0 ? 'Übernehmen' : 'Einfügen')));
   drawDefaults();
 
+  const insertAtCursor = (text) => {
+    const s = bodyArea.selectionStart ?? bodyArea.value.length;
+    bodyArea.setRangeText(text, s, bodyArea.selectionEnd ?? s, 'end');
+  };
   form.onsubmit = (e) => {
     e.preventDefault();
+    if (type.value === 'fixed') {
+      // Keine Feld-Klammern im festen Text, sonst entstuende ein Feld
+      const text = opts.value.replace(/\{\{|\}\}/g, '');
+      if (!text.trim()) return toast('Bitte einen Text eingeben', 'err');
+      const before = bodyArea.value.slice(0, bodyArea.selectionStart ?? bodyArea.value.length);
+      insertAtCursor((before && !/\s$/.test(before) && !/^\s/.test(text) ? ' ' : '') + text);
+      bodyArea.dispatchEvent(new Event('input'));
+      dlg.close();
+      onDone();
+      return;
+    }
     const nf = { name: cleanName(name.value), type: type.value, optional: !required.checked, options: readOpts(), defaults: f.defaults };
     if (!nf.name) return toast('Bitte einen Namen eingeben', 'err');
     if ((nf.type === 'single' || nf.type === 'multi') && nf.options.length < 2) return toast('Mindestens zwei Auswahlmöglichkeiten eintragen', 'err');
@@ -763,8 +792,7 @@ function openFieldBuilder(bodyArea, field0, onDone) {
     if (field0) {
       bodyArea.value = bodyArea.value.split(field0.token).join(token);
     } else {
-      const s = bodyArea.selectionStart ?? bodyArea.value.length;
-      bodyArea.setRangeText(token, s, bodyArea.selectionEnd ?? s, 'end');
+      insertAtCursor(token);
     }
     bodyArea.dispatchEvent(new Event('input'));
     dlg.close();

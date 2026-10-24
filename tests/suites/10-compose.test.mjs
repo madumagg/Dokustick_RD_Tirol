@@ -123,11 +123,20 @@ export default async function (t) {
   await p.uncheck('#dlg2 input[type=checkbox]');
   await p.click('#dlg2 button[type=submit]');
   ok((await p.inputValue('#dlg textarea[name=text]')).endsWith('{{Bemerkung?}}'), 'Optionales Feld: Pflichtfeld-Haken weg -> {{Bemerkung?}}');
+  // Fester Text: kommt direkt in den Baustein, kein Name noetig
+  await p.click('#dlg >> text=＋ Feld');
+  await p.selectOption('#dlg2 select', 'fixed');
+  ok(!(await p.isVisible('#dlg2 input[type=text]')) && await p.isVisible('#dlg2 >> text=wird immer mitgeschrieben'), 'Fester Text: ohne Name, mit Erklärung');
+  await p.fill('#dlg2 textarea', 'Pat. über Lagerung {{aufgeklärt}}.');
+  await p.screenshot({ path: t.out + '/43-fester-text.png' });
+  await p.click('#dlg2 button[type=submit]');
+  ok((await p.inputValue('#dlg textarea[name=text]')).endsWith('{{Bemerkung?}} Pat. über Lagerung aufgeklärt.'), 'Fester Text an der Cursor-Stelle eingefügt (Feld-Klammern entfernt)');
   await p.click('#dlg button[type=submit]');
   ok(await p.isVisible('#modList .mod:has-text("Lagerung") .badge:has-text("interaktiv")'), 'Neuer interaktiver Baustein gespeichert');
   await p.evaluate(() => addToDoc(listItems().find((i) => i.title === 'Lagerung'), { quiet: true }));
   const lag = p.locator('.block-mod:has-text("Lagerung")');
   ok(!(await lag.evaluate((n) => n.classList.contains('incomplete'))) && await lag.locator('[data-field="Bemerkung"] > span.missing').count() === 0, 'Leeres optionales Feld blockiert nicht');
+  ok((await lag.locator('.preview').textContent()).endsWith('Pat. über Lagerung aufgeklärt.'), 'Fester Text steht immer im Protokoll: ' + await lag.locator('.preview').textContent());
 
   // Vorlagen
   await p.click('#modTemplates');

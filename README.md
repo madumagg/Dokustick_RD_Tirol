@@ -118,6 +118,7 @@ Bausteine können **Auswahlfelder** enthalten, z. B. beim ABCDE-Schema:
 - **Optionale Felder:** Im Feld-Editor den Haken „Pflichtfeld“ entfernen, z. B. für Werte, die nicht immer gemessen werden. Bleibt ein optionaler Messwert leer, fällt er samt Beschriftung weg: Aus „RR … mmHg, HF 80/min“ wird „HF 80/min“.
 - **Mehrfachauswahl:** Optionen, die mit „kein“ beginnen (z. B. „keine Maßnahmen erforderlich“), heben die anderen auf und umgekehrt.
 - **Felder anlegen:** Baustein bearbeiten (✎) → **＋ Feld**: Name, Art (Einfachauswahl, Mehrfachauswahl, Text, Zahl), Auswahlmöglichkeiten und Vorauswahl festlegen. Vorhandene Felder antippen, um sie zu ändern.
+- **Fester Text:** **＋ Feld** → Art **„Fester Text (immer mitschreiben)“** setzt einen Text an der Cursor-Stelle in den Baustein, z. B. „Pat. über Risiken aufgeklärt.“ Er wird immer mitgeschrieben. Genauso gut kann man ihn direkt ins Feld „Text“ des Bausteins tippen.
 - **Vorlagen:** *Bausteine → Vorlagen* enthält:
   - das ABCDE-Schema (A nach Vorgabe, B–E als anpassbare Vorschläge)
   - Vitalparameter und Schmerz
