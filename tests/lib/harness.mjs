@@ -43,7 +43,7 @@ export function guardRemote() {
 
 /* ---------- Statischer Webserver ---------- */
 
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.wasm': 'application/wasm', '.aff': 'text/plain; charset=utf-8', '.dic': 'text/plain; charset=utf-8' };
 
 // maxAge > 0 bildet GitHub Pages nach (dort: max-age=600)
 export function serveStatic(dir, { port, maxAge = 0 } = {}) {

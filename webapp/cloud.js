@@ -9,7 +9,7 @@
  */
 
 // Einstellungen, die mit dem Konto mitwandern (Darstellung bleibt pro Geraet)
-const SYNCED_SETTINGS = ['delay', 'lang', 'voiceCmds', 'replacements', 'blankLine', 'defaultProtocol'];
+const SYNCED_SETTINGS = ['delay', 'lang', 'voiceCmds', 'replacements', 'blankLine', 'defaultProtocol', 'spellcheck', 'dictionary'];
 const ITEM_COLS = 'id,kind,title,category,body,sort,deleted,team_id,updated_at';
 
 const AUTH_ERRORS = [
@@ -195,6 +195,8 @@ const cloud = {
         sort: it.sort, deleted: !!it.deleted, team_id: it.team_id || null, owner_id: it.team_id ? null : acc.id,
       };
       const { error } = await this.sb.from('items').upsert(row);
+      // 23514 bei Protokollvorlagen: Datenbank noch ohne Migration *_standard_vorlagen.sql -> lokal behalten, spaeter erneut
+      if (error && error.code === '23514' && it.kind === 'protocol') continue;
       if (error && error.code !== '42501') throw error;
       // 42501 = keine Berechtigung (z.B. Admin-Rechte verloren): Aenderung verwerfen
       if (error) toast(`„${it.title}“ konnte nicht gespeichert werden (keine Berechtigung).`, 'err');

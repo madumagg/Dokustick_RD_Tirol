@@ -32,6 +32,9 @@ export default async function (t) {
     await p.waitForFunction(() => navigator.serviceWorker.controller, null, { timeout: 10000 }).catch(() => {});
     await p.reload(); await p.waitForTimeout(800);
     ok(await version() === '9.1' && await p.evaluate(() => !!navigator.serviceWorker.controller), 'Ausgangsversion 9.1, Offline-Speicher aktiv');
+    const dictFiles = () => p.evaluate(async () => ((await caches.has('dokustick-dict-1')) ? (await (await caches.open('dokustick-dict-1')).keys()).length : 0));
+    await p.waitForFunction(async () => (await caches.has('dokustick-dict-1')) && (await (await caches.open('dokustick-dict-1')).keys()).length === 9, null, { timeout: 15000 }).catch(() => {});
+    ok(await dictFiles() === 9, 'Wörterbuch (9 Dateien) im eigenen Offline-Speicher');
 
     setVersion(dir, '9.2');
     await p.reload(); await p.waitForTimeout(2000);
@@ -41,10 +44,14 @@ export default async function (t) {
     await p.evaluate(() => navigator.serviceWorker.getRegistration().then((r) => r.update()));
     await p.waitForFunction(() => APP_VERSION === '9.3', null, { timeout: 10000 }).catch(() => {});
     ok(await version() === '9.3', 'Update 9.3 lädt bei offener App automatisch neu');
+    ok(await dictFiles() === 9 && (await p.evaluate(() => caches.keys())).filter((k) => k.startsWith('dokustick-v')).length === 1,
+      'Nach Updates: Wörterbuch bleibt, alte App-Speicher sind gelöscht');
 
     await ctx.setOffline(true);
     await p.reload(); await p.waitForTimeout(1500);
     ok(await version() === '9.3' && await p.isVisible('#sendBtn'), 'Offline: App startet aus dem Speicher');
+    await p.waitForFunction(() => spell.h, null, { timeout: 15000 }).catch(() => {});
+    ok(await p.evaluate(() => !!spell.h && spell.check('Der Pateint').length === 1), 'Offline: Rechtschreibprüfung funktioniert');
     await ctx.close();
   } finally {
     server.close();

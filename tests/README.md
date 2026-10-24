@@ -53,12 +53,15 @@ Screenshots und die Test-PDF landen in `tests/test-output/` (nicht im Git).
 | `20-drag` | Blöcke verschieben mit Maus, Touch (echte Touch-Ereignisse) und Tastatur |
 | `30-ios` | Bluefy-Hinweis auf iPhone/iPad, Tastatur-Diktat |
 | `40-header` | Kopfzeile auf allen Bildschirmbreiten |
-| `45-update` | Updates kommen trotz HTTP-Cache (wie GitHub Pages) sofort an; Offline-Start |
+| `45-update` | Updates kommen trotz HTTP-Cache (wie GitHub Pages) sofort an; Offline-Start; Wörterbuch bleibt über Updates im Speicher |
 | `50-virtual` | Virtueller Dongle, PDF, Einsatz beenden *(Datenbank)* |
 | `60-sync` | Konto, Synchronisation, Teams, Offline-Änderungen *(Datenbank)* |
 | `70-admin-ui` | Administration in der App *(Datenbank)* |
+| `75-standard` | Standard-Bausteine: App-Admin pflegt, alle nutzen und kopieren *(Datenbank)* |
+| `76-protokolle` | Protokollvorlagen: anlegen, mit 📋 einfügen, Reihenfolge, Import; mit Datenbank zusätzlich Standard-Vorlagen |
+| `77-rechtschreibung` | Rechtschreibprüfung: Hinweise, Korrektur, eigenes Wörterbuch, Prüfung vor dem Senden |
 | `80-catalog` | Medikamente & Krankheiten: Vorschlag, Freigabe, CSV-Import, Suche im Protokoll *(Datenbank)* |
-| `90-db-rls`, `91-db-admin`, `92-db-catalog` | Zugriffsregeln der Datenbank direkt über die API *(Datenbank)* |
+| `90-db-rls`, `91-db-admin`, `92-db-catalog`, `93-db-standard` | Zugriffsregeln der Datenbank direkt über die API *(Datenbank)* |
 
 ## Eigene Tests schreiben
 

@@ -272,9 +272,10 @@ function renderTextBlock(b) {
     class: 'doc-text', rows: 2, placeholder: doc.length > 1 ? 'Freitext …' : 'Text eingeben, diktieren oder Bausteine hinzufügen …',
     autocomplete: 'off', spellcheck: 'true',
     onfocus: () => { activeBlockId = b.id; },
-    oninput: (e) => { b.text = e.target.value; autosize(e.target); saveDoc(); },
+    oninput: (e) => { b.text = e.target.value; autosize(e.target); saveDoc(); hint.refresh(700); },
   }, b.text);
-  const card = el('div', { class: 'block block-text', 'data-block': b.id }, ta);
+  const hint = spell.hint(() => b.text, (v) => { b.text = ta.value = v; autosize(ta); saveDoc(); });
+  const card = el('div', { class: 'block block-text', 'data-block': b.id }, ta, hint.box);
   if (doc.length > 1) {
     card.append(el('div', { class: 'block-tools' },
       grip(b, card),
@@ -322,10 +323,15 @@ function renderFieldInput(f, values, onChange) {
   };
   if (f.type === 'med' || f.type === 'dx') return renderLookup(f, values, onChange, label, mark);
   if (f.type === 'text' || f.type === 'number') {
+    let hint = null;
     const input = el('input', { type: 'text', inputmode: f.type === 'number' ? 'decimal' : null, autocomplete: 'off', value: values[f.name] || '',
-      oninput: (e) => { values[f.name] = e.target.value; mark(input); onChange(); } });
+      oninput: (e) => { values[f.name] = e.target.value; mark(input); onChange(); hint?.refresh(700); } });
     mark(input);
-    return el('label', { class: 'field compact', 'data-field': f.name }, label, input);
+    const box = el('label', { class: 'field compact', 'data-field': f.name }, label, input);
+    if (f.type === 'number') return box;
+    // Hinweise ausserhalb des <label>, sonst loesen die Knoepfe darin doppelt aus
+    hint = spell.hint(() => values[f.name] || '', (v) => { values[f.name] = input.value = v; mark(input); onChange(); });
+    return el('div', {}, box, hint.box);
   }
   const chips = el('div', { class: 'chips' });
   const selected = () => (f.type === 'multi' ? (Array.isArray(values[f.name]) ? values[f.name] : []) : [values[f.name]].filter(Boolean));
@@ -429,9 +435,26 @@ function renderLookup(f, values, onChange, label, mark) {
 /* ================= Pruefen vor dem Senden ================= */
 
 // Sendet nur, wenn alle Pflichtfelder der Bausteine ausgefuellt sind
-function sendChecked(blocks) {
+// Vom Benutzer geschriebener Text eines Blocks (Freitext und Textfelder, keine Auswahlen)
+const typedTexts = (b) => (b.type === 'text' ? [b.text] : formFields(b.tpl).filter((f) => f.type === 'text').map((f) => String(b.values[f.name] || '')));
+
+function sendChecked(blocks, { spellChecked = false } = {}) {
   const missing = blocks.filter((b) => b.type === 'module').map((b) => ({ b, list: blockProblems(b) })).filter((x) => x.list.length);
-  if (!missing.length) return send(joinBlocks(blocks));
+  if (!missing.length) {
+    // Moegliche Rechtschreibfehler: Hinweis, aber Senden bleibt moeglich
+    const typos = spellChecked ? [] : [...new Set(blocks.flatMap(typedTexts).flatMap((t) => spell.check(t).map((e) => e.word)))];
+    if (!typos.length) return send(joinBlocks(blocks));
+    openDialog('Mögliche Rechtschreibfehler', [
+      el('p', {}, typos.length === 1 ? 'Dieses Wort ist vielleicht falsch geschrieben:' : `Diese ${typos.length} Wörter sind vielleicht falsch geschrieben:`),
+      el('p', { class: 'chips' }, typos.map((w) => el('span', { class: 'chip spell-chip' }, w))),
+      el('p', { class: 'help' }, 'Zum Korrigieren die markierten Wörter unter dem Text antippen.'),
+    ], {
+      saveLabel: 'Trotzdem senden',
+      cancelLabel: 'Korrigieren',
+      onSave: () => { setTimeout(() => sendChecked(blocks, { spellChecked: true }), 0); },
+    });
+    return false;
+  }
   const total = missing.reduce((n, x) => n + x.list.length, 0);
   openDialog('Fehlende Angaben', [
     el('p', {}, total === 1 ? 'Eine Angabe fehlt noch. Es wurde nichts gesendet.' : `${total} Angaben fehlen noch. Es wurde nichts gesendet.`),

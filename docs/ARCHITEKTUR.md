@@ -26,6 +26,8 @@ Reines HTML/CSS/JavaScript **ohne Build-Schritt**. Die Skripte sind klassische `
 | `vendor/supabase.js` | supabase-js 2.117.2 (lokal, damit die App offline startet) |
 | `app.js` | Grundlagen: Hilfsfunktionen (`el`, `store`, `toast`, `openDialog`), Datenmodell der Bausteine, Text-Kodierung, Bluetooth, Diktat, Bausteine-Liste, Einstellungen, `boot()` |
 | `compose.js` | Feld-Syntax, Vorlagen, Protokoll im Schreiben-Fenster, Feld-Editor, Pflichtfeld-Prüfung, Verschieben per Ziehen |
+| `protocols.js` | Protokollvorlagen: Knopf 📋 im Schreiben-Reiter, Auswahl, Editor |
+| `spell.js` | Rechtschreibprüfung (Hunspell als WebAssembly, lädt `vendor/hunspell` und `vendor/dict` erst bei Bedarf per `import()`) |
 | `catalog.js` | Medikamente-/Krankheiten-Datenbank (Laden, Suche, Vorschlag, Freigabe, CSV-Import) |
 | `cloud.js` | Konto, Synchronisation, Teams |
 | `admin.js` | Administration (nur App-Admins) |
@@ -47,7 +49,7 @@ Eine Datei darf Funktionen einer **später** geladenen Datei nur zur Laufzeit au
 
 | Schlüssel | Inhalt |
 |---|---|
-| `settings` | Einstellungen: `{ delay, lang, voiceCmds, replacements, blankLine, theme }` |
+| `settings` | Einstellungen: `{ delay, lang, voiceCmds, replacements, blankLine, theme, defaultProtocol, spellcheck, dictionary }` |
 | `local.items` | Bausteine ohne Konto |
 | `account` | angemeldetes Konto `{ id, email }` |
 | `u.<userId>.items` | Bausteine des Kontos (lokale Kopie, inklusive noch nicht hochgeladener Änderungen!) |
@@ -65,12 +67,14 @@ In `sessionStorage` liegen `dokustick.doc` (das Protokoll, bleibt beim Neuladen 
 
 ```js
 { id,            // UUID, auch offline erzeugt (crypto.randomUUID)
-  kind,          // 'module' oder 'form' (frühere Formulare; werden wie Bausteine angezeigt)
+  kind,          // 'module', 'form' (frühere Formulare; werden wie Bausteine angezeigt) oder 'protocol'
   title, category, body,   // body enthält Text und Felder, siehe unten
   team_id,       // null = eigener Eintrag
   sort, deleted, updated_at,
   dirty }        // > 0: lokale Änderung noch nicht hochgeladen (nur lokal)
 ```
+
+**Protokollvorlagen** (`kind: 'protocol'`): `body` ist JSON `{"items": ["<Baustein-ID>", …]}` in Reihenfolge. Eingefügt wird die jeweils aktuelle Fassung der Bausteine. `listItems()` liefert Vorlagen nur mit `listItems('protocol')`. Welche Vorlage der Knopf 📋 einfügt, steht in `settings.defaultProtocol` (sonst die erste eigene, dann die erste aus dem Standard-Bereich). Team- und Standard-Vorlagen dürfen nur Bausteine enthalten, die dort alle sehen (`protocols.allowedFor`). Beim Import einer Sicherung werden die IDs neu vergeben und die Verweise umgestellt.
 
 ### Feld-Syntax in `body`
 
@@ -115,6 +119,7 @@ Schema als Migrationen in `supabase/migrations/` (Reihenfolge = Dateiname):
 | `…_admin.sql` | `app_admins`, `app_settings`; `app_info`, `admin_*`-Funktionen; Trigger auf `auth.users` (Registrierungsregeln, Standard-Team) |
 | `…_catalog.sql` | `medications`, `diagnoses`; `admin_import_catalog` |
 | `…_diagnoses_beschreibung.sql` | `diagnoses.abbreviation` fasst jetzt Abkürzung **und/oder Beschreibung** (bis 300 Zeichen). Der Spaltenname bleibt aus Kompatibilitätsgründen. |
+| `…_standard_vorlagen.sql` | Standard-Bereich: `teams.is_standard` (genau ein Team „Standard“ ohne Mitglieder), `app_info().standard_team`; `items.kind` erlaubt `'protocol'`; Admin-Funktionen behandeln den Standard-Bereich nicht als Team |
 
 Alle Tabellen haben **Row Level Security**. Kurzfassung:
 - **Eigene Einträge:** sieht und ändert nur der Besitzer.
@@ -122,6 +127,7 @@ Alle Tabellen haben **Row Level Security**. Kurzfassung:
 - **Beitrittscode:** sehen nur die Team-Admins.
 - **Admin-Funktionen** prüfen selbst `require_superadmin()`.
 - **Medikamente und Krankheiten:** freigegebene Einträge sind für alle sichtbar, Vorschläge nur für den Ersteller und die App-Admins.
+- **Standard-Bereich:** Einträge mit `team_id` = Standard-Team sehen alle angemeldeten Benutzer, anlegen und ändern dürfen nur App-Admins. In der App ist es ein Pseudo-Team: `cloud.isStandard()`, `cloud.isAdmin()` (für App-Admins wahr), `cloud.adminTargets()` für „Speichern in“. Ältere App-Versionen behandeln Standard-Einträge wie fremde Team-Einträge.
 
 ### Regeln für Datenbank-Änderungen
 
@@ -152,6 +158,7 @@ Datenstrom: UTF-8-Text, `00 <mod> <key>` = Taste, `00 FF <n>` = Pause n×10 ms. 
 - **`main` ist live:** GitHub Pages veröffentlicht `main` automatisch, nach etwa 30–60 Sekunden ist der Stand online.
 - **Version erhöhen:** Vor jeder Veröffentlichung im Projektordner `tools/version.sh` ausführen (z. B. 0.18 → 0.19). Das ändert `sw.js`, `app.js` und die `?v=`-Adressen in `index.html`. Ohne neue Version laden Geräte mit Offline-Speicher das Update nicht zuverlässig.
 - **Offline-Speicher:** Der Service Worker lädt online immer zuerst vom Netz (`cache: 'no-cache'`) und greift nur offline oder nach 4 s auf den Speicher zurück.
+- **Wörterbuch:** Hunspell und die Wörterbücher (ca. 2 MB, `DICT_FILES` in `sw.js`) liegen in einem eigenen Speicher `DICT_CACHE`, der App-Updates überdauert und zuerst gefragt wird. Bei neuen Wörterbuch- oder Hunspell-Dateien `DICT_CACHE` hochzählen.
 - **Neue Dateien:** zusätzlich in `FILES` in `sw.js` eintragen, sonst fehlen sie offline.
 
 ## Bekannte Stolperfallen
@@ -160,3 +167,5 @@ Datenstrom: UTF-8-Text, `00 <mod> <key>` = Taste, `00 FF <n>` = Pause n×10 ms. 
 - **iOS:** Safari kann kein Web Bluetooth, auf iPhone/iPad läuft die App in **Bluefy**. iPadOS meldet sich als Mac (`IS_IOS` in `app.js`).
 - **Web Bluetooth und Diktat** funktionieren nur über https oder `localhost`.
 - **Mehrere Supabase-Clients:** Die App nutzt `storageKey: 'dokustick.auth'`.
+- **Supabase liefert höchstens 1000 Zeilen pro Abfrage** (`max_rows`). Größere Listen seitenweise laden, siehe `catalog.fetchAll()`.
+- **Neue Einstellungen:** Ältere App-Versionen laden beim Speichern der Einstellungen nur ihre eigenen Schlüssel hoch (`SYNCED_SETTINGS`) und überschreiben damit neuere Schlüssel. Neue Einstellungen deshalb immer mit sinnvollem Standardwert behandeln.

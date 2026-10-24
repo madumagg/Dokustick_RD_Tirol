@@ -13,7 +13,7 @@ Handy (Web-App)  ──Bluetooth LE──▶  nRF52840 Dongle  ──USB-Tastatu
 | `firmware/` | Firmware (Zephyr RTOS) für **Makerdiary nRF52840 MDK USB Dongle** und **Nordic nRF52840 Dongle (PCA10059)** |
 | `firmware/out/` | Fertig kompilierte Firmware zum Aufspielen |
 | `webapp/` | Weboberfläche (als App installierbar, funktioniert offline) |
-| `supabase/migrations/` | Datenbank-Schema (Konto, Teams, Administration, Medikamente & Krankheiten) |
+| `supabase/migrations/` | Datenbank-Schema (Konto, Teams, Administration, Medikamente & Krankheiten, Standard-Bausteine & Protokollvorlagen) |
 | `tests/` | Automatische Tests, siehe [`tests/README.md`](tests/README.md) |
 | `docs/ARCHITEKTUR.md` | Technischer Aufbau für Entwickler |
 
@@ -117,6 +117,31 @@ Bausteine können **Auswahlfelder** enthalten, z. B. beim ABCDE-Schema:
 - **Vorlagen:** *Bausteine → Vorlagen* enthält das ABCDE-Schema (A nach Vorgabe, B–E als anpassbare Vorschläge) sowie Vitalparameter und Schmerz.
 - Das Protokoll bleibt beim Neuladen der Seite erhalten und wird beim Schließen des Browser-Tabs verworfen. Es wird nie hochgeladen.
 
+### Protokollvorlagen (📋)
+
+Eine Protokollvorlage ist eine Gruppe von Bausteinen, die du bei jedem Patienten brauchst, z. B. „Standard“ mit ABCDE und SAMPLER. Du kannst mehrere anlegen, etwa „Trauma“ oder „Kind“.
+
+- **Einfügen:** Der Knopf **📋** neben „＋ Baustein“ fügt alle Bausteine deiner Standard-Vorlage in der festgelegten Reihenfolge ins Protokoll ein. Sein Name zeigt, welche Vorlage das ist.
+- **Andere Vorlage:** Mit **▾** daneben siehst du alle Vorlagen. Antippen fügt die Vorlage ein, ★ macht sie zur Vorlage des 📋-Knopfs.
+- **Anlegen und ändern:** **▾ → ＋ Neue Protokollvorlage** oder *Bausteine → 📋 Protokollvorlagen*. Dort gibst du einen Namen ein und tippst Bausteine an. Mit ↑ ↓ änderst du die Reihenfolge, mit ✕ entfernst du einen Baustein.
+- **Aktuelle Fassung:** Die Vorlage merkt sich nur, welche Bausteine dazugehören. Änderst du einen Baustein, gilt die Änderung auch in der Vorlage. Gelöschte Bausteine fehlen beim Einfügen, und es erscheint ein Hinweis.
+- **Für andere:** Team-Admins können Vorlagen im Team speichern, App-Admins im Bereich „Standard“ für alle. Darin dürfen nur Bausteine stehen, die auch alle sehen. Mit ⧉ übernimmt man eine solche Vorlage als eigene Kopie.
+
+### Rechtschreibprüfung
+
+- Die Prüfung läuft **offline auf dem Gerät**, der Text verlässt das Gerät nicht. Das Wörterbuch (ca. 2 MB) lädt beim ersten Start und steht danach auch im Funkloch zur Verfügung.
+- **Was sie kennt:**
+  - Deutsch (Österreich) und medizinische Fachbegriffe
+  - häufige Rettungsdienst-Wörter
+  - die Wörter aus deinen Bausteinen
+  - Medikamente und Krankheiten aus der Datenbank
+  - dein eigenes Wörterbuch
+- **Ignoriert werden:** Abkürzungen in Großbuchstaben (RTW, GCS), Wörter mit Zahlen (SpO2) und Sondertasten.
+- **Hinweise:** Unter Freitext und Textfeldern erscheinen mögliche Fehler zum Antippen. Dort kannst du einen Vorschlag übernehmen, das Wort **ins Wörterbuch** aufnehmen oder es **ignorieren**.
+- **Vor dem Senden:** Sind noch mögliche Fehler offen, fragt die App nach. Wählst du „Trotzdem senden“, wird gesendet. Anders als bei fehlenden Pflichtfeldern wird nichts blockiert.
+- **Einstellungen → Rechtschreibung:** Hier schaltest du die Prüfung ein oder aus und bearbeitest das eigene Wörterbuch (ein Wort pro Zeile). Mit Konto wird beides synchronisiert.
+- Wörterbücher: igerman98 (Björn Jacke) und medicalterms (Tobias Quathamer), beide unter GPL. Details stehen in [`webapp/vendor/dict/README.md`](webapp/vendor/dict/README.md).
+
 Für Fortgeschrittene, so sieht ein Feld im Text aus:
 
 | Syntax | Feld |
@@ -158,6 +183,10 @@ Der anon-Key darf öffentlich im Code stehen. Die Daten werden durch die Zugriff
 - **Team-Bausteine anlegen** (nur Admins): beim Bearbeiten unter „Speichern in“ das Team auswählen.
   - Team-Bausteine tragen ein Team-Abzeichen.
   - Mitglieder können sie nutzen und mit ⧉ als eigene Kopie speichern, aber nicht ändern.
+- **Standard-Bausteine** (nur App-Admins): Unter „Speichern in“ **„Standard (für alle)“** wählen.
+  - Diese Bausteine sehen alle angemeldeten Benutzer, auch ohne Team. Sie tragen das grüne Abzeichen „Standard“, und der Filter „Standard“ zeigt nur sie.
+  - Ändern kann sie nur ein App-Admin. Alle anderen können sie nutzen und mit ⧉ als eigene Kopie übernehmen und diese frei anpassen.
+  - Für Protokollvorlagen gilt dasselbe.
 - **Offline:** Alles funktioniert weiter. Änderungen werden hochgeladen, sobald wieder Internet da ist. Das Wolken-Symbol im Kopf zeigt den Status: grün = synchron, gelb = wartet, rot = Fehler.
 - **Abmelden** entfernt die Kontodaten von diesem Gerät. In der Cloud bleiben sie erhalten.
 
@@ -170,14 +199,14 @@ Der anon-Key darf öffentlich im Code stehen. Die Daten werden durch die Zugriff
 
 ### Administration
 
-Für App-Admins gibt es unter *Einstellungen → Administration* eine Verwaltung der gesamten App. Einmalig einrichten: Im Supabase **SQL Editor** den Inhalt von [`supabase/migrations/20261023120100_admin.sql`](supabase/migrations/20261023120100_admin.sql) ausführen (nach der Schema-Migration). Der **zuerst registrierte Benutzer** wird dabei automatisch App-Admin.
+Für App-Admins gibt es unter *Einstellungen → Administration* eine Verwaltung der gesamten App. Einmalig einrichten: Im Supabase **SQL Editor** den Inhalt von [`supabase/migrations/20261023120100_admin.sql`](supabase/migrations/20261023120100_admin.sql) ausführen (nach der Schema-Migration). Der **zuerst registrierte Benutzer** wird dabei automatisch App-Admin. Für Standard-Bausteine und Protokollvorlagen zusätzlich [`supabase/migrations/20261024100000_standard_vorlagen.sql`](supabase/migrations/20261024100000_standard_vorlagen.sql) ausführen.
 
 | Bereich | Funktionen |
 |---|---|
-| Übersicht | Anzahl Benutzer (aktiv, unbestätigt, gesperrt), Teams, Textbausteine, Formulare |
+| Übersicht | Anzahl Benutzer (aktiv, unbestätigt, gesperrt), Teams, Textbausteine, Formulare, Protokollvorlagen |
 | Benutzer | suchen, Passwort-Reset senden, sperren/entsperren, zum App-Admin machen, Konto löschen |
 | Teams | alle Teams sehen, anlegen, umbenennen, löschen; Mitglieder per E-Mail hinzufügen, entfernen, Rollen ändern; Beitrittscode erneuern |
-| Einstellungen | Registrierung offen / nur bestimmte E-Mail-Domains / geschlossen; Standard-Team für neue Benutzer; Hinweis an alle |
+| Einstellungen | Registrierung offen / nur bestimmte E-Mail-Domains / geschlossen; Team für neue Benutzer; Hinweis an alle |
 
 **Virtueller Dongle (nur App-Admins):** Beim Verbinden wählbar, auch in Browsern ohne Bluetooth. Er wertet die gesendeten Daten genauso aus wie die Firmware: Zeichen ohne Taste fallen weg, „–“ wird zu „-“. Im Schreiben-Fenster zeigt er an, was getippt würde, und speichert das mit **Als PDF speichern** als Testprotokoll.
 
@@ -228,6 +257,7 @@ Beim Konstruieren beachten:
 - Ohne Konto liegen Textbausteine, Formulare und Einstellungen nur lokal im Browser des Handys. Mit Konto werden sie zusätzlich bei Supabase (Frankfurt) gespeichert. Ausgefüllte Formulare und der Editor-Inhalt werden nie gespeichert oder hochgeladen.
 - Die Bluetooth-Verbindung ist verschlüsselt, und nur gekoppelte Handys werden angenommen.
 - **Diktat:** Die Spracherkennung des Browsers läuft je nach Gerät über Server von Google bzw. Apple. Keine identifizierenden Patientendaten diktieren.
+- **Rechtschreibprüfung:** läuft vollständig auf dem Gerät, es wird kein Text verschickt.
 - Vor dem Einsatz an dienstlichen Geräten mit der zuständigen IT abklären, ob USB-Tastaturen erlaubt sind.
 
 ## Mitentwickeln
