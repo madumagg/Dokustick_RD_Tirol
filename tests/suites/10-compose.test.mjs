@@ -40,7 +40,7 @@ export default async function (t) {
   await p.click('#dlg .pick:has-text("Vitalparameter")');
   await p.click('#dlg >> text=Schließen');
   const blocks = await p.evaluate(() => doc.map((b) => b.type === 'text' ? 'T' : b.title[0]).join(''));
-  ok(blocks === 'ATBVT', 'Reihenfolge der Blöcke: ' + blocks);
+  ok(blocks === 'TABV', 'Reihenfolge der Blöcke (Freitext oben angeheftet, neue Bausteine am Ende): ' + blocks);
   const V = p.locator('.block-mod:has-text("Vitalparameter")');
   await V.locator('input').first().fill('130/80');
   await V.locator('.block-head button[title=Entfernen]').click();
@@ -48,7 +48,7 @@ export default async function (t) {
   await p.locator('.block-mod:has-text("B – Belüftung") .grip').focus();
   await p.keyboard.press('ArrowUp');
   const order = await p.evaluate(() => doc.map((b) => b.type === 'text' ? 'T' : b.title[0]).join(''));
-  ok(order === 'ABTT', 'Block nach oben verschoben: ' + order);
+  ok(order === 'TBA', 'Block nach oben verschoben, angehefteter Freitext bleibt oben: ' + order);
   await p.screenshot({ path: t.out + '/41-protokoll.png', fullPage: true });
 
   // Pflichtfelder: B hat leere Zahlenfelder -> rot markiert, Senden blockiert
@@ -80,7 +80,7 @@ export default async function (t) {
   await p.click('#sendBtn');
   await p.waitForTimeout(800);
   const sent = await sentText(p);
-  ok(sent === 'A – Atemwege: frei und gesichert. Maßnahmen: Guedeltubus, Absaugen.\n\nB – Belüftung: Atmung unauffällig, AF 18/min, SpO2 96 %, Auskultation seitengleich, vesikulär. Maßnahmen: keine Maßnahmen erforderlich.\n\nPat. kreislaufstabil.', 'Gesendet:\n' + sent);
+  ok(sent === 'Pat. kreislaufstabil.\n\nB – Belüftung: Atmung unauffällig, AF 18/min, SpO2 96 %, Auskultation seitengleich, vesikulär. Maßnahmen: keine Maßnahmen erforderlich.\n\nA – Atemwege: frei und gesichert. Maßnahmen: Guedeltubus, Absaugen.', 'Gesendet:\n' + sent);
   // Leerzeile abgeschaltet: Bloecke nur durch Zeilenumbruch getrennt
   await p.evaluate(() => { settings.blankLine = false; });
   await p.click('#sendBtn');
@@ -93,7 +93,7 @@ export default async function (t) {
 
   // Neu laden: Protokoll bleibt
   await p.reload();
-  ok(await p.evaluate(() => doc.length) === 4 && (await p.locator('.block-mod:has-text("A – Atemwege") .chip.sel:has-text("Absaugen")').count()) === 1, 'Protokoll übersteht Neuladen');
+  ok(await p.evaluate(() => doc.length) === 3 && (await p.locator('.block-mod:has-text("A – Atemwege") .chip.sel:has-text("Absaugen")').count()) === 1, 'Protokoll übersteht Neuladen');
 
   await p.click('#connBtn');
   await p.waitForSelector('text=Verbunden');

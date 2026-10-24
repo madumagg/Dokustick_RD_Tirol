@@ -36,8 +36,8 @@ export default async function (t) {
   // --- Einfuegen
   await P.click('#protoBtn');
   let titles = await docTitles();
-  ok(JSON.stringify(titles.slice(0, 3)) === JSON.stringify(['A – Atemwege', 'Text:Monitoring (EKG, SpO', 'B – Belüftung']) && titles.length === 7 && titles[6] === 'Text:',
-    'Eingefügt in Reihenfolge, einfacher Baustein als Text, leerer Textblock am Ende: ' + titles.join(' | '));
+  ok(titles[0] === 'Text:' && JSON.stringify(titles.slice(1, 4)) === JSON.stringify(['A – Atemwege', 'Text:Monitoring (EKG, SpO', 'B – Belüftung']) && titles.length === 7,
+    'Unter dem angehefteten Freitext eingefügt, in Reihenfolge, einfacher Baustein als Text: ' + titles.join(' | '));
   await P.screenshot({ path: t.out + '/protokoll-eingefuegt.png', fullPage: true });
 
   // --- Zweite Vorlage, Auswahl ueber ▾ und Wechsel des Standards
@@ -50,7 +50,7 @@ export default async function (t) {
   await P.click('#dlg button[type=submit]');
   await P.locator('#dlg .proto-card:has-text("Trauma") .send').click();
   titles = await docTitles();
-  ok(titles.slice(-3).join('|') === 'C – Kreislauf|E – Exposure|Text:', 'Über ▾ gewählte Vorlage „Trauma“ angehängt');
+  ok(titles.slice(-2).join('|') === 'C – Kreislauf|E – Exposure' && titles[0] === 'Text:', 'Über ▾ gewählte Vorlage „Trauma“ ans Ende angehängt');
   await chooser();
   await P.locator('#dlg .proto-card:has-text("Trauma") button[title="Mit dem 📋-Knopf einfügen"]').click();
   ok((await P.textContent('#protoBtn')).trim() === '📋 Trauma', '☆ macht „Trauma“ zum Knopf');

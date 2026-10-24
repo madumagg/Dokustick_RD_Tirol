@@ -107,6 +107,10 @@ Bausteine können **Auswahlfelder** enthalten, z. B. beim ABCDE-Schema:
 
 - **Ins Protokoll:** Tippt man einen interaktiven Baustein an, landet er im Fenster *Schreiben* als Karte mit Auswahl-Knöpfen. Einfache Bausteine ohne Felder werden wie bisher sofort getippt. ↧ legt jeden Baustein ins Protokoll.
 - **Im Protokoll:** Optionen antippen, mit „…“ einen eigenen Wert eingeben. Dazwischen ist Freitext oder Diktat möglich. Blöcke entfernt man mit ✕.
+- **Freitext oben angeheftet:** In jedem neuen Protokoll steht der Freitext ganz oben (📌, farbiger Rahmen). Neue Bausteine und Protokollvorlagen kommen darunter, Diktat und Tasten landen ohne ausgewähltes Feld im Freitext.
+  - Andere Bausteine lassen sich nicht darüber schieben.
+  - Verschiebst du den Freitext selbst, löst sich die Anheftung, und er bleibt an der neuen Stelle.
+  - 📌 antippen heftet ihn wieder oben an.
 - **Verschieben:** Kopfzeile einer Karte gedrückt halten (Touch, ca. ⅓ s) bzw. mit der Maus anklicken und an die neue Stelle ziehen. Mit dem Griff ⠿ geht es auch sofort, am Bildschirmrand scrollt die Seite mit. Per Tastatur: Griff auswählen und Pfeiltasten drücken.
 - **Senden:** „Alles senden“ tippt das ganze Protokoll und lässt es stehen. Zwischen den Blöcken steht automatisch eine Leerzeile (abschaltbar unter *Einstellungen → Tippen*, z. B. für einzeilige Felder). ⟶ an einer Karte sendet nur diesen Block.
 - **Einsatz beenden:** Der Knopf ganz unten setzt nach einer Sicherheitsabfrage alle Bausteine im Protokoll zurück und löscht den Freitext. Die gespeicherten Bausteine bleiben erhalten.

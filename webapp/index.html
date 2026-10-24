@@ -125,7 +125,10 @@ textarea:focus, input:focus, select:focus { outline: 2px solid var(--accent); ou
 #docBlocks > .block-text:only-child .doc-text { min-height: 30vh; }
 .block-tools { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; }
 .block-x { border: 0; background: var(--surface-2); color: var(--muted); border-radius: 8px; width: 32px; height: 32px; }
-.block-text:has(.block-tools) .doc-text { padding-right: 80px; }
+.block-text:has(.block-tools) .doc-text { padding-right: 116px; }
+.block-x.pin { filter: grayscale(1); opacity: .45; font-size: 15px; }
+.block-x.pin.on { filter: none; opacity: 1; background: var(--accent-soft); }
+.block-text.pinned .doc-text { border-color: var(--accent); }
 .grip { border: 0; background: var(--surface-2); color: var(--muted); border-radius: 8px; width: 32px; height: 32px; font-size: 18px; line-height: 1; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .block-head .grip { background: none; width: 28px; margin-left: -6px; }
 .block-head { cursor: grab; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
@@ -478,16 +481,16 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 <dialog id="dlg2"><form method="dialog" id="dlg2Form"></form></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=0.24"></script>
-<script src="vendor/supabase.js?v=0.24"></script>
-<script src="app.js?v=0.24"></script>
-<script src="compose.js?v=0.24"></script>
-<script src="protocols.js?v=0.24"></script>
-<script src="spell.js?v=0.24"></script>
-<script src="catalog.js?v=0.24"></script>
-<script src="cloud.js?v=0.24"></script>
-<script src="admin.js?v=0.24"></script>
-<script src="virtual.js?v=0.24"></script>
+<script src="config.js?v=0.25"></script>
+<script src="vendor/supabase.js?v=0.25"></script>
+<script src="app.js?v=0.25"></script>
+<script src="compose.js?v=0.25"></script>
+<script src="protocols.js?v=0.25"></script>
+<script src="spell.js?v=0.25"></script>
+<script src="catalog.js?v=0.25"></script>
+<script src="cloud.js?v=0.25"></script>
+<script src="admin.js?v=0.25"></script>
+<script src="virtual.js?v=0.25"></script>
 <script>boot(); $('#adminOpen').addEventListener('click', () => admin.open());</script>
 </body>
 </html>

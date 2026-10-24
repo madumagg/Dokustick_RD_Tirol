@@ -45,12 +45,7 @@ const protocols = {
     const { found, missing } = this.modules(p);
     if (!found.length) { toast(`„${p.title}“ enthält keine verfügbaren Bausteine.`, 'err'); return; }
     // Interaktive Bausteine als Karte, einfache als Textblock (Reihenfolge bleibt erhalten)
-    const blocks = found.map((it) => (formFields(it.body).length ? moduleBlock(it) : textBlock(it.body)));
-    const last = doc[doc.length - 1];
-    if (last && last.type === 'text' && !last.text.trim()) doc.splice(doc.length - 1, 0, ...blocks);
-    else doc.push(...blocks, textBlock());
-    saveDoc();
-    renderDoc();
+    insertBlocks(found.map((it) => (formFields(it.body).length ? moduleBlock(it) : textBlock(it.body))));
     showTab('write');
     toast(`„${p.title}“ eingefügt (${found.length} Bausteine)` + (missing ? `, ${missing} nicht mehr vorhanden` : ''), missing ? 'err' : undefined);
   },

@@ -98,7 +98,7 @@ Regeln beim Ausfüllen (`fillTemplate` in `compose.js`):
 
 ### Protokoll (`doc`)
 
-Liste von Blöcken: `{ id, type: 'text', text }` oder `{ id, type: 'module', title, tpl, values }`. `tpl` ist eine **Kopie** des Baustein-Texts zum Zeitpunkt des Hinzufügens. Spätere Änderungen am Baustein wirken sich also nicht auf ein laufendes Protokoll aus.
+Liste von Blöcken: `{ id, type: 'text', text, pinned? }` oder `{ id, type: 'module', title, tpl, values }`. `pinned: true` hat der Freitext eines neuen Protokolls: Er bleibt oben (`keepPinnedOnTop` nach jedem Verschieben), neue Blöcke kommen ans Ende (`insertBlocks`). Verschiebt man ihn selbst, wird `pinned` entfernt; ältere Protokolle ohne `pinned` verhalten sich wie früher. `tpl` ist eine **Kopie** des Baustein-Texts zum Zeitpunkt des Hinzufügens. Spätere Änderungen am Baustein wirken sich also nicht auf ein laufendes Protokoll aus.
 
 ## Synchronisation (`cloud.js`)
 

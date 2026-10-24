@@ -4,9 +4,15 @@ export const title = 'Blöcke verschieben (Maus, Touch, Tastatur)';
 
 export default async function (t) {
   const ok = (c, m) => t.ok(c, m);
-  async function setup(context) {
+  // pinned = false: Freitext geloest (steht nach den Bausteinen) -> reine Ziehmechanik
+  async function setup(context, { pinned = false } = {}) {
     const p = await newDevice(t, { name: 'Ziehen', context });
-    await p.evaluate(() => { sessionStorage.clear(); clearDoc(); ['A', 'B', 'C'].forEach((l) => addToDoc(TEMPLATES.find((x) => x.title.startsWith(l)), { quiet: true })); doc[doc.length - 1].text = 'Freitext'; saveDoc(); renderDoc(); });
+    await p.evaluate((pin) => {
+      sessionStorage.clear(); clearDoc();
+      if (!pin) doc[0].pinned = false;
+      ['A', 'B', 'C'].forEach((l) => addToDoc(TEMPLATES.find((x) => x.title.startsWith(l)), { quiet: true }));
+      doc.find((b) => b.type === 'text').text = 'Freitext'; saveDoc(); renderDoc();
+    }, pinned);
     return { ctx: p.ctx, p };
   }
   const order = (p) => p.evaluate(() => doc.map((b) => (b.type === 'text' ? 'T' : b.title[0])).join(''));
@@ -70,5 +76,39 @@ export default async function (t) {
     await p.locator('.block-mod:has(strong:text-is("A – Atemwege")) .chip:has-text("gefährdet")').tap();
     ok(await p.locator('.block-mod:has(strong:text-is("A – Atemwege")) .chip.sel:has-text("gefährdet")').count() === 1, 'Touch: Optionen antippen funktioniert weiterhin');
     await p.screenshot({ path: t.out + '/51-touch.png' });
+  }
+
+  // --- Freitext oben angeheftet (Standard bei neuem Protokoll)
+  {
+    const { p } = await setup({ viewport: { width: 390, height: 3200 } }, { pinned: true });
+    const pinned = () => p.evaluate(() => !!doc[0].pinned);
+    ok(await order(p) === 'TABC' && await pinned(), 'Angeheftet: Freitext oben, neue Bausteine darunter -> ' + await order(p));
+    ok(await p.locator('.block-text .pin.on').count() === 1, '📌 am Freitext aktiv');
+    // Baustein ueber den angehefteten Freitext schieben: Freitext bleibt oben
+    await p.locator('.block-mod:has(strong:text-is("A – Atemwege")) .grip').focus();
+    await p.keyboard.press('ArrowUp');
+    ok(await order(p) === 'TABC' && await pinned(), 'Baustein kann nicht über den angehefteten Freitext -> ' + await order(p));
+    // Mit der Maus zwischen andere Bausteine ziehen geht weiterhin
+    // Massgeblich ist die Kartenmitte: C so weit hochziehen, dass seine Mitte ueber der von A liegt
+    const card = async (l) => p.locator(`.block-mod:has(strong:text-is("${l}"))`).boundingBox();
+    const cBox = await card('C – Kreislauf'), aBox = await card('A – Atemwege');
+    const from = await center(p, headOf('C – Kreislauf'));
+    const dy = (aBox.y + aBox.height / 2 - 20) - (cBox.y + cBox.height / 2);
+    await p.mouse.move(from.x, from.y); await p.mouse.down();
+    for (let i = 1; i <= 15; i++) await p.mouse.move(from.x, from.y + (dy * i) / 15);
+    await p.mouse.up();
+    ok(await order(p) === 'TCAB' && await pinned(), 'Maus: C vor A gezogen, Freitext bleibt oben -> ' + await order(p));
+    // Freitext selbst verschieben: loest die Anheftung
+    await p.locator('.block-text .grip').focus();
+    await p.keyboard.press('ArrowDown');
+    ok(await order(p) === 'CTAB' && !(await p.evaluate(() => doc.some((b) => b.pinned))), 'Freitext verschoben -> gelöst: ' + await order(p));
+    ok(await p.locator('.block-text .pin:not(.on)').count() === 1, '📌 jetzt inaktiv');
+    // 📌 antippen: wieder oben angeheftet
+    await p.locator('.block-text .pin').click();
+    ok(await order(p) === 'TCAB' && await pinned(), '📌 antippen: Freitext wieder oben angeheftet -> ' + await order(p));
+    // Diktat/Tasten ohne Auswahl landen im angehefteten Freitext
+    await p.evaluate(() => { activeBlockId = null; appendText('Ergänzung'); });
+    ok((await p.evaluate(() => doc[0].text)) === 'Freitext Ergänzung', 'Einfügen ohne Auswahl landet im angehefteten Freitext');
+    await p.screenshot({ path: t.out + '/52-angeheftet.png', fullPage: true });
   }
 }

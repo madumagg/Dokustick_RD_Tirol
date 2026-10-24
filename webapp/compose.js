@@ -152,12 +152,14 @@ const isExclusive = (o) => /^(kein|unbekannt|nicht erhebbar)/i.test(o);
 /* ================= Protokoll (Schreiben) ================= */
 
 const textBlock = (text = '') => ({ id: uid(), type: 'text', text });
+// Freitext eines neuen Protokolls: oben angeheftet (pinned), bis man ihn verschiebt oder loest
+const pinnedTextBlock = () => ({ ...textBlock(), pinned: true });
 const moduleBlock = (it) => ({ id: uid(), type: 'module', title: it.title, tpl: it.body, values: initialValues(it.body) });
 
 // Bleibt beim Neuladen erhalten, wird beim Schliessen des Tabs verworfen
 let doc = (() => {
   try { const d = JSON.parse(sessionStorage.getItem('dokustick.doc')); if (Array.isArray(d) && d.length) return d; } catch { /* egal */ }
-  return [textBlock()];
+  return [pinnedTextBlock()];
 })();
 let activeBlockId = null;
 
@@ -172,15 +174,15 @@ const docText = () => joinBlocks(doc);
 const docIsEmpty = () => !doc.some((b) => b.type === 'module' || b.text.trim());
 
 function clearDoc() {
-  doc = [textBlock()];
+  doc = [pinnedTextBlock()];
   activeBlockId = null;
   saveDoc();
   renderDoc();
 }
 
-// Textfeld fuer Diktat & Einfuegen: das zuletzt benutzte, sonst ein neues am Ende
+// Textfeld fuer Diktat & Einfuegen: das zuletzt benutzte, sonst der angeheftete Freitext, sonst ein neues am Ende
 function activeTextArea() {
-  let b = doc.find((x) => x.id === activeBlockId && x.type === 'text');
+  let b = doc.find((x) => x.id === activeBlockId && x.type === 'text') || doc.find((x) => x.pinned);
   if (!b) {
     b = doc[doc.length - 1];
     if (!b || b.type !== 'text') { b = textBlock(); doc.push(b); renderDoc(); }
@@ -194,15 +196,41 @@ function addToDoc(it, { quiet = false } = {}) {
   if (!formFields(it.body).length) {
     appendText(it.body);
   } else {
-    // Vor einem leeren Textfeld am Ende einfuegen, damit man danach weiterschreiben kann
-    const last = doc[doc.length - 1];
-    const block = moduleBlock(it);
-    if (last && last.type === 'text' && !last.text.trim()) doc.splice(doc.length - 1, 0, block);
-    else doc.push(block, textBlock());
-    saveDoc();
-    renderDoc();
+    insertBlocks([moduleBlock(it)]);
   }
   if (!quiet) toast(`„${it.title}“ im Protokoll`);
+}
+
+// Neue Bloecke: unter einem angehefteten Freitext einfach ans Ende; sonst vor ein leeres
+// Textfeld am Ende (bzw. mit neuem Textfeld dahinter), damit man danach weiterschreiben kann
+function insertBlocks(blocks) {
+  const last = doc[doc.length - 1];
+  if (doc.some((x) => x.pinned)) doc.push(...blocks);
+  else if (last && last.type === 'text' && !last.text.trim()) doc.splice(doc.length - 1, 0, ...blocks);
+  else doc.push(...blocks, textBlock());
+  saveDoc();
+  renderDoc();
+}
+
+// Nach dem Verschieben: wer den angehefteten Freitext selbst verschiebt, loest ihn;
+// andere Bloecke koennen nicht darueber geschoben werden
+function keepPinnedOnTop(moved) {
+  const pin = doc.find((x) => x.pinned);
+  if (!pin || doc[0] === pin) return;
+  if (pin === moved) pin.pinned = false;
+  else doc = [pin, ...doc.filter((x) => x !== pin)];
+}
+
+function togglePin(b) {
+  if (b.pinned) { b.pinned = false; toast('Freitext gelöst – lässt sich jetzt verschieben'); }
+  else {
+    doc.forEach((x) => { delete x.pinned; });
+    b.pinned = true;
+    doc = [b, ...doc.filter((x) => x !== b)];
+    toast('Freitext oben angeheftet');
+  }
+  saveDoc();
+  renderDoc();
 }
 
 function appendText(text) {
@@ -217,6 +245,7 @@ function moveBlock(b, dir) {
   const i = doc.indexOf(b), j = i + dir;
   if (j < 0 || j >= doc.length) return;
   [doc[i], doc[j]] = [doc[j], doc[i]];
+  keepPinnedOnTop(b);
   saveDoc();
   renderDoc();
   document.querySelector(`[data-block="${b.id}"] .grip`)?.focus();
@@ -236,7 +265,7 @@ function grip(b, card) {
 function removeBlock(b) {
   if (b.type === 'module' && !confirm(`„${b.title}“ aus dem Protokoll entfernen?`)) return;
   doc = doc.filter((x) => x !== b);
-  if (!doc.length) doc.push(textBlock());
+  if (!doc.length) doc.push(pinnedTextBlock());
   saveDoc();
   renderDoc();
 }
@@ -275,9 +304,14 @@ function renderTextBlock(b) {
     oninput: (e) => { b.text = e.target.value; autosize(e.target); saveDoc(); hint.refresh(700); },
   }, b.text);
   const hint = spell.hint(() => b.text, (v) => { b.text = ta.value = v; autosize(ta); saveDoc(); });
-  const card = el('div', { class: 'block block-text', 'data-block': b.id }, ta, hint.box);
+  const card = el('div', { class: 'block block-text' + (b.pinned ? ' pinned' : ''), 'data-block': b.id }, ta, hint.box);
   if (doc.length > 1) {
     card.append(el('div', { class: 'block-tools' },
+      el('button', {
+        type: 'button', class: 'block-x pin' + (b.pinned ? ' on' : ''), 'aria-pressed': String(!!b.pinned),
+        title: b.pinned ? 'Oben angeheftet – antippen zum Lösen' : 'Oben anheften', 'aria-label': b.pinned ? 'Anheftung lösen' : 'Oben anheften',
+        onclick: () => togglePin(b),
+      }, '📌'),
       grip(b, card),
       el('button', { type: 'button', class: 'block-x', title: 'Textblock entfernen', 'aria-label': 'Textblock entfernen', onclick: () => removeBlock(b) }, '✕')));
   }
@@ -562,6 +596,7 @@ function endDrag(drop) {
     rest.splice(d.target, 0, d.b);
     const changed = rest.some((x, i) => x !== doc[i]);
     doc = rest;
+    keepPinnedOnTop(d.b);
     if (changed) { saveDoc(); renderDoc(); }
   }
 }
