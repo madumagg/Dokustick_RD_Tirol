@@ -1,6 +1,6 @@
 // Offline-Speicher: die App funktioniert auch ohne Internet (z.B. im Funkloch).
 // Die Versionsnummer wird mit tools/version.sh gemeinsam mit index.html und app.js erhoeht.
-const VERSION = '0.34';
+const VERSION = '0.35';
 const CACHE = 'dokustick-v' + VERSION;
 const FILES = ['./', './index.html', './app.js', './compose.js', './protocols.js', './spell.js', './catalog.js', './cloud.js', './support.js', './admin.js', './virtual.js', './config.js', './vendor/supabase.js', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 const NETWORK_TIMEOUT_MS = 4000;

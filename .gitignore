@@ -3,3 +3,6 @@ firmware/build/
 supabase/.branches/
 supabase/.temp/
 supabase/snippets/
+server/.env
+server/generated/
+server/backups/

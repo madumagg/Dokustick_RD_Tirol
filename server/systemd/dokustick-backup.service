@@ -1,0 +1,9 @@
+[Unit]
+Description=DokuStick: Backup auf die NAS
+After=docker.service network-online.target remote-fs.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=@USER@
+ExecStart=@DIR@/server/backup.sh

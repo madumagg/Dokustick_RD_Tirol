@@ -32,10 +32,12 @@ export const config = {
   password: 'geheim123',
 };
 
-// Niemals versehentlich gegen die echte Datenbank testen
+// Niemals versehentlich gegen die echte Datenbank testen (supabase.co oder den eigenen Server):
+// nur Adressen auf diesem Rechner sind erlaubt
 export function guardRemote() {
-  if (/supabase\.(co|in)\b/.test(config.supabaseUrl) && process.env.ALLOW_REMOTE_TESTS !== '1') {
-    throw new Error(`SUPABASE_URL zeigt auf ein Supabase-Projekt im Internet (${config.supabaseUrl}).\n` +
+  const host = (() => { try { return new URL(config.supabaseUrl).hostname; } catch { return ''; } })();
+  if (!['127.0.0.1', 'localhost', '[::1]'].includes(host) && process.env.ALLOW_REMOTE_TESTS !== '1') {
+    throw new Error(`SUPABASE_URL zeigt nicht auf diesen Rechner (${config.supabaseUrl}).\n` +
       'Die Tests legen Benutzer an, loeschen sie und aendern Einstellungen. Bitte nur gegen die lokale\n' +
       'Supabase (npx supabase start) oder ein eigenes Test-Projekt laufen lassen.');
   }

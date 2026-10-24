@@ -1,0 +1,9 @@
+[Unit]
+Description=DokuStick: Backup jede Nacht um 03:15
+
+[Timer]
+OnCalendar=*-*-* 03:15
+Persistent=true
+
+[Install]
+WantedBy=timers.target

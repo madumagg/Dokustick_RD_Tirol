@@ -61,6 +61,7 @@ Eine Datei darf Funktionen einer **später** geladenen Datei nur zur Laufzeit au
 | `u.<userId>.catalog` | Medikamente/Krankheiten für die Offline-Suche |
 | `appInfo` | Registrierungsregeln, Hinweis an alle, Admin-Status (`app_info()`) |
 | `announceSeen` | zuletzt ausgeblendeter Hinweis |
+| `lostSession` | `{ id, email, pending }`, wenn die Anmeldung ungültig wurde, ohne dass man sich abgemeldet hat |
 | `newsSeen` | Version, bis zu der „Was ist neu“ gelesen ist |
 | `supportFaq` | häufige Fragen für offline |
 | `auth` | Supabase-Sitzung (von supabase-js verwaltet) |
@@ -114,7 +115,7 @@ Die App arbeitet immer mit der lokalen Kopie. `cloud.sync()` läuft bei Änderun
 1. **Hochladen:** jeden Eintrag mit `dirty > 0` per `upsert` hochladen. Löschen = `deleted: true`. Bei fehlender Berechtigung (`42501`) wird die lokale Änderung verworfen.
 2. **Teams, Einträge, Einstellungen, App-Info und Datenbank** vollständig neu laden. Lokale Einträge mit `dirty` haben Vorrang vor dem Serverstand.
 
-Beim Abmelden werden alle `u.<userId>.*`-Schlüssel vom Gerät entfernt.
+Beim Abmelden werden alle `u.<userId>.*`-Schlüssel vom Gerät entfernt. **Ausnahme:** Wird die Anmeldung ungültig, ohne dass man selbst abgemeldet hat (`SIGNED_OUT` von supabase-js, z. B. abgelaufen oder nach einem Serverwechsel), bleiben sie erhalten (`cloud.sessionLost()`). Meldet man sich mit demselben Konto wieder an, werden offene Änderungen hochgeladen. Bei einem anderen Konto werden sie nach Rückfrage verworfen.
 
 Nach jedem `loadInfo()` holt `support.poll()` die Zahlen für die Abzeichen (`support_counts`) und die eigenen Tickets, höchstens stündlich auch die häufigen Fragen. Fehler dort (z. B. fehlende Migration) stören die Synchronisation nicht.
 
@@ -150,6 +151,20 @@ Alle Tabellen haben **Row Level Security**. Kurzfassung:
    - `auth.users.banned_until` niemals auf `'infinity'` setzen, das kann der Login-Dienst nicht lesen (Fehler „Database error querying schema“).
    - Funktionen mit `security definer` immer mit `set search_path = ''` und voll qualifizierten Namen (`public.…`).
    - Neue Tabellen: RLS einschalten, `anon` alle Rechte entziehen, nur nötige Rechte an `authenticated` geben.
+
+## Eigener Server (`server/`)
+
+Alternative zu supabase.co und GitHub Pages, Anleitung in [`server/README.md`](../server/README.md). Docker Compose mit:
+- PostgreSQL 17 (`supabase/postgres`)
+- GoTrue für die Anmeldung
+- PostgREST als Daten-API
+- Caddy
+
+Es sind dieselben Image-Versionen wie bei der Supabase-CLI. Caddy liefert die App direkt aus dem Repository aus, `/config.js` aus `server/generated/`. `/auth/v1` und `/rest/v1` leitet Caddy an GoTrue und PostgREST weiter, mit CORS für die alte Adresse. Kong, Realtime und Storage entfallen, Studio startet nur bei Bedarf (`--profile admin`).
+
+`migrate.sh` spielt Migrationen ein und führt Buch in `supabase_migrations.schema_migrations`. `update.sh` holt `main` alle 5 Minuten. Nach dem Umzug läuft eine neue Migration also kurz nach dem Push auf dem Server, nicht erst nach Handarbeit im SQL-Editor.
+
+Daten-Export und -Import (`data-export.sh`, `data-import.sh`) arbeiten mit JSON je Zeile und übernehmen nur gemeinsame Spalten. Damit funktionieren derselbe Weg für Backups und der Umzug von supabase.co.
 
 ## Bluetooth-Protokoll
 

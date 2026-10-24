@@ -1,0 +1,84 @@
+# Webserver: HTTPS-Zertifikat (Let's Encrypt, automatisch), Web-App und Weiterleitung
+# der Supabase-Pfade an Anmeldung und Daten-API. Werte aus server/.env.
+{
+	email {$ACME_EMAIL}
+}
+
+# CORS: die App darf auch von einer anderen Adresse aus zugreifen
+# (Uebergangszeit, in der die alte Adresse auf GitHub Pages noch benutzt wird)
+(cors) {
+	header Access-Control-Allow-Origin "*"
+	header Access-Control-Expose-Headers "Content-Range, Content-Profile, Preference-Applied, X-Supabase-Api-Version"
+	@preflight method OPTIONS
+	handle @preflight {
+		header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+		header Access-Control-Allow-Headers "authorization, apikey, content-type, accept, accept-profile, content-profile, prefer, range, x-client-info, x-supabase-api-version"
+		header Access-Control-Max-Age "86400"
+		respond 204
+	}
+}
+
+# Eigene CORS-Angaben der Dienste entfernen, sonst stuenden sie doppelt da
+(strip_cors) {
+	header_down -Access-Control-Allow-Origin
+	header_down -Access-Control-Allow-Credentials
+	header_down -Access-Control-Allow-Headers
+	header_down -Access-Control-Allow-Methods
+	header_down -Access-Control-Expose-Headers
+}
+
+# Wie bei supabase.co: /auth/v1/* -> Anmeldung (GoTrue), /rest/v1/* -> Daten-API (PostgREST)
+(api) {
+	handle_path /auth/v1/* {
+		import cors
+		reverse_proxy auth:9999 {
+			import strip_cors
+		}
+	}
+	handle_path /rest/v1/* {
+		import cors
+		reverse_proxy rest:3000 {
+			import strip_cors
+		}
+	}
+}
+
+{$SITE_ADDRESS} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+	import api
+	# Zugangsdaten dieses Servers statt der config.js aus dem Repository
+	handle /config.js {
+		root * /srv/config
+		header Cache-Control "no-cache"
+		file_server
+	}
+	# Web-App direkt aus dem Repository; der Browser fragt immer nach Aenderungen (ETag)
+	handle {
+		root * /srv/webapp
+		header Cache-Control "no-cache"
+		file_server
+	}
+}
+
+# Nur im Docker-Netz: Mail-Vorlagen fuer die Anmeldung und API fuer Studio
+http://:8081 {
+	import api
+	handle_path /mail/* {
+		root * /srv/mail
+		file_server
+	}
+}
+
+# Verwaltung (Supabase Studio) mit Passwort, nur im Heimnetz – Port 8000 im Router nicht freigeben
+http://:8000 {
+	basic_auth {
+		{$STUDIO_USER} {$STUDIO_PASSWORD_HASH}
+	}
+	reverse_proxy studio:3000
+}

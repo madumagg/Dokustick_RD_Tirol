@@ -1,0 +1,9 @@
+[Unit]
+Description=DokuStick: neue Version von GitHub holen und Migrationen einspielen
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=@USER@
+ExecStart=@DIR@/server/update.sh

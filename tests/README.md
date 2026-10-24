@@ -35,7 +35,7 @@ Screenshots und die Test-PDF landen in `tests/test-output/` (nicht im Git).
 
 In jeder Testreihe gelten als Fehler: JavaScript-Ausnahmen im Browser und Text „null“ oder „undefined“ in der Seite (meist ein leerer Platzhalter, der an `replaceChildren`/`append` statt an `el()` ging, siehe `docs/ARCHITEKTUR.md`).
 
-**Sicherheit:** Die Tests legen Benutzer an, löschen sie und ändern App-Einstellungen. Zeigt `SUPABASE_URL` auf ein Projekt bei supabase.co, verweigern sie den Start. Nur für ein eigenes, leeres **Test-Projekt** lässt sich das mit `ALLOW_REMOTE_TESTS=1` übersteuern.
+**Sicherheit:** Die Tests legen Benutzer an, löschen sie und ändern App-Einstellungen. Zeigt `SUPABASE_URL` nicht auf diesen Rechner (`127.0.0.1`/`localhost`), verweigern sie den Start. Das schützt supabase.co und den eigenen Server. Nur für ein eigenes, leeres **Test-Projekt** lässt sich das mit `ALLOW_REMOTE_TESTS=1` übersteuern.
 
 ## Umgebungsvariablen (optional)
 
@@ -60,6 +60,7 @@ In jeder Testreihe gelten als Fehler: JavaScript-Ausnahmen im Browser und Text �
 | `45-update` | Updates kommen trotz HTTP-Cache (wie GitHub Pages) sofort an; Offline-Start; Wörterbuch bleibt über Updates im Speicher |
 | `50-virtual` | Virtueller Dongle, PDF, Einsatz beenden *(Datenbank)* |
 | `60-sync` | Konto, Synchronisation, Teams, Offline-Änderungen *(Datenbank)* |
+| `62-sitzung` | Abgelaufene Anmeldung (z. B. nach Serverwechsel): nicht hochgeladene Änderungen bleiben, Hinweis mit vorausgefüllter E-Mail, nach erneuter Anmeldung hochgeladen *(Datenbank)* |
 | `70-admin-ui` | Administration in der App *(Datenbank)* |
 | `75-standard` | Standard-Bausteine: App-Admin pflegt, alle nutzen und kopieren *(Datenbank)* |
 | `76-protokolle` | Protokollvorlagen: anlegen, mit 📋 einfügen, Reihenfolge, Import; mit Datenbank zusätzlich Standard-Vorlagen |
@@ -86,3 +87,7 @@ export default async function (t) {
 ```
 
 Hilfsfunktionen stehen in `lib/harness.mjs`, u. a. `newDevice`, `login`, `waitSynced`, `sentText`, `serviceClient`, `userId` und `uniq`. Testdaten bekommen über `uniq()` einen eindeutigen Zusatz, so können Tests mehrfach gegen dieselbe Datenbank laufen.
+
+## Gegen den eigenen Server-Aufbau testen
+
+Die Testreihe läuft auch gegen `server/` (eigener Server statt supabase.co), siehe Abschnitt „Für Entwickler“ in [`server/README.md`](../server/README.md).

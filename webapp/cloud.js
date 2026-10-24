@@ -104,18 +104,36 @@ const cloud = {
     const user = session && session.user;
     if (user && (!this.account || this.account.id !== user.id)) {
       this.setAccount({ id: user.id, email: user.email });
-    } else if (event === 'SIGNED_OUT' && this.account) {
-      this.setAccount(null);
+    } else if (event === 'SIGNED_OUT' && this.account && !this.signingOut) {
+      this.sessionLost();
     } else if (user && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN')) {
       this.sync();
     }
   },
 
-  setAccount(acc) {
+  // Anmeldung ungueltig geworden, ohne dass man sich abgemeldet hat (abgelaufen, oder nach
+  // einem Serverwechsel): Daten auf dem Geraet behalten. Nach erneuter Anmeldung mit demselben
+  // Konto werden noch nicht hochgeladene Aenderungen nachgeholt.
+  sessionLost() {
+    const acc = this.account, pending = this.pending();
+    store.save('lostSession', { id: acc.id, email: acc.email, pending });
+    this.setAccount(null, { keepData: true });
+    toast(pending ? `Anmeldung abgelaufen – bitte neu anmelden. ${pending} Änderung(en) bleiben auf diesem Gerät.` : 'Anmeldung abgelaufen – bitte neu anmelden.', pending ? 'err' : '');
+  },
+
+  forgetDevice(id) {
+    for (const k of ['items', 'teams', 'settingsDirty', 'lastSync', 'catalog']) store.remove(`u.${id}.${k}`);
+  },
+
+  setAccount(acc, { keepData = false } = {}) {
     const prev = this.account;
-    if (prev && !acc) {
-      // Beim Abmelden die Kontodaten von diesem Geraet entfernen
-      for (const k of ['items', 'teams', 'settingsDirty', 'lastSync', 'catalog']) store.remove(`u.${prev.id}.${k}`);
+    // Beim Abmelden die Kontodaten von diesem Geraet entfernen
+    if (prev && !acc && !keepData) this.forgetDevice(prev.id);
+    const lost = store.load('lostSession', null);
+    if (acc && lost) {
+      // Anderes Konto: die behaltenen Daten des abgelaufenen werden nicht mehr gebraucht
+      if (lost.id !== acc.id) this.forgetDevice(lost.id);
+      store.remove('lostSession');
     }
     this.account = acc;
     store.save('account', acc);
@@ -266,6 +284,9 @@ const cloud = {
   redirectUrl() { return location.origin + location.pathname; },
 
   async signIn(email, password) {
+    const lost = store.load('lostSession', null);
+    if (lost && lost.pending && lost.email.toLowerCase() !== email.toLowerCase()
+      && !confirm(`Auf diesem Gerät warten noch ${lost.pending} Änderung(en) von ${lost.email} auf das Hochladen. Mit einem anderen Konto gehen sie verloren. Trotzdem anmelden?`)) return;
     const { error } = await this.sb.auth.signInWithPassword({ email, password });
     if (error) throw error;
     toast('Angemeldet');
@@ -309,8 +330,14 @@ const cloud = {
     const n = this.pending();
     if (n && !confirm(`${n} Änderung(en) sind noch nicht hochgeladen und gehen beim Abmelden verloren. Trotzdem abmelden?`)) return;
     if (!n && !confirm('Abmelden? Deine Bausteine bleiben im Konto gespeichert und werden von diesem Gerät entfernt.')) return;
-    await this.sb.auth.signOut({ scope: 'local' }).catch(() => {});
-    this.setAccount(null);
+    this.signingOut = true;
+    try {
+      await this.sb.auth.signOut({ scope: 'local' }).catch(() => {});
+      this.setAccount(null);
+    } finally {
+      // Das SIGNED_OUT-Ereignis kommt verzoegert (setTimeout in onAuthStateChange)
+      setTimeout(() => { this.signingOut = false; }, 100);
+    }
     toast('Abgemeldet');
   },
 
@@ -472,7 +499,8 @@ const cloud = {
     }
 
     if (!this.account) {
-      const email = el('input', { type: 'email', name: 'email', required: true, autocomplete: 'username', placeholder: 'name@beispiel.at' });
+      const lost = store.load('lostSession', null);
+      const email = el('input', { type: 'email', name: 'email', required: true, autocomplete: 'username', placeholder: 'name@beispiel.at', value: lost ? lost.email : null });
       const pw = el('input', { type: 'password', name: 'password', autocomplete: 'current-password', placeholder: 'mindestens 8 Zeichen' });
       const run = async (btn, fn) => {
         if (!email.reportValidity()) return;
@@ -482,6 +510,8 @@ const cloud = {
       const needPw = () => { if (pw.value.length < 8) { toast('Das Passwort muss mindestens 8 Zeichen haben.', 'err'); return false; } return true; };
       const mode = this.info.signup_mode;
       card.append(...kids(
+        lost ? el('p', { class: 'note warn', style: 'margin-top:0' }, `Deine Anmeldung ist abgelaufen. Bitte melde dich wieder mit ${lost.email} an`,
+          lost.pending ? ` – ${lost.pending} Änderung(en) auf diesem Gerät werden danach hochgeladen.` : '.') : null,
         el('p', { class: 'help', style: 'margin-top:0' }, 'Mit einem Konto werden deine Bausteine, Formulare und Einstellungen gesichert und auf all deinen Geräten synchronisiert. Außerdem kannst du Teams beitreten.'),
         mode === 'closed' ? el('p', { class: 'note' }, 'Neue Registrierungen sind derzeit geschlossen.') : null,
         mode === 'domains' ? el('p', { class: 'note' }, 'Registrierung nur mit E-Mail-Adressen von ' + (this.info.allowed_domains || []).map((d) => '@' + d).join(', ') + '.') : null,

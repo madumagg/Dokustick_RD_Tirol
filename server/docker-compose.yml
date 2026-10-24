@@ -1,0 +1,163 @@
+# DokuStick auf dem eigenen Server: Datenbank, Anmeldung, Daten-API und Web-App.
+# Einrichtung und Bedienung: server/README.md. Alle Werte stehen in server/.env (erzeugt von setup.sh).
+#
+# Es laufen nur die Dienste, die DokuStick braucht (gleiche Versionen wie die lokale
+# Test-Datenbank der Supabase-CLI). Kong, Realtime, Storage usw. entfallen: Caddy leitet
+# /auth/v1 und /rest/v1 direkt an Anmeldung (GoTrue) und Daten-API (PostgREST) weiter.
+name: dokustick
+
+services:
+  db:
+    image: public.ecr.aws/supabase/postgres:17.11.0.002
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: supabase_admin
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: /var/run/postgresql
+      POSTGRES_INITDB_ARGS: --allow-group-access --locale-provider=icu --encoding=UTF-8 --icu-locale=en_US.UTF-8
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXP: 3600
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      # Passwoerter der Supabase-Rollen, laeuft nur beim allerersten Start
+      - ./db/schema.sql:/etc/postgresql.schema.sql:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "127.0.0.1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  auth:
+    image: ghcr.io/supabase/gotrue:v2.197.0
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: ${PUBLIC_URL}/auth/v1
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:5432/postgres
+      GOTRUE_SITE_URL: ${PUBLIC_URL}/
+      GOTRUE_URI_ALLOW_LIST: ${REDIRECT_URLS}
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_PASSWORD_MIN_LENGTH: 8
+      GOTRUE_SECURITY_REFRESH_TOKEN_ROTATION_ENABLED: "true"
+      GOTRUE_SECURITY_REFRESH_TOKEN_REUSE_INTERVAL: 10
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_EXTERNAL_PHONE_ENABLED: "false"
+      GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: "false"
+      GOTRUE_MAILER_AUTOCONFIRM: ${MAILER_AUTOCONFIRM:-false}
+      GOTRUE_MAILER_SECURE_EMAIL_CHANGE_ENABLED: "true"
+      GOTRUE_MAILER_OTP_EXP: 86400
+      GOTRUE_RATE_LIMIT_EMAIL_SENT: ${RATE_LIMIT_EMAIL_SENT:-60}
+      GOTRUE_SMTP_HOST: ${SMTP_HOST}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT}
+      GOTRUE_SMTP_USER: ${SMTP_USER}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS}
+      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_SENDER}
+      GOTRUE_SMTP_SENDER_NAME: DokuStick
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_RECOVERY: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_INVITE: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: /auth/v1/verify
+      # Deutsche E-Mails (Vorlagen in server/mail, ausgeliefert von Caddy im internen Netz)
+      GOTRUE_MAILER_SUBJECTS_CONFIRMATION: "DokuStick: E-Mail-Adresse bestätigen"
+      GOTRUE_MAILER_SUBJECTS_RECOVERY: "DokuStick: Passwort zurücksetzen"
+      GOTRUE_MAILER_SUBJECTS_INVITE: "DokuStick: Einladung"
+      GOTRUE_MAILER_SUBJECTS_EMAIL_CHANGE: "DokuStick: Neue E-Mail-Adresse bestätigen"
+      GOTRUE_MAILER_SUBJECTS_MAGIC_LINK: "DokuStick: Anmeldelink"
+      GOTRUE_MAILER_TEMPLATES_CONFIRMATION: http://caddy:8081/mail/confirmation.html
+      GOTRUE_MAILER_TEMPLATES_RECOVERY: http://caddy:8081/mail/recovery.html
+      GOTRUE_MAILER_TEMPLATES_INVITE: http://caddy:8081/mail/invite.html
+      GOTRUE_MAILER_TEMPLATES_EMAIL_CHANGE: http://caddy:8081/mail/email_change.html
+      GOTRUE_MAILER_TEMPLATES_MAGIC_LINK: http://caddy:8081/mail/magic_link.html
+
+  rest:
+    image: public.ecr.aws/supabase/postgrest:v16.4
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["/bin/postgrest"]
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@db:5432/postgres
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      # wie bei supabase.co: hoechstens 1000 Zeilen pro Abfrage (die App blaettert)
+      PGRST_DB_MAX_ROWS: 1000
+
+  caddy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    depends_on: [auth, rest]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+      # Verwaltung (Studio), nur im Heimnetz bzw. per VPN – im Router NICHT freigeben
+      - "8000:8000"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-${DOMAIN}}
+      ACME_EMAIL: ${ACME_EMAIL}
+      STUDIO_USER: ${STUDIO_USER:-admin}
+      STUDIO_PASSWORD_HASH: ${STUDIO_PASSWORD_HASH}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../webapp:/srv/webapp:ro
+      - ./generated:/srv/config:ro
+      - ./mail:/srv/mail:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+  # --- Verwaltung im Browser (Supabase Studio): nur bei Bedarf starten ---
+  #   docker compose --profile admin up -d      starten (http://<Server>:8000)
+  #   docker compose --profile admin stop studio meta
+  meta:
+    image: public.ecr.aws/supabase/postgres-meta:v0.99.0
+    profiles: [admin]
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: db
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: postgres
+      PG_META_DB_USER: postgres
+      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
+
+  studio:
+    image: public.ecr.aws/supabase/studio:2026.09.28-sha-5e59b60
+    profiles: [admin]
+    restart: unless-stopped
+    depends_on: [meta]
+    environment:
+      HOSTNAME: 0.0.0.0
+      STUDIO_PG_META_URL: http://meta:8080
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SUPABASE_URL: http://caddy:8081
+      SUPABASE_PUBLIC_URL: ${PUBLIC_URL}
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      AUTH_JWT_SECRET: ${JWT_SECRET}
+      DEFAULT_ORGANIZATION_NAME: DokuStick
+      DEFAULT_PROJECT_NAME: DokuStick
+      PGRST_DB_SCHEMAS: public
+      NEXT_PUBLIC_ENABLE_LOGS: "false"
+      NEXT_ANALYTICS_BACKEND_PROVIDER: postgres
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

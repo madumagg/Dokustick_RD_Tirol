@@ -12,6 +12,7 @@
 // "Was ist neu": Neuerungen fuer Benutzer pro Version, neueste zuerst.
 // Bei jeder Version mit sichtbaren Neuerungen hier einen Eintrag ergaenzen.
 const NEWS = [
+  { v: '0.35', items: ['Läuft die Anmeldung ab, bleiben noch nicht hochgeladene Änderungen auf dem Gerät und werden nach dem erneuten Anmelden hochgeladen. Die E-Mail-Adresse ist dann schon eingetragen.'] },
   { v: '0.34', items: ['Baustein-Editor: Beim Verschieben verschmelzen keine Abschnitte mehr. Ein Feld vor der Überschrift ist ein eigener Abschnitt.', '„＋ Feld“ fügt ans Ende ein, wenn man vorher nicht ins Textfeld getippt hat (statt vor die Überschrift).'] },
   { v: '0.33', items: ['Behoben: Einfache Textbausteine (ohne Felder) wurden im Protokoll an den Freitext angehängt. Jetzt kommen sie als eigener Block ans Ende und lassen sich einzeln verschieben.'] },
   { v: '0.32', items: ['„Alles senden“ fragt vorher nach: nur tatsächlich Erhobenes dokumentieren. Werte, die noch unverändert aus der Vorauswahl stammen, werden aufgelistet.'] },

@@ -13,6 +13,7 @@ Handy (Web-App)  ──Bluetooth LE──▶  nRF52840 Dongle  ──USB-Tastatu
 | `firmware/` | Firmware (Zephyr RTOS) für **Makerdiary nRF52840 MDK USB Dongle** und **Nordic nRF52840 Dongle (PCA10059)** |
 | `firmware/out/` | Fertig kompilierte Firmware zum Aufspielen |
 | `webapp/` | Weboberfläche (als App installierbar, funktioniert offline) |
+| `server/` | Eigener Server statt supabase.co und GitHub Pages: Docker-Aufbau, Backups, Umzug, siehe [`server/README.md`](server/README.md) |
 | `supabase/migrations/` | Datenbank-Schema (Konto, Teams, Administration, Medikamente & Krankheiten, Standard-Bausteine & Protokollvorlagen, Support) |
 | `tests/` | Automatische Tests, siehe [`tests/README.md`](tests/README.md) |
 | `docs/ARCHITEKTUR.md` | Technischer Aufbau für Entwickler |
@@ -40,6 +41,8 @@ Der Bootloader auf dem Dongle bleibt immer erhalten. Du kannst also jederzeit ei
 4. **Add file** → `firmware/out/dokustick-nordic-pca10059.hex` → **Write**.
 
 ## 2. Weboberfläche bereitstellen
+
+**Eigener Server:** Datenbank, Anmeldung und App lassen sich komplett auf einem eigenen Server betreiben. Anleitung: [`server/README.md`](server/README.md). Die folgenden Schritte beschreiben den Betrieb mit GitHub Pages und supabase.co.
 
 Web Bluetooth funktioniert nur über **https**. Am einfachsten ist **GitHub Pages** (kostenlos):
 
