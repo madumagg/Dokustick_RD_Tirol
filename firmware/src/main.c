@@ -21,7 +21,7 @@
 #include <zephyr/settings/settings.h>
 #include <zephyr/sys/byteorder.h>
 
-#define FW_VERSION 2
+#define FW_VERSION 3
 
 #define PAIRING_WINDOW_MS   (60 * 1000)
 #define ERASE_HOLD_MS       5000
@@ -345,6 +345,15 @@ int main(void)
 	gpio_pin_configure_dt(&led_red, GPIO_OUTPUT_INACTIVE);
 	gpio_pin_configure_dt(&led_green, GPIO_OUTPUT_INACTIVE);
 	gpio_pin_configure_dt(&led_blue, GPIO_OUTPUT_INACTIVE);
+
+	/* Lebenszeichen beim Start: rot, gruen, blau nacheinander */
+	leds(true, false, false);
+	k_msleep(250);
+	leds(false, true, false);
+	k_msleep(250);
+	leds(false, false, true);
+	k_msleep(250);
+	leds(false, false, false);
 
 	if (typer_init() != 0) {
 		leds(true, false, false);

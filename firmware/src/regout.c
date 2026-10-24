@@ -19,8 +19,12 @@ static int regout_init(void)
 		NRF_NVMC->CONFIG = NVMC_CONFIG_WEN_Ren << NVMC_CONFIG_WEN_Pos;
 		while (NRF_NVMC->READY == NVMC_READY_READY_Busy) {
 		}
-		/* Aenderung wird erst nach einem Neustart wirksam */
-		NVIC_SystemReset();
+		/* Aenderung wird erst nach einem Neustart wirksam. Nur neu starten, wenn
+		 * das Schreiben geklappt hat, sonst liefe der Dongle in einer Neustart-Schleife. */
+		if ((NRF_UICR->REGOUT0 & UICR_REGOUT0_VOUT_Msk) ==
+		    (UICR_REGOUT0_VOUT_3V3 << UICR_REGOUT0_VOUT_Pos)) {
+			NVIC_SystemReset();
+		}
 	}
 	return 0;
 }
