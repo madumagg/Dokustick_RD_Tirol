@@ -509,12 +509,53 @@ const typedTexts = (b) => (b.type === 'text' ? [[b.text, {}]]
 // Textfelder stehen meist nach "Name:" -> der Anfang darf klein sein
 const FIELD_SPELL = { sentenceStart: false };
 
-function sendChecked(blocks, { spellChecked = false } = {}) {
+// Felder, deren Wert noch genau der Vorauswahl des Bausteins entspricht
+function untouchedDefaults(blocks) {
+  const out = [];
+  for (const b of blocks) {
+    if (b.type !== 'module') continue;
+    for (const f of formFields(b.tpl)) {
+      if (!f.defaults.length) continue;
+      const v = b.values[f.name];
+      const same = Array.isArray(v) ? v.length === f.defaults.length && v.every((x, i) => x === f.defaults[i]) : v === f.defaults[0];
+      if (same) out.push({ b, f, value: Array.isArray(v) ? v.join(', ') : v });
+    }
+  }
+  return out;
+}
+
+// Letzte Rueckfrage vor "Alles senden": nur dokumentieren, was erhoben bzw. durchgefuehrt wurde
+function confirmDocumented(blocks) {
+  const text = joinBlocks(blocks);
+  // Kann ohnehin nicht gesendet werden: send() nennt den Grund, keine Rueckfrage
+  if (!text.trim() || !ble.connected) return send(text);
+  const pre = untouchedDefaults(blocks);
+  const MAX = 12;
+  openDialog('Nur Erhobenes dokumentieren', [
+    el('p', { style: 'margin-top:0' }, 'Steht im Protokoll nur, was du tatsächlich erhoben und durchgeführt hast?'),
+    el('ul', { class: 'missing-list' },
+      el('li', {}, 'Vorausgewählte Werte wie „unauffällig“ oder „keine Maßnahmen erforderlich“ nur senden, wenn du sie geprüft hast.'),
+      el('li', {}, 'Nicht erhobene Befunde und nicht durchgeführte Maßnahmen entfernen.'),
+      el('li', {}, el('b', {}, 'Im Zweifel: löschen.'))),
+    pre.length ? el('p', { class: 'help', style: 'margin:12px 0 4px' }, `Unverändert aus der Vorauswahl (${pre.length}):`) : null,
+    pre.length ? el('ul', { class: 'missing-list pre-list' },
+      pre.slice(0, MAX).map(({ b, f, value }) => el('li', {}, el('b', {}, b.title), ` · ${f.name}: „${shorten(value, 60)}“`)),
+      pre.length > MAX ? el('li', {}, `… und ${pre.length - MAX} weitere`) : null) : null,
+  ], {
+    saveLabel: 'Geprüft – senden',
+    cancelLabel: 'Zurück',
+    onSave: () => { setTimeout(() => send(text), 0); },
+  });
+  return false;
+}
+
+// warn: vor dem Senden an das Dokumentieren nur erhobener Befunde erinnern ("Alles senden")
+function sendChecked(blocks, { spellChecked = false, warn = false } = {}) {
   const missing = blocks.filter((b) => b.type === 'module').map((b) => ({ b, list: blockProblems(b) })).filter((x) => x.list.length);
   if (!missing.length) {
     // Moegliche Rechtschreibfehler: Hinweis, aber Senden bleibt moeglich
     const typos = spellChecked ? [] : [...new Set(blocks.flatMap(typedTexts).flatMap(([t, o]) => spell.check(t, o).map((e) => spell.label(e))))];
-    if (!typos.length) return send(joinBlocks(blocks));
+    if (!typos.length) return warn ? confirmDocumented(blocks) : send(joinBlocks(blocks));
     openDialog('Mögliche Rechtschreibfehler', [
       el('p', {}, typos.length === 1 ? 'Hier ist vielleicht etwas falsch geschrieben:' : `Hier sind ${typos.length} Stellen vielleicht falsch geschrieben:`),
       el('p', { class: 'chips' }, typos.map((w) => el('span', { class: 'chip spell-chip' }, w))),
@@ -522,7 +563,7 @@ function sendChecked(blocks, { spellChecked = false } = {}) {
     ], {
       saveLabel: 'Trotzdem senden',
       cancelLabel: 'Korrigieren',
-      onSave: () => { setTimeout(() => sendChecked(blocks, { spellChecked: true }), 0); },
+      onSave: () => { setTimeout(() => sendChecked(blocks, { spellChecked: true, warn }), 0); },
     });
     return false;
   }
@@ -941,7 +982,7 @@ function openTemplates() {
 /* ================= Schreiben: Bedienelemente ================= */
 
 // "Alles senden" laesst das Protokoll stehen; geloescht wird erst mit "Einsatz beenden"
-$('#sendBtn').addEventListener('click', () => sendChecked(doc));
+$('#sendBtn').addEventListener('click', () => sendChecked(doc, { warn: true }));
 
 function endMission() {
   const dlg = $('#dlg');

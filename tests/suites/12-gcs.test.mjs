@@ -30,6 +30,7 @@ export default async function (t) {
   await p.screenshot({ path: t.out + '/gcs.png', fullPage: true });
 
   await p.click('#sendBtn');
+  await p.click('#dlg button:has-text("Geprüft – senden")');
   await p.waitForTimeout(800);
   const sent = await sentText(p);
   const exp = 'GCS – Augen öffnen: Spontan (4 Punkte)\nVerbal: desorientiert (4 Punkte)\nMotorisch: gezielte Bewegung (5 Punkte)\nErgebnis: 13 Punkte';

@@ -88,6 +88,7 @@ export default async function (t) {
   ok((await sentText(p)) === '', '„Korrigieren“: nichts gesendet');
   await p.click('#sendBtn');
   await p.click('#dlg button:has-text("Trotzdem senden")');
+  await p.click('#dlg button:has-text("Geprüft – senden")');
   await p.waitForFunction(() => window.__writes.length > 0);
   await p.waitForTimeout(300);
   ok((await sentText(p)).includes('Rettungswagn transportiert'), '„Trotzdem senden“ sendet');
@@ -99,6 +100,7 @@ export default async function (t) {
   await p.click('nav button[data-tab=write]');
   ok(await p.evaluate(() => [...document.querySelectorAll('.spell')].every((n) => n.hidden)), 'Ausgeschaltet: keine Hinweise');
   await p.click('#sendBtn');
+  ok(!(await p.isVisible('#dlg >> text=Mögliche Rechtschreibfehler')), 'Ausgeschaltet: keine Rückfrage zur Rechtschreibung');
+  await p.click('#dlg button:has-text("Geprüft – senden")');
   await p.waitForFunction(() => window.__writes.length > 0);
-  ok(!(await p.isVisible('#dlg >> text=Mögliche Rechtschreibfehler')), 'Ausgeschaltet: Senden ohne Rückfrage');
 }

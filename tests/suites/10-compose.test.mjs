@@ -76,14 +76,28 @@ export default async function (t) {
   await B.locator('.chip:has-text("unauffällig")').click();
   await p.screenshot({ path: t.out + '/81-vollstaendig.png' });
 
-  // Alles senden
+  // Alles senden: zuerst die Rueckfrage "Nur Erhobenes dokumentieren"
   await p.click('#sendBtn');
+  await p.waitForSelector('#dlg >> text=Nur Erhobenes dokumentieren');
+  ok((await p.textContent('#dlg')).includes('Im Zweifel: löschen.'), 'Rückfrage vor dem Senden: nur Erhobenes dokumentieren');
+  const pre = (await p.locator('#dlg .pre-list li').allTextContents()).join(' | ');
+  ok(pre.includes('B – Belüftung · Auskultation: „seitengleich, vesikulär“') && pre.includes('„keine Maßnahmen erforderlich“') && !pre.includes('Guedeltubus') && !pre.includes('AF'),
+    'Nennt die unveränderte Vorauswahl, nicht die geänderten Felder: ' + pre);
+  await p.screenshot({ path: t.out + '/82-rueckfrage-senden.png' });
+  await p.click('#dlg button:has-text("Zurück")');
+  await p.waitForTimeout(300);
+  ok((await sentText(p)) === '' && !(await p.locator('#dlg[open]').count()), '„Zurück“: nichts gesendet');
+
+  // Alles senden, Rueckfrage bestaetigt
+  await p.click('#sendBtn');
+  await p.click('#dlg button:has-text("Geprüft – senden")');
   await p.waitForTimeout(800);
   const sent = await sentText(p);
   ok(sent === 'Pat. kreislaufstabil.\n\nB – Belüftung: Atmung unauffällig, AF 18/min, SpO2 96 %, Auskultation seitengleich, vesikulär. Maßnahmen: keine Maßnahmen erforderlich.\n\nA – Atemwege: frei und gesichert. Maßnahmen: Guedeltubus, Absaugen.', 'Gesendet:\n' + sent);
   // Leerzeile abgeschaltet: Bloecke nur durch Zeilenumbruch getrennt
   await p.evaluate(() => { settings.blankLine = false; });
   await p.click('#sendBtn');
+  await p.click('#dlg button:has-text("Geprüft – senden")');
   await p.waitForTimeout(800);
   ok(!(await sentText(p)).includes('\n\n'), 'Ohne Leerzeile: Blöcke nur durch einen Zeilenumbruch getrennt');
   await p.evaluate(() => { settings.blankLine = true; });

@@ -35,6 +35,7 @@ export default async function (t) {
     saveDoc(); renderDoc();
   });
   await A.click('#sendBtn');
+  await A.click('#dlg button:has-text("Geprüft – senden")');
   await A.waitForFunction(() => vdongle.keystrokes > 0 && !sendJob, null, { timeout: 10000 });
   await A.waitForTimeout(200);
   const screen = await A.textContent('.vscreen');
