@@ -96,6 +96,7 @@ const cloud = {
     this.render();
     renderStatus(); // Admin-Status beeinflusst die Verbinden-Schaltflaeche
     catalog.render();
+    support.poll(); // Abzeichen fuer neue Antworten und Tickets
   },
 
   onAuth(event, session) {
@@ -120,6 +121,7 @@ const cloud = {
     store.save('account', acc);
     if (!acc) { this.info = { ...this.info, is_admin: false }; this.loadInfo(); }
     this.teams = []; this.lastSync = null; this.error = null;
+    support.reset();
     loadItems();
     if (acc) this.loadTeams();
     catalog.load();
@@ -453,6 +455,7 @@ const cloud = {
     const card = $('#accountCard'), teamsCard = $('#teamsCard'), teamsHead = $('#teamsHead');
     if (!card) return;
     this.renderAnnouncement();
+    support.render();
     const adminCard = $('#adminCard');
     adminCard.hidden = $('#adminHead').hidden = !(this.account && this.info.is_admin);
     card.replaceChildren();

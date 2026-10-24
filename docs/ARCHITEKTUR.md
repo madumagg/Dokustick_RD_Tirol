@@ -30,7 +30,8 @@ Reines HTML/CSS/JavaScript **ohne Build-Schritt**. Die Skripte sind klassische `
 | `spell.js` | Rechtschreibprüfung (Hunspell als WebAssembly, lädt `vendor/hunspell` und `vendor/dict` erst bei Bedarf per `import()`) |
 | `catalog.js` | Medikamente-/Krankheiten-Datenbank (Laden, Suche, Vorschlag, Freigabe, CSV-Import) |
 | `cloud.js` | Konto, Synchronisation, Teams |
-| `admin.js` | Administration (nur App-Admins) |
+| `support.js` | Support & Feedback: Tickets, Ideen, häufige Fragen, „Was ist neu“ (`NEWS`), Geräteinfos, Abzeichen |
+| `admin.js` | Administration (nur App-Admins), darin der Reiter „Support“ |
 | `virtual.js` | Virtueller Dongle mit PDF-Ausgabe (nur App-Admins); `vendor/jspdf.umd.min.js` wird erst bei Bedarf geladen |
 | `sw.js` | Service Worker: Offline-Speicher |
 
@@ -59,6 +60,8 @@ Eine Datei darf Funktionen einer **später** geladenen Datei nur zur Laufzeit au
 | `u.<userId>.catalog` | Medikamente/Krankheiten für die Offline-Suche |
 | `appInfo` | Registrierungsregeln, Hinweis an alle, Admin-Status (`app_info()`) |
 | `announceSeen` | zuletzt ausgeblendeter Hinweis |
+| `newsSeen` | Version, bis zu der „Was ist neu“ gelesen ist |
+| `supportFaq` | häufige Fragen für offline |
 | `auth` | Supabase-Sitzung (von supabase-js verwaltet) |
 
 In `sessionStorage` liegen `dokustick.doc` (das Protokoll, bleibt beim Neuladen erhalten und wird beim Schließen des Tabs verworfen) und `dokustick.tab` (zuletzt offener Reiter).
@@ -112,6 +115,8 @@ Die App arbeitet immer mit der lokalen Kopie. `cloud.sync()` läuft bei Änderun
 
 Beim Abmelden werden alle `u.<userId>.*`-Schlüssel vom Gerät entfernt.
 
+Nach jedem `loadInfo()` holt `support.poll()` die Zahlen für die Abzeichen (`support_counts`) und die eigenen Tickets, höchstens stündlich auch die häufigen Fragen. Fehler dort (z. B. fehlende Migration) stören die Synchronisation nicht.
+
 ## Supabase
 
 Schema als Migrationen in `supabase/migrations/` (Reihenfolge = Dateiname):
@@ -123,6 +128,7 @@ Schema als Migrationen in `supabase/migrations/` (Reihenfolge = Dateiname):
 | `…_catalog.sql` | `medications`, `diagnoses`; `admin_import_catalog` |
 | `…_diagnoses_beschreibung.sql` | `diagnoses.abbreviation` fasst jetzt Abkürzung **und/oder Beschreibung** (bis 300 Zeichen). Der Spaltenname bleibt aus Kompatibilitätsgründen. |
 | `…_standard_vorlagen.sql` | Standard-Bereich: `teams.is_standard` (genau ein Team „Standard“ ohne Mitglieder), `app_info().standard_team`; `items.kind` erlaubt `'protocol'`; Admin-Funktionen behandeln den Standard-Bereich nicht als Team |
+| `…_support.sql` | `support_tickets`, `support_messages` (`internal`, `system`), `support_reads`, `support_votes`, `support_faq`; Funktionen `support_*` (Benutzer) und `admin_ticket_*`, `admin_reply`, `admin_tickets` |
 
 Alle Tabellen haben **Row Level Security**. Kurzfassung:
 - **Eigene Einträge:** sieht und ändert nur der Besitzer.
@@ -130,6 +136,7 @@ Alle Tabellen haben **Row Level Security**. Kurzfassung:
 - **Beitrittscode:** sehen nur die Team-Admins.
 - **Admin-Funktionen** prüfen selbst `require_superadmin()`.
 - **Medikamente und Krankheiten:** freigegebene Einträge sind für alle sichtbar, Vorschläge nur für den Ersteller und die App-Admins.
+- **Support:** Tickets, Nachrichten, Lesestand und Stimmen haben **keine** Tabellenrechte, nur die `security definer`-Funktionen greifen zu. Sie prüfen Ersteller oder App-Admin (`support_get`). Interne Notizen und E-Mail-Adressen liefern sie nur an App-Admins, Ideen (`support_ideas`) nur mit Titel, Ideen-Text und Stimmen. Ist ein Ticket jemand anderem zugewiesen, verweigern `admin_reply` und `admin_ticket_assign` ohne `p_force` mit Fehlercode `DS409`; die App fragt dann nach. Häufige Fragen: lesen alle (auch `anon`), schreiben nur App-Admins (RLS).
 - **Standard-Bereich:** Einträge mit `team_id` = Standard-Team sehen alle angemeldeten Benutzer, anlegen und ändern dürfen nur App-Admins. In der App ist es ein Pseudo-Team: `cloud.isStandard()`, `cloud.isAdmin()` (für App-Admins wahr), `cloud.adminTargets()` für „Speichern in“. Ältere App-Versionen behandeln Standard-Einträge wie fremde Team-Einträge.
 
 ### Regeln für Datenbank-Änderungen
@@ -163,6 +170,7 @@ Datenstrom: UTF-8-Text, `00 <mod> <key>` = Taste, `00 FF <n>` = Pause n×10 ms. 
 - **Offline-Speicher:** Der Service Worker lädt online immer zuerst vom Netz (`cache: 'no-cache'`) und greift nur offline oder nach 4 s auf den Speicher zurück.
 - **Wörterbuch:** Hunspell und die Wörterbücher (ca. 2 MB, `DICT_FILES` in `sw.js`) liegen in einem eigenen Speicher `DICT_CACHE`, der App-Updates überdauert und zuerst gefragt wird. Bei neuen Wörterbuch- oder Hunspell-Dateien `DICT_CACHE` hochzählen.
 - **Neue Dateien:** zusätzlich in `FILES` in `sw.js` eintragen, sonst fehlen sie offline.
+- **Was ist neu:** Neuerungen für Benutzer als Eintrag in `NEWS` (oben in `support.js`) ergänzen. Der Hinweis nach dem Update zeigt alle Einträge, die neuer als `newsSeen` und nicht neuer als `APP_VERSION` sind.
 
 ## Bekannte Stolperfallen
 
@@ -172,3 +180,4 @@ Datenstrom: UTF-8-Text, `00 <mod> <key>` = Taste, `00 FF <n>` = Pause n×10 ms. 
 - **Mehrere Supabase-Clients:** Die App nutzt `storageKey: 'dokustick.auth'`.
 - **Supabase liefert höchstens 1000 Zeilen pro Abfrage** (`max_rows`). Größere Listen seitenweise laden, siehe `catalog.fetchAll()`.
 - **Neue Einstellungen:** Ältere App-Versionen laden beim Speichern der Einstellungen nur ihre eigenen Schlüssel hoch (`SYNCED_SETTINGS`) und überschreiben damit neuere Schlüssel. Neue Einstellungen deshalb immer mit sinnvollem Standardwert behandeln.
+- **Globale Namen:** Alle Skripte teilen sich einen Gültigkeitsbereich. Ein zweites `const` mit demselben Namen in einer anderen Datei (z. B. `fmtDate` aus `admin.js`) bricht das spätere Skript komplett ab. Vor neuen globalen Namen kurz suchen.

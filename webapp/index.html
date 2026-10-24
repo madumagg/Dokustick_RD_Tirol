@@ -258,6 +258,38 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 .chip.spell-chip.k-case, .chip.spell-chip.k-double { text-decoration-style: dotted; text-decoration-color: var(--warn); }
 .sum-val { display: block; font-size: 20px; font-weight: 700; padding: 4px 0; }
 .badge.std { background: transparent; color: var(--ok); border: 1px solid var(--ok); }
+.badge.ok { background: transparent; color: var(--ok); border: 1px solid var(--ok); }
+.seg.seg-3 { grid-template-columns: repeat(3, 1fr); }
+#adminTabs { grid-template-columns: repeat(6, 1fr); }
+#adminTabs button { grid-column: span 2; }
+#adminTabs button:nth-child(n+4) { grid-column: span 3; }
+@media (min-width: 640px) { #adminTabs { grid-template-columns: repeat(5, 1fr); } #adminTabs button, #adminTabs button:nth-child(n+4) { grid-column: auto; } }
+#adminTabs .badge { margin-left: 4px; }
+.mod .prev .badge { margin-left: 0; vertical-align: 0; }
+.thread { display: grid; gap: 8px; margin: 12px 0; }
+.msg { max-width: 88%; justify-self: start; padding: 8px 12px; border-radius: 14px 14px 14px 4px; background: var(--surface-2); }
+.msg.mine { justify-self: end; border-radius: 14px 14px 4px 14px; background: var(--accent-soft); }
+.msg.internal { background: var(--warn-soft); border: 1px dashed var(--warn); }
+.msg-meta { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+.msg-body { white-space: pre-wrap; word-break: break-word; }
+.msg-sys { justify-self: center; text-align: center; font-size: 12px; color: var(--muted); }
+.msg-sys.internal { color: var(--warn); }
+details.dev { margin: 8px 0; font-size: 14px; }
+details.dev summary, .faq summary { cursor: pointer; }
+.dev-info { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; white-space: pre-wrap; word-break: break-word; background: var(--surface-2); border-radius: 10px; padding: 8px 10px; margin: 6px 0 0; }
+.faq details { border-bottom: 1px solid var(--border); padding: 10px 0; }
+.faq summary { font-weight: 600; }
+.faq p { white-space: pre-wrap; margin: 8px 0 0; }
+.idea { display: flex; gap: 10px; align-items: flex-start; }
+.idea-text { white-space: pre-wrap; margin-top: 4px; }
+.vote { white-space: nowrap; }
+.vote[aria-pressed=true] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.news h2 { margin: 14px 0 4px; }
+.news ul { margin: 0; padding-left: 20px; }
+.news li + li { margin-top: 4px; }
+.ticket.unread .title { color: var(--accent); }
+textarea.internal-input { background: var(--warn-soft); }
+.ticket-meta .field { margin: 0; }
 .seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: var(--surface-2); border-radius: 12px; padding: 4px; margin-bottom: 16px; }
 .seg button { border: 0; background: none; border-radius: 9px; padding: 8px 4px; min-height: 40px; font-size: 14px; color: var(--muted); }
 .seg button[aria-selected=true] { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: var(--shadow); }
@@ -313,6 +345,7 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 
 <main>
   <div id="announce"></div>
+  <div id="newsNote"></div>
   <!-- Schreiben: Protokoll aus Text- und Baustein-Bloecken -->
   <section id="tab-write">
     <div id="docBlocks"></div>
@@ -376,9 +409,12 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
     <div class="card pad" id="teamsCard" hidden></div>
     <h2 id="adminHead" hidden>Administration</h2>
     <div class="card pad" id="adminCard" hidden>
-      <p class="help" style="margin-top:0">Du bist App-Admin: Benutzer, Teams, Registrierung und den Hinweis an alle verwalten.</p>
+      <p class="help" style="margin-top:0">Du bist App-Admin: Benutzer, Teams, Support-Tickets, Registrierung und den Hinweis an alle verwalten.</p>
       <button class="btn primary" id="adminOpen">Administration öffnen</button>
+      <div id="adminSupport"></div>
     </div>
+    <h2>Support &amp; Feedback</h2>
+    <div class="card pad" id="supportCard"></div>
 
     <h2>Tippen</h2>
     <div class="card pad">
@@ -462,6 +498,7 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
     </div>
     <div class="seg" id="adminTabs" role="tablist">
       <button role="tab" data-view="overview" aria-selected="true">Übersicht</button>
+      <button role="tab" data-view="support" aria-selected="false">Support</button>
       <button role="tab" data-view="users" aria-selected="false">Benutzer</button>
       <button role="tab" data-view="teams" aria-selected="false">Teams</button>
       <button role="tab" data-view="settings" aria-selected="false">Einstellungen</button>
@@ -478,23 +515,24 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
   <button role="tab" data-tab="db" aria-selected="false">
     <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 20.5 3.5 13.5a4.95 4.95 0 1 1 7-7l7 7a4.95 4.95 0 1 1-7 7Z"/><path d="m8.5 8.5 7 7"/></svg><span class="nav-badge" id="dbNavBadge" hidden></span></span>Datenbank</button>
   <button role="tab" data-tab="settings" aria-selected="false">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>Einstellungen</button>
+    <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg><span class="nav-badge" id="setNavBadge" hidden></span></span>Einstellungen</button>
 </nav>
 
 <dialog id="dlg"><form method="dialog" id="dlgForm"></form></dialog>
 <dialog id="dlg2"><form method="dialog" id="dlg2Form"></form></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=0.29"></script>
-<script src="vendor/supabase.js?v=0.29"></script>
-<script src="app.js?v=0.29"></script>
-<script src="compose.js?v=0.29"></script>
-<script src="protocols.js?v=0.29"></script>
-<script src="spell.js?v=0.29"></script>
-<script src="catalog.js?v=0.29"></script>
-<script src="cloud.js?v=0.29"></script>
-<script src="admin.js?v=0.29"></script>
-<script src="virtual.js?v=0.29"></script>
+<script src="config.js?v=0.30"></script>
+<script src="vendor/supabase.js?v=0.30"></script>
+<script src="app.js?v=0.30"></script>
+<script src="compose.js?v=0.30"></script>
+<script src="protocols.js?v=0.30"></script>
+<script src="spell.js?v=0.30"></script>
+<script src="catalog.js?v=0.30"></script>
+<script src="cloud.js?v=0.30"></script>
+<script src="support.js?v=0.30"></script>
+<script src="admin.js?v=0.30"></script>
+<script src="virtual.js?v=0.30"></script>
 <script>boot(); $('#adminOpen').addEventListener('click', () => admin.open());</script>
 </body>
 </html>

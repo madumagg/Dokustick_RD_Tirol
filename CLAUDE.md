@@ -13,7 +13,7 @@ Dokumentationshilfe für den Rettungsdienst: Eine Web-App (Handy/iPad) schickt T
 ## Vor jedem Push
 
 1. **Tests:** `cd tests && npm run db:start && npm test`. Alles muss grün sein. Ohne Docker mindestens `npm run test:offline`.
-2. **Bei Änderungen an `webapp/`:** `tools/version.sh` ausführen (z. B. 0.18 → 0.19), sonst kommt das Update auf Geräten mit Offline-Speicher nicht zuverlässig an. Neue Dateien zusätzlich in `FILES` in `webapp/sw.js` eintragen.
+2. **Bei Änderungen an `webapp/`:** `tools/version.sh` ausführen (z. B. 0.18 → 0.19), sonst kommt das Update auf Geräten mit Offline-Speicher nicht zuverlässig an. Neue Dateien zusätzlich in `FILES` in `webapp/sw.js` eintragen. Sichtbare Neuerungen in `NEWS` oben in `webapp/support.js` eintragen („Was ist neu“).
 3. **Neue Funktionen** bekommen eine Testreihe in `tests/suites/` (siehe `tests/README.md`).
 4. **Anleitung aktualisieren:** `README.md` für Benutzer, `docs/ARCHITEKTUR.md` für Entwickler.
 

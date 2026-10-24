@@ -62,8 +62,9 @@ Screenshots und die Test-PDF landen in `tests/test-output/` (nicht im Git).
 | `75-standard` | Standard-Bausteine: App-Admin pflegt, alle nutzen und kopieren *(Datenbank)* |
 | `76-protokolle` | Protokollvorlagen: anlegen, mit 📋 einfügen, Reihenfolge, Import; mit Datenbank zusätzlich Standard-Vorlagen |
 | `77-rechtschreibung` | Rechtschreibprüfung: Hinweise, Korrektur, eigenes Wörterbuch, Prüfung vor dem Senden |
+| `78-support` | Support & Feedback: Ticket mit Geräteinfos, Abzeichen, Admin-Antwort übernimmt das Ticket, Warnung für zweiten Admin, interne Notizen unsichtbar, Ideen mit 👍, häufige Fragen, „Was ist neu“ nach Updates, Server ohne Migration *(Teile mit Datenbank)* |
 | `80-catalog` | Medikamente & Krankheiten: Vorschlag, Freigabe, CSV-Import, Suche im Protokoll *(Datenbank)* |
-| `90-db-rls`, `91-db-admin`, `92-db-catalog`, `93-db-standard` | Zugriffsregeln der Datenbank direkt über die API *(Datenbank)* |
+| `90-db-rls`, `91-db-admin`, `92-db-catalog`, `93-db-standard`, `94-db-support` | Zugriffsregeln der Datenbank direkt über die API *(Datenbank)* |
 
 ## Eigene Tests schreiben
 

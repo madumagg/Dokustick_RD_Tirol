@@ -13,7 +13,7 @@ Handy (Web-App)  ──Bluetooth LE──▶  nRF52840 Dongle  ──USB-Tastatu
 | `firmware/` | Firmware (Zephyr RTOS) für **Makerdiary nRF52840 MDK USB Dongle** und **Nordic nRF52840 Dongle (PCA10059)** |
 | `firmware/out/` | Fertig kompilierte Firmware zum Aufspielen |
 | `webapp/` | Weboberfläche (als App installierbar, funktioniert offline) |
-| `supabase/migrations/` | Datenbank-Schema (Konto, Teams, Administration, Medikamente & Krankheiten, Standard-Bausteine & Protokollvorlagen) |
+| `supabase/migrations/` | Datenbank-Schema (Konto, Teams, Administration, Medikamente & Krankheiten, Standard-Bausteine & Protokollvorlagen, Support) |
 | `tests/` | Automatische Tests, siehe [`tests/README.md`](tests/README.md) |
 | `docs/ARCHITEKTUR.md` | Technischer Aufbau für Entwickler |
 
@@ -234,7 +234,8 @@ Für App-Admins gibt es unter *Einstellungen → Administration* eine Verwaltung
 
 | Bereich | Funktionen |
 |---|---|
-| Übersicht | Anzahl Benutzer (aktiv, unbestätigt, gesperrt), Teams, Textbausteine, Formulare, Protokollvorlagen |
+| Übersicht | Anzahl Benutzer (aktiv, unbestätigt, gesperrt), Teams, Textbausteine, Formulare, Protokollvorlagen, nicht zugewiesene Support-Tickets |
+| Support | Tickets beantworten, zuweisen, Status setzen, interne Notizen; Vorschläge als Idee veröffentlichen; häufige Fragen pflegen (siehe [Support & Feedback](#support--feedback)) |
 | Benutzer | suchen, Passwort-Reset senden, sperren/entsperren, zum App-Admin machen, Konto löschen |
 | Teams | alle Teams sehen, anlegen, umbenennen, löschen; Mitglieder per E-Mail hinzufügen, entfernen, Rollen ändern; Beitrittscode erneuern |
 | Einstellungen | Registrierung offen / nur bestimmte E-Mail-Domains / geschlossen; Team für neue Benutzer; Hinweis an alle |
@@ -245,6 +246,27 @@ Hinweise:
 - Gesperrte Benutzer werden sofort abgemeldet und können sich nicht mehr anmelden.
 - Löscht man ein Konto, das einziger Admin eines Teams ist, wird automatisch das am längsten dabei befindliche Mitglied Team-Admin.
 - Sich selbst kann man weder sperren noch löschen noch die Admin-Rechte entziehen. So bleibt immer mindestens ein App-Admin übrig.
+
+### Support & Feedback
+
+Einmalig einrichten: Im Supabase **SQL Editor** den Inhalt von [`supabase/migrations/20261024200000_support.sql`](supabase/migrations/20261024200000_support.sql) ausführen (nach den anderen). Fehlt die Migration, zeigt die App unter *Support & Feedback* nur „noch nicht eingerichtet“, alles andere läuft normal weiter.
+
+**Für alle** unter *Einstellungen → Support & Feedback*:
+- **＋ Neues Ticket:** Kategorie *Frage / Problem*, *Fehler* oder *Vorschlag*, Betreff und Beschreibung. **Geräteinfos** (App-Version, Gerät, Browser, Dongle mit Firmware, Tippverzögerung …) werden auf Wunsch angehängt. Was genau mitgeht, zeigt „Anzeigen, was mitgeschickt wird“. Bitte **keine Patientendaten** in Tickets schreiben.
+- **Meine Tickets:** Verlauf mit den Antworten vom „Support“, selbst antworten, „Erledigt ✓“ oder wieder öffnen, Ticket löschen. Eine neue Antwort zeigt ein rotes Abzeichen an *Einstellungen* und „Neue Antwort“ am Ticket. Status: *Offen* → *In Bearbeitung* → *Wartet auf deine Antwort* → *Erledigt*. Antwortet man auf ein erledigtes Ticket, ist es wieder offen.
+- **💡 Ideen:** Vorschläge, die die Admins für alle sichtbar gemacht haben (ohne Namen). Mit 👍 zustimmen, nochmal tippen nimmt die Stimme zurück.
+- **❓ Häufige Fragen:** von den Admins gepflegt, auch ohne Konto und offline lesbar (zuletzt geladener Stand).
+- **✨ Was ist neu:** Neuerungen der letzten Versionen. Nach einem Update erscheint oben kurz ein Hinweis „Neu in Version …“, bis man ihn schließt oder „Mehr“ antippt.
+
+**Für App-Admins** unter *Administration → Support* (Abzeichen am Reiter und an *Einstellungen*: nicht zugewiesene Tickets plus eigene Tickets mit neuer Nachricht):
+- **Liste** filtern (offen, nicht zugewiesen, mir zugewiesen, wartet auf Rückmeldung, Ideen, erledigt), nach Kategorie und Text suchen.
+- **Zuweisen:** Mit der ersten Antwort übernimmt man ein Ticket automatisch, sonst über „Übernehmen“ oder die Auswahl „Zuständig“. Ist ein Ticket schon jemand anderem zugewiesen, steht oben „Wird bearbeitet von …“, und vor dem Antworten oder Übernehmen kommt eine Rückfrage. Das prüft auch die Datenbank, so antworten zwei Admins nicht gleichzeitig.
+- **Antworten** mit „Status danach“ (z. B. *Wartet auf Rückmeldung* oder *Erledigt*). Status- und Kategoriewechsel erscheinen als Vermerk im Verlauf.
+- **Interne Notiz:** nur für Admins sichtbar (gelb markiert). Ändert die Zuweisung nicht.
+- **Als Idee veröffentlichen** (bei Vorschlägen): Titel und Text vorher von persönlichen Angaben bereinigen. Die Person sieht im Verlauf, dass ihr Vorschlag veröffentlicht wurde. Abgelehnte oder doppelte Ideen mit „Zurückziehen“ wieder ausblenden.
+- **Häufige Fragen → Bearbeiten:** anlegen, ändern, löschen, mit ↑ ↓ sortieren. Die Migration legt einige Startfragen aus den Hinweisen der App an.
+
+Es gibt keine E-Mail-Benachrichtigung. Neue Antworten und Tickets erscheinen beim nächsten Abgleich, also beim Öffnen der App, beim Öffnen der Einstellungen und alle 2 Minuten.
 
 ### Datenbank: Medikamente & Krankheiten
 
@@ -289,6 +311,7 @@ Beim Konstruieren beachten:
 - Die Bluetooth-Verbindung ist verschlüsselt, und nur gekoppelte Handys werden angenommen.
 - **Diktat:** Die Spracherkennung des Browsers läuft je nach Gerät über Server von Google bzw. Apple. Keine identifizierenden Patientendaten diktieren.
 - **Rechtschreibprüfung:** läuft vollständig auf dem Gerät, es wird kein Text verschickt.
+- **Support-Tickets:** liegen bei Supabase. Sie sehen nur die Person selbst und die App-Admins, interne Notizen nur die Admins. Geräteinfos werden nur mitgeschickt, wenn der Haken gesetzt ist. Wird ein Konto gelöscht, verschwinden auch seine Tickets. Ideen sind ohne Namen für alle sichtbar.
 - Vor dem Einsatz an dienstlichen Geräten mit der zuständigen IT abklären, ob USB-Tastaturen erlaubt sind.
 
 ## Mitentwickeln
