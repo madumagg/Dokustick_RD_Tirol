@@ -163,6 +163,9 @@ body.drag-on { user-select: none; -webkit-user-select: none; cursor: grabbing; }
 .pick-n { color: var(--accent); font-weight: 700; white-space: nowrap; }
 .fields-box { background: var(--surface-2); border-radius: 12px; padding: 10px 12px; margin: -4px 0 12px; }
 .fields-box .chip { background: var(--surface); }
+.piece-list { position: relative; display: grid; gap: 6px; }
+.piece { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 4px 10px 4px 4px; font-size: 14px; }
+.piece.dragging { position: relative; z-index: 20; box-shadow: 0 6px 20px rgba(0,0,0,.2); }
 .interim { min-height: 1.4em; color: var(--muted); font-style: italic; font-size: 14px; margin: 6px 2px; }
 label.field { display: block; margin-bottom: 12px; }
 label.field > span { display: block; font-size: 14px; color: var(--muted); margin-bottom: 4px; }
@@ -482,16 +485,16 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 <dialog id="dlg2"><form method="dialog" id="dlg2Form"></form></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=0.27"></script>
-<script src="vendor/supabase.js?v=0.27"></script>
-<script src="app.js?v=0.27"></script>
-<script src="compose.js?v=0.27"></script>
-<script src="protocols.js?v=0.27"></script>
-<script src="spell.js?v=0.27"></script>
-<script src="catalog.js?v=0.27"></script>
-<script src="cloud.js?v=0.27"></script>
-<script src="admin.js?v=0.27"></script>
-<script src="virtual.js?v=0.27"></script>
+<script src="config.js?v=0.28"></script>
+<script src="vendor/supabase.js?v=0.28"></script>
+<script src="app.js?v=0.28"></script>
+<script src="compose.js?v=0.28"></script>
+<script src="protocols.js?v=0.28"></script>
+<script src="spell.js?v=0.28"></script>
+<script src="catalog.js?v=0.28"></script>
+<script src="cloud.js?v=0.28"></script>
+<script src="admin.js?v=0.28"></script>
+<script src="virtual.js?v=0.28"></script>
 <script>boot(); $('#adminOpen').addEventListener('click', () => admin.open());</script>
 </body>
 </html>

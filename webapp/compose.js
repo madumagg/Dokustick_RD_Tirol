@@ -685,7 +685,7 @@ function openPicker() {
 // Zeigt die Felder eines Bausteins und erlaubt Hinzufuegen/Bearbeiten ohne Syntax
 function fieldEditor(bodyArea) {
   const box = el('div', { class: 'fields-box' });
-  const draw = () => {
+  const draw = (focusIndex) => {
     const fields = formFields(bodyArea.value);
     box.replaceChildren(
       el('div', { class: 'row' },
@@ -693,11 +693,102 @@ function fieldEditor(bodyArea) {
         el('button', { type: 'button', class: 'btn small primary', onclick: () => openFieldBuilder(bodyArea, null, draw) }, '＋ Feld')),
       fields.length ? el('div', { class: 'chips' }, fields.map((f) => el('button', {
         type: 'button', class: 'chip', onclick: () => openFieldBuilder(bodyArea, f, draw),
-      }, `${f.name} · ${FIELD_TYPES[f.type]}${f.optional ? ' · optional' : ''}`))) : null);
+      }, `${f.name} · ${FIELD_TYPES[f.type]}${f.optional ? ' · optional' : ''}`))) : null,
+      pieceOrder(bodyArea, focusIndex));
   };
-  bodyArea.addEventListener('input', draw);
+  bodyArea.addEventListener('input', (e) => draw(e.detail && e.detail.focusIndex));
   draw();
   return box;
+}
+
+/* ---------- Reihenfolge der Abschnitte im Baustein-Editor ---------- */
+
+/*
+ * Zerlegt einen Baustein in verschiebbare Abschnitte (Feld samt Beschriftung und Einheit),
+ * getrennt an Zeilenumbruechen, ", ", "; " und Satzenden (". " vor Grossbuchstaben),
+ * nie innerhalb von Feldern. Die Trennzeichen und das Satzzeichen am Ende bleiben an
+ * ihrer Stelle, damit die Zeichensetzung nach dem Umsortieren stimmt.
+ */
+function splitPieces(body) {
+  const SEP = /[.;,]?[ \t]*\n+[ \t]*|, |; |\. (?=[A-ZÄÖÜ])/y;
+  const pieces = [''], seps = [];
+  let depth = 0;
+  for (let i = 0; i < body.length;) {
+    if (body.startsWith('{{', i)) { depth++; pieces[pieces.length - 1] += '{{'; i += 2; continue; }
+    if (depth && body.startsWith('}}', i)) { depth--; pieces[pieces.length - 1] += '}}'; i += 2; continue; }
+    if (!depth) {
+      SEP.lastIndex = i;
+      const m = SEP.exec(body);
+      if (m) { seps.push(m[0]); pieces.push(''); i += m[0].length; continue; }
+    }
+    pieces[pieces.length - 1] += body[i++];
+  }
+  const last = pieces.length - 1;
+  const end = pieces[last].match(/[.!?;:,\s]*$/)[0];
+  pieces[last] = pieces[last].slice(0, pieces[last].length - end.length);
+  return { pieces, seps, end };
+}
+
+const joinPieces = ({ pieces, seps, end }) => pieces.map((p, i) => p + (seps[i] ?? '')).join('') + end;
+
+// Liste der Abschnitte zum Ziehen; null, wenn es nichts umzusortieren gibt
+function pieceOrder(bodyArea, focusIndex) {
+  const parts = splitPieces(bodyArea.value);
+  if (parts.pieces.length < 2 || parts.pieces.some((p) => !p.trim())) return null;
+  const move = (from, to) => {
+    if (to < 0 || to >= parts.pieces.length || to === from) return;
+    const [p] = parts.pieces.splice(from, 1);
+    parts.pieces.splice(to, 0, p);
+    bodyArea.value = joinPieces(parts);
+    bodyArea.dispatchEvent(new CustomEvent('input', { detail: { focusIndex: to } }));
+  };
+  const list = el('div', { class: 'piece-list' });
+  parts.pieces.forEach((p, i) => {
+    const handle = el('button', { type: 'button', class: 'grip', title: 'Ziehen zum Verschieben', 'aria-label': 'Abschnitt verschieben (Pfeiltasten)' }, '⠿');
+    const row = el('div', { class: 'piece' }, handle, el('span', { class: 'grow' }, templatePreview(p).trim()));
+    sortableRow(handle, row, list, i, move);
+    list.append(row);
+  });
+  if (focusIndex != null) setTimeout(() => list.children[focusIndex]?.querySelector('.grip')?.focus(), 0);
+  return el('div', {}, el('p', { class: 'help', style: 'margin:10px 0 6px' }, 'Reihenfolge – am ⠿ ziehen:'), list);
+}
+
+// Ziehen am Griff (Maus und Touch) oder Pfeiltasten; move(von, nach)
+function sortableRow(handle, row, list, index, move) {
+  handle.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); move(index, index + (e.key === 'ArrowUp' ? -1 : 1)); }
+  });
+  handle.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    try { handle.setPointerCapture(e.pointerId); } catch { /* egal */ }
+    const rects = [...list.children].map((r) => r.getBoundingClientRect());
+    const self = rects[index], others = rects.filter((_, k) => k !== index);
+    const line = el('div', { class: 'drop-line' });
+    list.append(line);
+    row.classList.add('dragging');
+    let target = index;
+    const onMove = (ev) => {
+      const dy = ev.clientY - e.clientY;
+      row.style.transform = `translateY(${dy}px)`;
+      const center = self.top + self.height / 2 + dy;
+      target = others.filter((r) => r.top + r.height / 2 < center).length;
+      const at = target < others.length ? others[target].top - 3 : others[others.length - 1].bottom + 3;
+      line.style.top = (at - list.getBoundingClientRect().top) + 'px';
+    };
+    const onUp = (ev) => {
+      handle.removeEventListener('pointermove', onMove);
+      handle.removeEventListener('pointerup', onUp);
+      handle.removeEventListener('pointercancel', onUp);
+      line.remove();
+      row.classList.remove('dragging');
+      row.style.transform = '';
+      if (ev.type === 'pointerup' && target !== index) move(index, target);
+    };
+    handle.addEventListener('pointermove', onMove);
+    handle.addEventListener('pointerup', onUp);
+    handle.addEventListener('pointercancel', onUp);
+  });
 }
 
 function openFieldBuilder(bodyArea, field0, onDone) {

@@ -51,6 +51,7 @@ Screenshots und die Test-PDF landen in `tests/test-output/` (nicht im Git).
 | `00-unit` | Kernfunktionen direkt im Browser: Feld-Syntax, Leerfeld-Regel, Kodierung für den Dongle, Datenbank-Suche, Sprachbefehle |
 | `10-compose` | Protokoll, interaktive Bausteine, Pflichtfelder, Feld-Editor, Vorlagen, Senden an simulierten Dongle |
 | `12-gcs` | GCS-Vorlage: Summe der Punkte, nur gewählte Optionen im Text, Summenfeld im Feld-Editor |
+| `13-reihenfolge` | Baustein-Editor: Abschnitte per Ziehen und Pfeiltasten umsortieren, Zeichensetzung bleibt erhalten |
 | `20-drag` | Blöcke verschieben mit Maus, Touch (echte Touch-Ereignisse) und Tastatur |
 | `30-ios` | Bluefy-Hinweis auf iPhone/iPad, Tastatur-Diktat |
 | `40-header` | Kopfzeile auf allen Bildschirmbreiten |

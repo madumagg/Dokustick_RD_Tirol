@@ -3,7 +3,7 @@
 /* ================= Konstanten ================= */
 
 // Wird mit tools/version.sh zusammen mit sw.js und index.html erhoeht
-const APP_VERSION = '0.27';
+const APP_VERSION = '0.28';
 
 const SVC_UUID = '6e7a0001-4b3c-4f8e-9a1d-5c2b7d0a4e01';
 const CMD_UUID = '6e7a0002-4b3c-4f8e-9a1d-5c2b7d0a4e01';
@@ -626,7 +626,8 @@ function openDialog(title, content, { onSave, onDelete, saveLabel = 'Speichern',
   const dlg = $('#dlg'), form = $('#dlgForm');
   form.replaceChildren(
     el('h3', {}, title),
-    ...content,
+    // Leere Eintraege (z.B. "Speichern in" ohne Team) weglassen, sonst steht "null" im Dialog
+    ...content.filter((c) => c != null),
     el('div', { class: 'row', style: 'margin-top:8px' },
       onDelete ? el('button', { type: 'button', class: 'btn danger', onclick: () => {
         if (confirm('Wirklich löschen?')) { onDelete(); dlg.close(); }
