@@ -3,7 +3,7 @@
 /* ================= Konstanten ================= */
 
 // Wird mit tools/version.sh zusammen mit sw.js und index.html erhoeht
-const APP_VERSION = '0.32';
+const APP_VERSION = '0.33';
 
 const SVC_UUID = '6e7a0001-4b3c-4f8e-9a1d-5c2b7d0a4e01';
 const CMD_UUID = '6e7a0002-4b3c-4f8e-9a1d-5c2b7d0a4e01';

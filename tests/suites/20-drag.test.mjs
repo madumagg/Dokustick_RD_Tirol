@@ -107,8 +107,20 @@ export default async function (t) {
     await p.locator('.block-text .pin').click();
     ok(await order(p) === 'TCAB' && await pinned(), '📌 antippen: Freitext wieder oben angeheftet -> ' + await order(p));
     // Diktat/Tasten ohne Auswahl landen im angehefteten Freitext
-    await p.evaluate(() => { activeBlockId = null; appendText('Ergänzung'); });
-    ok((await p.evaluate(() => doc[0].text)) === 'Freitext Ergänzung', 'Einfügen ohne Auswahl landet im angehefteten Freitext');
+    ok(await p.evaluate(() => { activeBlockId = null; return activeTextArea().closest('[data-block]').dataset.block === doc[0].id; }), 'Diktat/Tasten ohne Auswahl landen im angehefteten Freitext');
     await p.screenshot({ path: t.out + '/52-angeheftet.png', fullPage: true });
+
+    // Einfache Textbausteine: eigene Bloecke in der Reihenfolge des Hinzufuegens, nie an den Freitext angehaengt
+    await p.evaluate(() => {
+      addToDoc({ title: 'E – Ereignis', body: 'Siehe Notfallgeschehen' }, { quiet: true });
+      addToDoc({ title: 'Monitoring', body: 'Monitoring (EKG, SpO2, RR) angelegt.' }, { quiet: true });
+    });
+    const texts = () => p.evaluate(() => doc.map((b) => (b.type === 'text' ? b.text : b.title[0])).join(' | '));
+    ok(await texts() === 'Freitext | C | A | B | Siehe Notfallgeschehen | Monitoring (EKG, SpO2, RR) angelegt.', 'Textbausteine als eigene Blöcke am Ende: ' + await texts());
+    const mon = p.locator('.block-text:has(textarea:text-is("Monitoring (EKG, SpO2, RR) angelegt.")) .grip');
+    await mon.focus();
+    await p.keyboard.press('ArrowUp');
+    await p.keyboard.press('ArrowUp');
+    ok(await texts() === 'Freitext | C | A | Monitoring (EKG, SpO2, RR) angelegt. | B | Siehe Notfallgeschehen', 'Einzeln verschiebbar, nichts zusammengelegt: ' + await texts());
   }
 }

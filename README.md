@@ -107,7 +107,7 @@ Bausteine können **Auswahlfelder** enthalten, z. B. beim ABCDE-Schema:
 
 > A – Atemwege: [frei und gesichert | gefährdet]. Maßnahmen: [keine Maßnahmen erforderlich | Wendltubus | Guedeltubus | …]
 
-- **Ins Protokoll:** Tippt man einen interaktiven Baustein an, landet er im Fenster *Schreiben* als Karte mit Auswahl-Knöpfen. Einfache Bausteine ohne Felder werden wie bisher sofort getippt. ↧ legt jeden Baustein ins Protokoll.
+- **Ins Protokoll:** Tippt man einen interaktiven Baustein an, landet er im Fenster *Schreiben* als Karte mit Auswahl-Knöpfen. Einfache Bausteine ohne Felder werden wie bisher sofort getippt. ↧ legt jeden Baustein ins Protokoll, einfache als eigenen Textblock am Ende. So lässt sich jeder Baustein einzeln verschieben.
 - **Im Protokoll:** Optionen antippen, mit „…“ einen eigenen Wert eingeben. Dazwischen ist Freitext oder Diktat möglich. Blöcke entfernt man mit ✕.
 - **Freitext oben angeheftet:** In jedem neuen Protokoll steht der Freitext ganz oben (📌, farbiger Rahmen). Neue Bausteine und Protokollvorlagen kommen darunter, Diktat und Tasten landen ohne ausgewähltes Feld im Freitext.
   - Andere Bausteine lassen sich nicht darüber schieben.

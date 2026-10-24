@@ -221,13 +221,10 @@ function activeTextArea() {
   return document.querySelector(`[data-block="${b.id}"] textarea`);
 }
 
-// Baustein ins Protokoll: mit Feldern als Karte, sonst als Text
+// Baustein ins Protokoll: mit Feldern als Karte, sonst als eigener Textblock
+// (nie an einen vorhandenen Text anhaengen, sonst laesst er sich nicht mehr einzeln verschieben)
 function addToDoc(it, { quiet = false } = {}) {
-  if (!formFields(it.body).length) {
-    appendText(it.body);
-  } else {
-    insertBlocks([moduleBlock(it)]);
-  }
+  insertBlocks([formFields(it.body).length ? moduleBlock(it) : textBlock(it.body)]);
   if (!quiet) toast(`„${it.title}“ im Protokoll`);
 }
 
@@ -261,13 +258,6 @@ function togglePin(b) {
   }
   saveDoc();
   renderDoc();
-}
-
-function appendText(text) {
-  const ta = activeTextArea();
-  const sep = ta.value && !/[\s]$/.test(ta.value) ? ' ' : '';
-  ta.value += sep + text;
-  ta.dispatchEvent(new Event('input'));
 }
 
 // Tastatur-Bedienung des Griffs (Pfeiltasten)
