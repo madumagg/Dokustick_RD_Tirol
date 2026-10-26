@@ -129,7 +129,7 @@ Bausteine können **Auswahlfelder** enthalten, z. B. beim ABCDE-Schema:
   - Kleben zwei Felder direkt aneinander („…}}{{…“) oder steht ein Feld direkt vor einer Beschriftung („[Lagerung] E – Exposure: …“), sind sie getrennte Abschnitte. Beim Verschieben kommt ein Komma dazwischen.
   - „＋ Feld“ fügt an der Cursorposition ein. Hat man noch nicht ins Textfeld getippt, kommt das neue Feld ans Ende.
   - Neue Felder („＋ Feld“) bekommen automatisch ein Komma bzw. Leerzeichen, wenn der Cursor direkt an einem anderen Feld oder Wort steht. Fester Text hinter einem Feld wird ein eigener Satz, damit er nicht mit einem leeren optionalen Feld wegfällt.
-- **Fester Text:** **＋ Feld** → Art **„Fester Text (immer mitschreiben)“** setzt einen Text an der Cursor-Stelle in den Baustein, z. B. „Pat. über Risiken aufgeklärt.“ Er wird immer mitgeschrieben. Genauso gut kann man ihn direkt ins Feld „Text“ des Bausteins tippen.
+- **Fester Text:** **＋ Feld** → Art **„Fester Text (immer mitschreiben)“** setzt einen Text an der Cursor-Stelle in den Baustein (ohne Cursor: ans Ende), z. B. „Pat. über Risiken aufgeklärt.“ Er wird immer mitgeschrieben und ist ein eigener Abschnitt, den man in der Reihenfolge verschieben kann. Genauso gut kann man ihn direkt ins Feld „Text“ des Bausteins tippen.
 - **Vorlagen:** *Bausteine → Vorlagen* enthält:
   - das ABCDE-Schema (A nach Vorgabe, B–E als anpassbare Vorschläge)
   - Vitalparameter und Schmerz

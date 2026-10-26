@@ -727,7 +727,9 @@ function fieldEditor(bodyArea) {
       }, `${f.name} · ${FIELD_TYPES[f.type]}${f.optional ? ' · optional' : ''}`))) : null,
       pieceOrder(bodyArea, focusIndex)));
   };
-  bodyArea.addEventListener('input', (e) => draw(e.detail && e.detail.focusIndex));
+  // Nur beim Umsortieren (CustomEvent) den Fokus auf den Griff setzen. Beim Tippen ist e.detail 0
+  // (InputEvent), sonst sprang der Fokus nach jedem Buchstaben weg (iPad: Tastatur schloss sich)
+  bodyArea.addEventListener('input', (e) => draw(e instanceof CustomEvent && e.detail ? e.detail.focusIndex : undefined));
   draw();
   return box;
 }
@@ -863,7 +865,7 @@ function openFieldBuilder(bodyArea, field0, onDone) {
   const readOpts = () => opts.value.split('\n').map(cleanOption).filter(Boolean);
   const reqLabel = el('label', { class: 'check', style: 'margin-top:-6px' }, required, 'Pflichtfeld – Senden erst, wenn ausgefüllt');
   const sumHelp = el('p', { class: 'help', style: 'margin-top:-6px' }, 'Zählt die Punkte der gewählten Optionen in diesem Baustein zusammen. Die Punkte stehen in den Optionen der anderen Felder in Klammern, z. B. „Spontan (4 Punkte)“ oder „keine (1 Punkt)“. Im Text erscheint nur die Zahl, also z. B. „Ergebnis: [Feld] Punkte“.');
-  const fixedHelp = el('p', { class: 'help', style: 'margin-top:-6px' }, 'Dieser Text steht fest im Baustein und wird immer mitgeschrieben, z. B. „Pat. über Risiken aufgeklärt.“ Er kommt an die Stelle, an der der Cursor im Baustein-Text stand.');
+  const fixedHelp = el('p', { class: 'help', style: 'margin-top:-6px' }, 'Dieser Text steht fest im Baustein und wird immer mitgeschrieben, z. B. „Pat. über Risiken aufgeklärt.“ Er kommt an die Stelle, an der der Cursor im Baustein-Text stand (sonst ans Ende) und wird ein eigener Abschnitt, den man verschieben kann.');
   const choiceHelp = el('p', { class: 'help', style: 'margin-top:-6px' }, 'Einfachauswahl = genau eine Option · Mehrfachauswahl = mehrere Optionen (z. B. Maßnahmen). Optionen, die mit „kein“ beginnen, heben die anderen auf.');
   const drawDefaults = () => {
     const fixed = type.value === 'fixed';
@@ -916,11 +918,13 @@ function openFieldBuilder(bodyArea, field0, onDone) {
 
   // Einfuegestelle: der Cursor; steht er ganz am Anfang (Textfeld noch nicht angetippt),
   // ans Ende vor den Schlusspunkt. Vor die Ueberschrift will man nie etwas einfuegen.
+  // Ebenso, wenn der Cursor hinter dem Schlusspunkt steht (nur . ! ?, ein ":" am Ende gehoert zur Beschriftung).
+  const tailOf = (v) => v.length - ((v.match(/[.!?]+\s*$/) || [''])[0].length);
   const insertRange = () => {
     const v = bodyArea.value, s = bodyArea.selectionStart ?? v.length;
-    if (s > 0 || !v.trim()) return [s, bodyArea.selectionEnd ?? s];
-    const at = v.length - splitPieces(v).end.length;
-    return [at, at];
+    const tail = tailOf(v);
+    if (!v.trim() || (s > 0 && s <= tail)) return [s, bodyArea.selectionEnd ?? s];
+    return [tail, tail];
   };
   const insertAtCursor = (text) => {
     const [s, e] = insertRange();
@@ -930,13 +934,20 @@ function openFieldBuilder(bodyArea, field0, onDone) {
     e.preventDefault();
     if (type.value === 'fixed') {
       // Keine Feld-Klammern im festen Text, sonst entstuende ein Feld
-      const text = opts.value.replace(/\{\{|\}\}/g, '');
-      if (!text.trim()) return toast('Bitte einen Text eingeben', 'err');
-      const c = bodyArea.value.slice(0, insertRange()[0]).slice(-1);
-      // Ein neuer Satz hinter einem Feld wird eigener Abschnitt: so faellt er nie mit einem leeren Feld weg
-      const pre = !c || /\s/.test(c) || /^\s/.test(text) ? '' : /[.!?]/.test(c) ? ' '
-        : /^[A-ZÄÖÜ]/.test(text) && /[}\p{L}\d%)]/u.test(c) ? '. ' : ' ';
-      insertAtCursor(pre + text);
+      let text = opts.value.replace(/\{\{|\}\}/g, '').trim();
+      if (!text) return toast('Bitte einen Text eingeben', 'err');
+      const v = bodyArea.value, [at, to] = insertRange();
+      const c = v.slice(0, at).slice(-1), after = v[to] || '';
+      // Vor dem Schlusspunkt des Bausteins: eigener Punkt des Texts entfaellt (sonst "..")
+      if (to === tailOf(v) && to < v.length) text = text.replace(/[.!?]+$/, '');
+      // Eigener Abschnitt hinter einem Feld oder Wort: neuer Satz bzw. mit Komma angehaengt.
+      // So laesst er sich verschieben und faellt nie mit einem leeren Feld weg.
+      const pre = !c || /\s/.test(c) ? '' : /[.!?]/.test(c) ? ' '
+        : /[}\p{L}\d%)]/u.test(c) ? (/^[A-ZÄÖÜ]/.test(text) ? '. ' : ', ') : ' ';
+      // Folgt direkt weiterer Text (Cursor mitten im Baustein), nicht daran kleben
+      const post = !after || /[\s.,;:!?)\]]/.test(after) ? '' : /[.!?]$/.test(text) ? ' '
+        : /[A-ZÄÖÜ{]/.test(after) ? '. ' : ' ';
+      insertAtCursor(pre + text + post);
       bodyArea.dispatchEvent(new Event('input'));
       dlg.close();
       onDone();

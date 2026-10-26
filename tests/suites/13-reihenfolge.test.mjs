@@ -129,4 +129,33 @@ export default async function (t) {
   await p.fill('#dlg2 textarea', 'Liegend\nSitzend');
   await p.click('#dlg2 button[type=submit]');
   ok(await p.inputValue('#dlg textarea[name=text]') === 'E – Exposure: {{Befund:a|b}}, {{Lagerung:Liegend|Sitzend}}.', 'Cursor am Anfang: neues Feld ans Ende vor den Punkt: ' + await p.inputValue('#dlg textarea[name=text]'));
+
+  // --- Tippen im Baustein-Text: Fokus bleibt im Textfeld (iPad: sonst schliesst sich die Tastatur)
+  await p.click('#dlg textarea[name=text]');
+  await p.keyboard.press('End');
+  await p.keyboard.type(' Test', { delay: 20 });
+  ok(await p.evaluate(() => document.activeElement.name === 'text') && (await p.inputValue('#dlg textarea[name=text]')).endsWith('}}. Test'),
+    'Tippen: alle Buchstaben kommen an, Fokus bleibt im Textfeld');
+
+  // --- Fester Text wird ein eigener, verschiebbarer Abschnitt (Fall aus der Praxis)
+  const fixedText = async (body, text) => {
+    await p.evaluate((b) => { const ta = document.querySelector('#dlg textarea[name=text]'); ta.value = b; ta.dispatchEvent(new Event('input')); ta.setSelectionRange(0, 0); }, body);
+    await p.click('#dlg >> text=＋ Feld');
+    await p.selectOption('#dlg2 select', 'fixed');
+    await p.fill('#dlg2 textarea', text);
+    await p.click('#dlg2 button[type=submit]');
+    return { body: await p.inputValue('#dlg textarea[name=text]'), pieces: (await rows.locator('span.grow').allTextContents()).map((x) => x.trim()) };
+  };
+  let r2 = await fixedText('B: Atmung {{Atmung:unauffällig|Dyspnoe}}.', 'mit O2-Gabe');
+  ok(r2.body === 'B: Atmung {{Atmung:unauffällig|Dyspnoe}}, mit O2-Gabe.' && r2.pieces.at(-1) === 'mit O2-Gabe', 'Fester Text klein: mit Komma, eigener Abschnitt: ' + r2.body);
+  r2 = await fixedText('B: Atmung {{Atmung:unauffällig|Dyspnoe}}.', 'Pat. über Risiken aufgeklärt.');
+  ok(r2.body === 'B: Atmung {{Atmung:unauffällig|Dyspnoe}}. Pat. über Risiken aufgeklärt.' && r2.pieces.length === 2, 'Fester Text mit Punkt: eigener Satz, kein „..“: ' + r2.body);
+  r2 = await fixedText('Monitoring angelegt.', 'keine Auffälligkeiten');
+  ok(r2.body === 'Monitoring angelegt, keine Auffälligkeiten.' && r2.pieces.length === 2, 'Baustein ohne Felder: fester Text als zweiter Abschnitt: ' + r2.body);
+  await p.evaluate(() => { const ta = document.querySelector('#dlg textarea[name=text]'); ta.value = 'A: {{A:frei|gefährdet}}. Maßnahmen: {{M:keine|O2}}.'; ta.dispatchEvent(new Event('input')); ta.setSelectionRange(25, 25); });
+  await p.click('#dlg >> text=＋ Feld');
+  await p.selectOption('#dlg2 select', 'fixed');
+  await p.fill('#dlg2 textarea', 'Pat. kooperativ');
+  await p.click('#dlg2 button[type=submit]');
+  ok(await p.inputValue('#dlg textarea[name=text]') === 'A: {{A:frei|gefährdet}}. Pat. kooperativ. Maßnahmen: {{M:keine|O2}}.', 'Mitten im Text: klebt nicht am folgenden Abschnitt: ' + await p.inputValue('#dlg textarea[name=text]'));
 }
