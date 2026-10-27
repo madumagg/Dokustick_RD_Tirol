@@ -14,12 +14,9 @@ Statische Website (HTML und CSS, ohne Skripte, Cookies oder externe Schriften) f
 
 ## Vor dem Hochladen ausfüllen
 
-Platzhalter sind auf der Seite gelb markiert (`class="todo"`).
-
-- [ ] `impressum.html`: Name und Anschrift. Bei gewerblichem Verkauf der Sticks zusätzlich UID-Nummer, Gewerbebehörde und Kammer, sonst den gelben Absatz löschen. Hilfe: Impressum-Leitfaden der WKO.
-- [ ] `datenschutz.html`: Name und Anschrift, Speicherdauer der Zugriffsprotokolle bei Hetzner.
+- [x] `impressum.html` und `datenschutz.html`: Name, Anschrift, Speicherdauer der Zugriffsprotokolle (7 Tage)
 - [ ] Mit Hetzner den **Vertrag zur Auftragsverarbeitung** abschließen (im Hetzner-Kundenkonto), darauf verweist die Datenschutzerklärung.
-- [ ] Postfach **kontakt@protopilot.at** anlegen (oder die Adresse in `index.html`, `impressum.html` und `datenschutz.html` ersetzen).
+- [ ] Postfach **info@protopilot.at** anlegen (Kontaktadresse in `index.html`, `impressum.html` und `datenschutz.html`).
 - [ ] Antwort auf „Was kostet ProtoPilot?“ in `index.html` anpassen, sobald Preis und Bezug feststehen.
 
 ## Hochladen
@@ -32,6 +29,8 @@ Platzhalter sind auf der Seite gelb markiert (`class="todo"`).
 Ohne FTP-Programm geht es auch im Browser mit **WebFTP** in der konsoleH. Die Umleitung von `http://` auf `https://` erledigt Hetzner bereits.
 
 ## Später ändern
+
+Die Dateien nur mit einem reinen Texteditor bearbeiten (z. B. Notepad++). Ein Web-Editor mit Vorschau wirft den Kopf der Seite (`<head>`, Verweis auf `style.css`) weg, dann fehlt das ganze Aussehen.
 
 - **Neue Adresse der Web-App** (nach dem Umzug auf den eigenen Server): nur in `.htaccess` die Zieladresse bei `RedirectMatch` ändern. Alle Knöpfe „Web-App öffnen“ zeigen auf `/app`.
 - **Datenschutz nach dem Server-Umzug:** In `datenschutz.html` den Absatz „Mit Konto“ anpassen (eigener Server statt Supabase, Standort).
