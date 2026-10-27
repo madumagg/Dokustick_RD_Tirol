@@ -10,7 +10,7 @@
 
 /* [Ausgabe] */
 // Welches Teil ausgegeben wird
-teil = "alle"; // [alle, unterteil, deckel, unterlage, zusammengebaut]
+teil = "alle"; // [alle, unterteil, deckel, taster, unterlage, zusammengebaut]
 
 /* [Platine – nachmessen!] */
 // Dicke der Platine (mit Messschieber nachmessen)
@@ -49,7 +49,13 @@ schrift = "Inter Display:style=ExtraBold";
 unterlage_t = 0.4;
 
 /* [Bedienung] */
-// Loch über dem Taster SW1 (mit Büroklammer drücken)
+// Eigener Taster für SW1 (sonst nur ein Loch für die Büroklammer)
+sw1_taster = true;
+// Höhe der Kappe von SW1 über der Platine (nachmessen!)
+sw1_kappe = 1.5;
+// Wie weit der Taster über den Deckel ragt
+taster_ueberstand = 1.0;
+// Loch über SW1, wenn kein Taster verwendet wird
 sw1_loch = 2.4;
 // Löcher über den LEDs
 led_loch = 1.8;
@@ -65,6 +71,22 @@ SW1 = [10.61, pcb_w - 4.75];
 RESET_Y = pcb_w - 4.77;      // Mitte des seitlichen Tasters
 LD1 = [28.12, pcb_w - 11.66];
 LD2 = [28.12, pcb_w - 3.57];
+
+// Taster SW1: loser Stößel, liegt nur auf der Kappe auf. Ein Kragen unter dem Deckel
+// hält ihn fest. Das Gehäuse kann ihn nie nach unten drücken: Steigt er, stößt nur der
+// Kragen oben an. Deshalb muss zwischen Kappe und Taschendecke Platz für Fuß + Kragen sein.
+T_FUSS = [1.6, 2.4];        // berührt nur die Kappe (Kappe ca. 2,2 x 3,0)
+T_FUSS_H = 0.4;
+T_KRAGEN = [3.4, 5.4];      // schmal in x: links daneben sitzt der RESET-Taster
+T_KRAGEN_H = 0.5;
+T_SCHAFT = [2.6, 4.2];
+T_SPIEL = 0.2;
+T_TASCHE = 0.6;             // Vertiefung in der Deckelunterseite für den Kragen
+t_schaft_l = bauteile_h + deckel_t + taster_ueberstand - sw1_kappe - T_FUSS_H - T_KRAGEN_H;
+if (sw1_taster && sw1_kappe + T_FUSS_H + T_KRAGEN_H > bauteile_h + T_TASCHE - 0.3)
+  echo("WARNUNG: SW1 zu hoch für den Taster – bauteile_h erhöhen, sonst drückt der Taster dauerhaft");
+
+module oval(d) scale([d[0], d[1]]) circle(d = 1);
 
 // Innenraum
 in_x0 = -spiel;
@@ -149,8 +171,11 @@ module deckel() {
         translate([x + 0.5, s ? sy1 : sy0, rast_z + 0.4])
           rotate([0, 90, 0]) cylinder(r = 0.32, h = rast_l - 1, $fn = 16);
     }
-    // Taster SW1
-    translate([SW1[0], SW1[1], z_teil - 1]) cylinder(d = sw1_loch, h = 5);
+    // Taster SW1: Loch für den Stößel und Tasche für seinen Kragen, sonst nur ein Loch
+    if (sw1_taster) translate([SW1[0], SW1[1], 0]) {
+      translate([0, 0, z_teil - 1]) linear_extrude(5) oval(T_SCHAFT + [2, 2] * T_SPIEL);
+      translate([0, 0, z_teil - 1]) linear_extrude(1 + T_TASCHE) oval(T_KRAGEN + [0.5, 0.5]);
+    } else translate([SW1[0], SW1[1], z_teil - 1]) cylinder(d = sw1_loch, h = 5);
     // LEDs
     for (p = [LD1, LD2]) translate([p[0], p[1], z_teil - 1]) cylinder(d = led_loch, h = 5);
     // RESET-Zugang auch durch die Schürze
@@ -160,11 +185,21 @@ module deckel() {
       translate([1.0, LD1[1] - 1.75]) text("ProtoPilot", size = 3.5, font = schrift, halign = "left", valign = "baseline");
       translate([17.2, SW1[1] - 3.0]) scale(6.0) flieger();
     }
-    // Ring um das Tasterloch
-    translate([SW1[0], SW1[1], z_oben - gravur]) difference() {
+    // Ring um das Tasterloch (beim Taster nicht: dort ist der Deckel über der Tasche dünn)
+    if (!sw1_taster) translate([SW1[0], SW1[1], z_oben - gravur]) difference() {
       cylinder(d = sw1_loch + 2.2, h = 1);
       translate([0, 0, -1]) cylinder(d = sw1_loch + 1.2, h = 3);
     }
+  }
+}
+
+// Stößel für SW1 (z = 0 an der Unterseite des Fußes)
+module taster() {
+  linear_extrude(T_FUSS_H + e) oval(T_FUSS);
+  translate([0, 0, T_FUSS_H]) linear_extrude(T_KRAGEN_H + e) oval(T_KRAGEN);
+  translate([0, 0, T_FUSS_H + T_KRAGEN_H]) hull() {
+    linear_extrude(t_schaft_l - 0.4) oval(T_SCHAFT);
+    linear_extrude(t_schaft_l) offset(delta = -0.4) oval(T_SCHAFT);
   }
 }
 
@@ -179,7 +214,7 @@ module platine() {
     [0, 0], [pcb_body, 0], [pcb_body + (pcb_w - usb_w) / 2, (pcb_w - usb_w) / 2],
     [pcb_len, (pcb_w - usb_w) / 2], [pcb_len, (pcb_w + usb_w) / 2],
     [pcb_body + (pcb_w - usb_w) / 2, (pcb_w + usb_w) / 2], [pcb_body, pcb_w], [0, pcb_w]]);
-  color("white") translate([SW1[0] - 2.1, SW1[1] - 1.55, pcb_t]) cube([4.2, 3.1, 1.5]);
+  color("white") translate([SW1[0] - 1.55, SW1[1] - 2.1, pcb_t]) cube([3.1, 4.2, sw1_kappe]);
   color("white") translate([5.11, RESET_Y - 2.0, pcb_t]) cube([2.9, 3.5, 1.4]);
   color("black") translate([5.6, 4.0, pcb_t]) cube([7, 7, 0.85]);
 }
@@ -189,10 +224,15 @@ module deckel_druck() translate([0, ay1 + ay0, z_oben]) rotate([180, 0, 0]) deck
 
 if (teil == "unterteil") translate([0, 0, boden]) unterteil();
 else if (teil == "deckel") deckel_druck();
+else if (teil == "taster") translate([0, 0, T_FUSS_H + T_KRAGEN_H + t_schaft_l]) rotate([180, 0, 0]) taster();
 else if (teil == "unterlage") unterlage();
-else if (teil == "zusammengebaut") { color("#0b6f6a") unterteil(); color("#3fb8ae", 0.9) deckel(); platine(); }
+else if (teil == "zusammengebaut") {
+  color("#0b6f6a") unterteil(); color("#3fb8ae", 0.9) deckel(); platine();
+  if (sw1_taster) color("#ffa62b") translate([SW1[0], SW1[1], pcb_t + sw1_kappe]) taster();
+}
 else {
   translate([0, 0, boden]) unterteil();
   translate([0, ay1 - ay0 + 6, 0]) deckel_druck();
   translate([0, -usb_w - 6, 0]) unterlage();
+  if (sw1_taster) translate([20, -usb_w / 2 - 6, 0]) rotate([180, 0, 0]) translate([0, 0, -(T_FUSS_H + T_KRAGEN_H + t_schaft_l)]) taster();
 }
