@@ -78,7 +78,7 @@ curl -fsSL https://get.docker.com | sudo sh
 sudo usermod -aG docker $USER
 sudo apt install -y git cifs-utils
 sudo mkdir -p /opt/dokustick && sudo chown $USER: /opt/dokustick
-git clone https://github.com/madumagg/Dokustick_RD_Tirol.git /opt/dokustick
+git clone https://github.com/rdprotopilot/protopilot.git /opt/dokustick
 exit
 ```
 

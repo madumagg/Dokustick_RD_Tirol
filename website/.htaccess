@@ -4,7 +4,7 @@
 # Kurzadresse zur Web-App: protopilot.at/app
 # Nach dem Umzug der App nur hier die Zieladresse aendern.
 <IfModule mod_alias.c>
-  RedirectMatch 302 ^/app/?$ https://madumagg.github.io/Dokustick_RD_Tirol/webapp/
+  RedirectMatch 302 ^/app/?$ https://rdprotopilot.github.io/protopilot/webapp/
 </IfModule>
 
 ErrorDocument 404 /404.html

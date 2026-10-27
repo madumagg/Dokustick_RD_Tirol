@@ -65,7 +65,7 @@ Web Bluetooth funktioniert nur über **https**. Am einfachsten ist **GitHub Page
 Safari kann auf iPhone und iPad kein Bluetooth für Webseiten. Deshalb läuft ProtoPilot dort in der kostenlosen App **[Bluefy – Web BLE Browser](https://apps.apple.com/app/id1492822055)**:
 
 1. Bluefy aus dem App Store installieren.
-2. In Bluefy `https://madumagg.github.io/Dokustick_RD_Tirol/` öffnen. Öffnet man die Seite in Safari, zeigt die App beide Schritte mit „Bluefy laden“ und „Link kopieren“ direkt an.
+2. In Bluefy `protopilot.at/app` öffnen (leitet zu `https://rdprotopilot.github.io/protopilot/webapp/` weiter). Öffnet man die Seite in Safari, zeigt die App beide Schritte mit „Bluefy laden“ und „Link kopieren“ direkt an.
 3. **Diktat:** Falls der 🎤-Knopf in Bluefy nicht funktioniert, die Diktierfunktion der Bildschirmtastatur verwenden (Mikrofon-Taste).
 
 **iPad ohne SIM-Karte:** Die Verbindung zum Dongle läuft über Bluetooth und braucht **kein Internet**. Internet über einen Hotspot (z. B. vom Diensthandy) ist nur für die Synchronisierung von Konto und Teams, für das Diktat und zum ersten Laden der Seite nötig. Ohne Internet werden Änderungen an Bausteinen gesammelt und später hochgeladen.
@@ -208,8 +208,8 @@ Die Daten liegen bei **Supabase** (kostenloser Tarif, Server in Frankfurt).
    - Datenbank-Passwort: ein sicheres Passwort wählen und gut aufheben
 2. Links **SQL Editor** → **New query**, den Inhalt von [`supabase/migrations/20261023120000_schema.sql`](supabase/migrations/20261023120000_schema.sql) einfügen und **Run** klicken.
 3. **Authentication → URL Configuration**:
-   - **Site URL:** `https://madumagg.github.io/Dokustick_RD_Tirol/webapp/`
-   - **Redirect URLs:** dieselbe Adresse hinzufügen
+   - **Site URL:** `https://rdprotopilot.github.io/protopilot/webapp/`
+   - **Redirect URLs:** `https://rdprotopilot.github.io/protopilot/**` hinzufügen
 4. **Authentication → Sign In / Providers → Email**: „Confirm email“ eingeschaltet lassen und die minimale Passwortlänge auf **8** setzen.
 5. **Project Settings → API**: **Project URL** und den **anon public** Key in [`webapp/config.js`](webapp/config.js) eintragen.
 

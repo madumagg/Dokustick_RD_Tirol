@@ -54,8 +54,8 @@ cat > "$ENV_FILE" <<ENV
 DOMAIN=$DOMAIN
 PUBLIC_URL=$PUBLIC_URL
 SITE_ADDRESS=$SITE_ADDRESS
-# Erlaubte Ziele fuer Links in Mails (Passwort vergessen usw.): neue Adresse und die alte auf GitHub Pages
-REDIRECT_URLS=$PUBLIC_URL/**,https://madumagg.github.io/Dokustick_RD_Tirol/**
+# Erlaubte Ziele fuer Links in Mails (Passwort vergessen usw.): eigene Adresse und GitHub Pages
+REDIRECT_URLS=$PUBLIC_URL/**,https://rdprotopilot.github.io/protopilot/**
 
 POSTGRES_PASSWORD=$POSTGRES_PASSWORD
 JWT_SECRET=$JWT_SECRET
