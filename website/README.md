@@ -17,7 +17,7 @@ Statische Website (HTML und CSS, ohne Skripte, Cookies oder externe Schriften) f
 - [x] `impressum.html` und `datenschutz.html`: Name, Anschrift, Speicherdauer der Zugriffsprotokolle (7 Tage)
 - [ ] Mit Hetzner den **Vertrag zur Auftragsverarbeitung** abschließen (im Hetzner-Kundenkonto), darauf verweist die Datenschutzerklärung.
 - [ ] Postfach **info@protopilot.at** anlegen (Kontaktadresse in `index.html`, `impressum.html` und `datenschutz.html`).
-- [ ] Antwort auf „Was kostet ProtoPilot?“ in `index.html` anpassen, sobald Preis und Bezug feststehen.
+- [x] „Was kostet ProtoPilot?“ und Bezug: nur persönlich, zum Selbstkostenpreis, ohne Gewinnabsicht
 
 ## Hochladen
 
