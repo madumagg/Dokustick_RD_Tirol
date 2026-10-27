@@ -70,8 +70,7 @@ p { margin: 0 0 1em; }
 }
 .top .wrap { display: flex; align-items: center; gap: 24px; height: 64px; }
 .brand { margin-right: auto; display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); font-weight: 700; font-size: 1.2rem; }
-.brand img { width: 34px; height: 34px; }
-.brand span span { color: var(--accent); }
+.brand img { display: block; height: 34px; width: auto; }
 .top nav { display: flex; gap: 20px; }
 .top nav a { color: var(--muted); text-decoration: none; font-size: .95rem; }
 .top nav a:hover { color: var(--text); }

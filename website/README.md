@@ -11,6 +11,7 @@ Statische Website (HTML und CSS, ohne Skripte, Cookies oder externe Schriften) f
 | `.htaccess` | Kurzadresse `protopilot.at/app`, Sicherheits-Header, Zwischenspeichern |
 | `style.css` | Aussehen, passt sich hellem und dunklem Modus an |
 | `img/` | Logo, Bildschirmfotos der App, Vorschaubild für WhatsApp & Co. |
+| `favicon.svg`, `favicon.ico` | Symbol im Browser-Tab |
 
 ## Vor dem Hochladen ausfüllen
 
@@ -34,5 +35,6 @@ Die Dateien nur mit einem reinen Texteditor bearbeiten (z. B. Notepad++). Ein We
 
 - **Neue Adresse der Web-App** (nach dem Umzug auf den eigenen Server): nur in `.htaccess` die Zieladresse bei `RedirectMatch` ändern. Alle Knöpfe „Web-App öffnen“ zeigen auf `/app`.
 - **Datenschutz nach dem Server-Umzug:** In `datenschutz.html` den Absatz „Mit Konto“ anpassen (eigener Server statt Supabase, Standort).
-- **Name:** Kommt statt ProtoPilot ein anderer Name, „ProtoPilot“ in allen `.html`-Dateien ersetzen und das Vorschaubild `img/vorschau.png` neu erstellen.
+- **Logo, Favicon und Vorschaubild** kommen aus `branding/` und werden mit `node branding/export.mjs` hier neu abgelegt.
+- **Name:** Kommt statt ProtoPilot ein anderer Name, „ProtoPilot“ in allen `.html`-Dateien ersetzen, in `branding/make.py` den Schriftzug ändern und beide Skripte neu laufen lassen.
 - **Bildschirmfotos** sind 390 Punkte breite Handy-Aufnahmen der App (doppelte Auflösung, WebP). Neue Fotos im gleichen Format einfach ersetzen.
