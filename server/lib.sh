@@ -6,7 +6,7 @@ SERVER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SERVER_DIR/.." && pwd)"
 ENV_FILE="${DOKUSTICK_ENV:-$SERVER_DIR/.env}"
 
-# docker compose mit der Konfiguration von DokuStick (DOKUSTICK_COMPOSE_EXTRA nur fuer Tests)
+# docker compose mit der Konfiguration von ProtoPilot (DOKUSTICK_COMPOSE_EXTRA nur fuer Tests)
 dc() {
   # shellcheck disable=SC2086
   docker compose --project-directory "$SERVER_DIR" -f "$SERVER_DIR/docker-compose.yml" --env-file "$ENV_FILE" ${DOKUSTICK_COMPOSE_EXTRA:-} "$@"

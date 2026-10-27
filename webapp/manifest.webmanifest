@@ -1,7 +1,7 @@
 {
-  "name": "DokuStick",
-  "short_name": "DokuStick",
-  "description": "Text per Bluetooth an den DokuStick-Dongle senden und als Tastatur eintippen lassen.",
+  "name": "ProtoPilot",
+  "short_name": "ProtoPilot",
+  "description": "Protokoll am Handy zusammenstellen, der ProtoPilot-Stick tippt es per Bluetooth wie eine Tastatur ein.",
   "lang": "de",
   "start_url": "./",
   "scope": "./",
@@ -11,6 +11,7 @@
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
     { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
   ]
 }

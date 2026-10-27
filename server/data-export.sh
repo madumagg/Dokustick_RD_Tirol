@@ -1,5 +1,5 @@
 #!/bin/bash
-# Exportiert alle Daten von DokuStick in einen Ordner: je Tabelle eine Datei (eine Zeile JSON pro Zeile).
+# Exportiert alle Daten von ProtoPilot in einen Ordner: je Tabelle eine Datei (eine Zeile JSON pro Zeile).
 # Erfasst werden alle Tabellen im Schema public sowie die Konten (auth.users, auth.identities).
 #
 #   server/data-export.sh ZIELORDNER                       aus der Datenbank dieses Servers

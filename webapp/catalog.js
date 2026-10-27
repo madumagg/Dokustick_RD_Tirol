@@ -236,7 +236,7 @@ const catalog = {
     const d = new Date(), pad = (n) => String(n).padStart(2, '0');
     const a = el('a', {
       href: URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })),
-      download: `dokustick-${C.title.toLowerCase()}-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.csv`,
+      download: `protopilot-${C.title.toLowerCase()}-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.csv`,
     });
     document.body.append(a); a.click(); a.remove();
     toast(`${rows.length} ${C.title} exportiert`);

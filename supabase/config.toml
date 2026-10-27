@@ -1,4 +1,4 @@
-# Lokale Entwicklungsumgebung fuer DokuStick (Supabase CLI).
+# Lokale Entwicklungsumgebung fuer ProtoPilot (Supabase CLI).
 # Start: im Ordner tests/ `npm run db:start`, siehe tests/README.md.
 # Die Migrationen in supabase/migrations/ werden dabei automatisch eingespielt.
 

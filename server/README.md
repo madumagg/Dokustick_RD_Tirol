@@ -1,4 +1,4 @@
-# DokuStick auf dem eigenen Server
+# ProtoPilot auf dem eigenen Server
 
 Diese Anleitung bringt Datenbank, Anmeldung und App von supabase.co und GitHub Pages auf einen eigenen Server: eine Ubuntu-VM unter Hyper-V (Windows 10 Pro), Router UniFi Dream Machine Pro, Backups auf eine Synology-NAS. Die Dongles sind davon nicht betroffen.
 
@@ -17,9 +17,9 @@ Es laufen dieselben Programmversionen wie in der lokalen Test-Datenbank (Supabas
 
 ## 1. Domain und Mail-Postfach
 
-1. Bei einem Anbieter mit Mail-Postfach eine Domain kaufen, z. B. eine `.at`-Domain.
-2. Im DNS des Anbieters einen **A-Eintrag** anlegen: Name `dokustick`, Ziel deine **feste IP-Adresse**. Die App ist dann unter `https://dokustick.deinedomain.at` erreichbar. Statt `dokustick` geht auch die Domain selbst (`@`).
-3. Ein Postfach für den Versand anlegen, z. B. `noreply@deinedomain.at`. Notiere vom Anbieter:
+1. Die Domain `protopilot.at` liegt bei Hetzner (dort läuft auch die Infoseite).
+2. In der konsoleH im DNS der Domain einen **A-Eintrag** anlegen: Name `app`, Ziel deine **feste IP-Adresse**. Die App ist dann unter `https://app.protopilot.at` erreichbar. Die Domain selbst (`@`, `www`) bleibt bei der Infoseite.
+3. Ein Postfach für den Versand anlegen, z. B. `noreply@protopilot.at`. Notiere vom Anbieter:
    - SMTP-Server
    - Port (meist 587, bei manchen 465)
    - Benutzername und Passwort
@@ -63,7 +63,7 @@ Es laufen dieselben Programmversionen wie in der lokalen Test-Datenbank (Supabas
 2. **Nichts anderes freigeben**, vor allem nicht SSH (22) und die Verwaltung (8000).
 3. Für den Zugriff von unterwegs auf die Verwaltung das **VPN der UDM** verwenden (WireGuard bzw. Teleport).
 
-## 4. DokuStick installieren
+## 4. ProtoPilot installieren
 
 Per SSH in die VM (unter Windows in der Eingabeaufforderung):
 
@@ -71,7 +71,7 @@ Per SSH in die VM (unter Windows in der Eingabeaufforderung):
 ssh dokustick@192.168.1.20
 ```
 
-Docker und git installieren und DokuStick holen:
+Docker und git installieren und ProtoPilot holen:
 
 ```sh
 curl -fsSL https://get.docker.com | sudo sh
@@ -95,7 +95,7 @@ server/start.sh
   - Diese Datei ist **geheim** und kommt nie ins Repository.
   - Das angezeigte Passwort für die Verwaltung (Studio) bitte notieren.
 - `start.sh` startet alle Dienste und spielt die Datenbank-Migrationen ein. Beim ersten Mal lädt es die Programme herunter (etwa 2 GB).
-- Nach etwa einer Minute ist `https://dokustick.deinedomain.at` mit gültigem Zertifikat erreichbar.
+- Nach etwa einer Minute ist `https://app.protopilot.at` mit gültigem Zertifikat erreichbar.
 
 **Kurztest:**
 1. Die neue Adresse öffnen.
@@ -149,7 +149,7 @@ server/restore.sh /mnt/nas/dokustick/dokustick-2026-11-02_0315.tar.gz
 
 In der App unter *Administration → Einstellungen → Hinweis an alle* den Umzug ankündigen, z. B.:
 
-> Am 15.11. um 20 Uhr zieht DokuStick auf einen eigenen Server um. Bitte vorher einmal mit Internet öffnen, damit alles synchronisiert ist. Danach musst du dich einmal neu anmelden.
+> Am 15.11. um 20 Uhr zieht ProtoPilot auf einen eigenen Server um. Bitte vorher einmal mit Internet öffnen, damit alles synchronisiert ist. Danach musst du dich einmal neu anmelden.
 
 ## 7. Datenumzug von supabase.co
 
@@ -198,7 +198,7 @@ In der App unter *Administration → Einstellungen → Hinweis an alle* den Umzu
 - Die Datenbank ist nicht von außen erreichbar, nur über die App-Schnittstellen mit den Zugriffsregeln (RLS).
 - `server/.env` und die Backups enthalten alle Geheimnisse: nur für dich und den Backup-Benutzer zugänglich halten.
 - **Windows 10** bekommt Sicherheitsupdates nur noch mit Anmeldung zum verlängerten Programm (ESU, bis 12. Oktober 2027). Prüfen unter *Einstellungen → Windows Update*. Langfristig das Betriebssystem des Servers wechseln.
-- Soll DokuStick offiziell in der Organisation eingesetzt werden: den Betrieb auf einem privaten Server vorher mit dem Datenschutzbeauftragten klären. Gespeichert sind Dienst-E-Mail-Adressen und Tickets, aber keine Patientendaten.
+- Soll ProtoPilot offiziell in der Organisation eingesetzt werden: den Betrieb auf einem privaten Server vorher mit dem Datenschutzbeauftragten klären. Gespeichert sind Dienst-E-Mail-Adressen und Tickets, aber keine Patientendaten.
 
 ## Für Entwickler
 

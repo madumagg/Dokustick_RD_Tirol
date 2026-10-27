@@ -63,7 +63,7 @@ export default async function (t) {
   await dl.saveAs(pdfPath);
   // jsPDF schreibt Text unkomprimiert in WinAnsi; Node uebersetzt 0x80 nicht immer in €
   const txt = new TextDecoder('latin1').decode(readFileSync(pdfPath)).replace(/\x80/g, '€');
-  ok(/^dokustick-test-\d{4}-\d\d-\d\d-\d{4}\.pdf$/.test(dl.suggestedFilename()), 'PDF heruntergeladen: ' + dl.suggestedFilename());
+  ok(/^protopilot-test-\d{4}-\d\d-\d\d-\d{4}\.pdf$/.test(dl.suggestedFilename()), 'PDF heruntergeladen: ' + dl.suggestedFilename());
   ok(txt.includes('U+1F600'), 'PDF: Emoji als U+1F600 statt Zeichensalat');
   ok(txt.includes('Maßnahmen: Guedeltubus, i-gel Larynxmaske') && txt.includes('Ä Ö Ü ß € @') && txt.includes('[Tab]') && txt.includes(t.config.adminEmail), 'PDF enthält Ausgabe, Umlaute, [Tab] und Benutzer');
 

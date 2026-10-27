@@ -57,6 +57,7 @@ In jeder Testreihe gelten als Fehler: JavaScript-Ausnahmen im Browser und Text �
 | `20-drag` | Blöcke verschieben mit Maus, Touch (echte Touch-Ereignisse) und Tastatur |
 | `30-ios` | Bluefy-Hinweis auf iPhone/iPad, Tastatur-Diktat |
 | `40-header` | Kopfzeile auf allen Bildschirmbreiten |
+| `41-name` | Name ProtoPilot, Icons, alte Sticks („DokuStick“) werden weiter erkannt |
 | `45-update` | Updates kommen trotz HTTP-Cache (wie GitHub Pages) sofort an; Offline-Start; Wörterbuch bleibt über Updates im Speicher |
 | `50-virtual` | Virtueller Dongle, PDF, Einsatz beenden *(Datenbank)* |
 | `60-sync` | Konto, Synchronisation, Teams, Offline-Änderungen *(Datenbank)* |

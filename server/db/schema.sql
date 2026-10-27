@@ -1,6 +1,6 @@
 -- Laeuft einmal beim allerersten Start der Datenbank (leeres Volume), als supabase_admin.
 -- Setzt die Passwoerter der Supabase-Rollen auf POSTGRES_PASSWORD (wie die Supabase-CLI).
--- Das Schema von DokuStick spielt danach server/migrate.sh aus supabase/migrations ein.
+-- Das Schema von ProtoPilot spielt danach server/migrate.sh aus supabase/migrations ein.
 
 \set pgpass `echo "$PGPASSWORD"`
 \set jwt_secret `echo "$JWT_SECRET"`

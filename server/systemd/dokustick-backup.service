@@ -1,5 +1,5 @@
 [Unit]
-Description=DokuStick: Backup auf die NAS
+Description=ProtoPilot: Backup auf die NAS
 After=docker.service network-online.target remote-fs.target
 Wants=network-online.target
 

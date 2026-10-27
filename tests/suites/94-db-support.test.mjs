@@ -21,6 +21,9 @@ export default async function (t) {
   // --- Ohne Anmeldung: nur haeufige Fragen
   let r = await anonClient().from('support_faq').select('question, answer').order('sort');
   ok(r.data?.length >= 7 && r.data[0].question.includes('Dongle'), `Häufige Fragen ohne Anmeldung lesbar (${r.data?.length})`);
+  const faqText = (r.data || []).map((f) => f.question + ' ' + f.answer).join('\n');
+  ok(faqText.includes('Funktioniert ProtoPilot auf iPhone und iPad?') && !faqText.replace(/ältere Firmware: „DokuStick“/g, '').includes('DokuStick'),
+    'Häufige Fragen: Name ProtoPilot (DokuStick nur als Hinweis auf ältere Firmware)');
   r = await anonClient().rpc('support_create', { p_category: 'frage', p_title: 'x', p_body: 'y' });
   ok(!!r.error, 'Ohne Anmeldung kein Ticket');
 

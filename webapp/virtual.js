@@ -101,7 +101,7 @@ function connectMenu() {
   openDialog('Verbinden mit …', [
     el('div', { class: 'pick-list' },
       el('button', { type: 'button', class: 'pick', disabled: !navigator.bluetooth, onclick: () => { $('#dlg').close(); if (ble.device && ble.device.virtual) ble.device = null; connect(); } },
-        el('span', { class: 'grow' }, el('b', {}, 'DokuStick (Bluetooth)'), el('span', { class: 'help', style: 'display:block' }, navigator.bluetooth ? 'Echter Dongle am Zielgerät' : 'In diesem Browser nicht verfügbar'))),
+        el('span', { class: 'grow' }, el('b', {}, 'ProtoPilot-Stick (Bluetooth)'), el('span', { class: 'help', style: 'display:block' }, navigator.bluetooth ? 'Echter Dongle am Zielgerät' : 'In diesem Browser nicht verfügbar'))),
       el('button', { type: 'button', class: 'pick', onclick: () => { $('#dlg').close(); connectVirtual(); } },
         el('span', { class: 'grow' }, el('b', {}, 'Virtueller Dongle (Test)'), el('span', { class: 'help', style: 'display:block' }, 'Zeigt an, was getippt würde, und speichert es als PDF')))),
   ]);
@@ -153,7 +153,7 @@ async function exportVirtualPdf() {
   let y = M;
 
   pdf.setFont('helvetica', 'bold'); pdf.setFontSize(15);
-  pdf.text('DokuStick – Testausgabe (virtueller Dongle)', M, y); y += 7;
+  pdf.text('ProtoPilot – Testausgabe (virtueller Dongle)', M, y); y += 7;
   pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(100);
   pdf.text(`Erstellt: ${stamp}   ·   Benutzer: ${cloud.account ? cloud.account.email : '–'}   ·   Anschläge: ${vdongle.keystrokes}   ·   Tippverzögerung: ${settings.delay} ms`, M, y); y += 4;
   if (vdongle.dropped.size) {
@@ -183,6 +183,6 @@ async function exportVirtualPdf() {
     pdf.text('Nur für Testzwecke – keine Patientendaten', M, 297 - 8);
   }
   const pad = (n) => String(n).padStart(2, '0');
-  pdf.save(`dokustick-test-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.pdf`);
+  pdf.save(`protopilot-test-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.pdf`);
   toast('PDF gespeichert');
 }

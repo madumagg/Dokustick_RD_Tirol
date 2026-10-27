@@ -1,5 +1,5 @@
 [Unit]
-Description=DokuStick: alle 5 Minuten nach Updates sehen
+Description=ProtoPilot: alle 5 Minuten nach Updates sehen
 
 [Timer]
 OnBootSec=3min

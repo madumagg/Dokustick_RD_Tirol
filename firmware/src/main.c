@@ -1,5 +1,5 @@
 /*
- * DokuStick: Bluetooth-zu-USB-Tastatur fuer nRF52840-Dongles
+ * ProtoPilot: Bluetooth-zu-USB-Tastatur fuer nRF52840-Dongles
  * (Nordic PCA10059, Makerdiary nRF52840 MDK USB Dongle).
  *
  * Das Smartphone verbindet sich per Bluetooth LE und schickt Text,
@@ -21,7 +21,7 @@
 #include <zephyr/settings/settings.h>
 #include <zephyr/sys/byteorder.h>
 
-#define FW_VERSION 3
+#define FW_VERSION 4
 
 #define PAIRING_WINDOW_MS   (60 * 1000)
 #define ERASE_HOLD_MS       5000

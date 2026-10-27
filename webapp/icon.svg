@@ -1,8 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#0b6f6a"/>
-  <rect x="186" y="84" width="140" height="84" rx="14" fill="#ffffff" opacity=".85"/>
-  <rect x="200" y="108" width="28" height="22" rx="4" fill="#0b6f6a"/>
-  <rect x="284" y="108" width="28" height="22" rx="4" fill="#0b6f6a"/>
-  <rect x="136" y="168" width="240" height="264" rx="44" fill="#ffffff"/>
-  <path d="M196 264h120M196 320h76" stroke="#0b6f6a" stroke-width="28" stroke-linecap="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img"><title>ProtoPilot</title><rect width="512" height="512" rx="112" fill="#0b6f6a"/><g transform="translate(256 256) scale(1.0) translate(-262 -252)"><circle cx="80" cy="436" r="11" fill="#ffa62b"/><circle cx="104.5" cy="398.3" r="11" fill="#ffa62b"/><circle cx="133.3" cy="363.7" r="11" fill="#ffa62b"/><circle cx="166.8" cy="333.7" r="11" fill="#ffa62b"/><circle cx="204.7" cy="309.6" r="11" fill="#ffa62b"/><path d="M391.9 119.6 115 217 239.1 272.4z" fill="#fff"/><path d="M400.4 128.1 303 405 247.6 280.9z" fill="#bfe3df"/></g></svg>

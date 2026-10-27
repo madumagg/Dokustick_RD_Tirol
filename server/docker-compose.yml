@@ -1,9 +1,10 @@
-# DokuStick auf dem eigenen Server: Datenbank, Anmeldung, Daten-API und Web-App.
+# ProtoPilot auf dem eigenen Server: Datenbank, Anmeldung, Daten-API und Web-App.
 # Einrichtung und Bedienung: server/README.md. Alle Werte stehen in server/.env (erzeugt von setup.sh).
 #
-# Es laufen nur die Dienste, die DokuStick braucht (gleiche Versionen wie die lokale
+# Es laufen nur die Dienste, die ProtoPilot braucht (gleiche Versionen wie die lokale
 # Test-Datenbank der Supabase-CLI). Kong, Realtime, Storage usw. entfallen: Caddy leitet
 # /auth/v1 und /rest/v1 direkt an Anmeldung (GoTrue) und Daten-API (PostgREST) weiter.
+# Projektname bleibt "dokustick": daran haengen die Namen der Datenbank-Volumes
 name: dokustick
 
 services:
@@ -64,17 +65,17 @@ services:
       GOTRUE_SMTP_USER: ${SMTP_USER}
       GOTRUE_SMTP_PASS: ${SMTP_PASS}
       GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_SENDER}
-      GOTRUE_SMTP_SENDER_NAME: DokuStick
+      GOTRUE_SMTP_SENDER_NAME: ProtoPilot
       GOTRUE_MAILER_URLPATHS_CONFIRMATION: /auth/v1/verify
       GOTRUE_MAILER_URLPATHS_RECOVERY: /auth/v1/verify
       GOTRUE_MAILER_URLPATHS_INVITE: /auth/v1/verify
       GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: /auth/v1/verify
       # Deutsche E-Mails (Vorlagen in server/mail, ausgeliefert von Caddy im internen Netz)
-      GOTRUE_MAILER_SUBJECTS_CONFIRMATION: "DokuStick: E-Mail-Adresse bestätigen"
-      GOTRUE_MAILER_SUBJECTS_RECOVERY: "DokuStick: Passwort zurücksetzen"
-      GOTRUE_MAILER_SUBJECTS_INVITE: "DokuStick: Einladung"
-      GOTRUE_MAILER_SUBJECTS_EMAIL_CHANGE: "DokuStick: Neue E-Mail-Adresse bestätigen"
-      GOTRUE_MAILER_SUBJECTS_MAGIC_LINK: "DokuStick: Anmeldelink"
+      GOTRUE_MAILER_SUBJECTS_CONFIRMATION: "ProtoPilot: E-Mail-Adresse bestätigen"
+      GOTRUE_MAILER_SUBJECTS_RECOVERY: "ProtoPilot: Passwort zurücksetzen"
+      GOTRUE_MAILER_SUBJECTS_INVITE: "ProtoPilot: Einladung"
+      GOTRUE_MAILER_SUBJECTS_EMAIL_CHANGE: "ProtoPilot: Neue E-Mail-Adresse bestätigen"
+      GOTRUE_MAILER_SUBJECTS_MAGIC_LINK: "ProtoPilot: Anmeldelink"
       GOTRUE_MAILER_TEMPLATES_CONFIRMATION: http://caddy:8081/mail/confirmation.html
       GOTRUE_MAILER_TEMPLATES_RECOVERY: http://caddy:8081/mail/recovery.html
       GOTRUE_MAILER_TEMPLATES_INVITE: http://caddy:8081/mail/invite.html
@@ -151,8 +152,8 @@ services:
       SUPABASE_ANON_KEY: ${ANON_KEY}
       SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
       AUTH_JWT_SECRET: ${JWT_SECRET}
-      DEFAULT_ORGANIZATION_NAME: DokuStick
-      DEFAULT_PROJECT_NAME: DokuStick
+      DEFAULT_ORGANIZATION_NAME: ProtoPilot
+      DEFAULT_PROJECT_NAME: ProtoPilot
       PGRST_DB_SCHEMAS: public
       NEXT_PUBLIC_ENABLE_LOGS: "false"
       NEXT_ANALYTICS_BACKEND_PROVIDER: postgres

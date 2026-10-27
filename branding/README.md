@@ -48,4 +48,4 @@ python3 branding/make.py      # SVG-Dateien in branding/svg
 node branding/export.mjs      # PNG, favicon.ico und die Logo-Dateien der Website
 ```
 
-`make.py` braucht die Schriftdatei `InterDisplay-ExtraBold.otf` (Pfad oben im Skript, Download: rsms.me/inter). `export.mjs` nutzt Playwright aus `tests/` und schreibt auch `website/favicon.*`, `website/img/logo*.svg`, `website/img/apple-touch-icon.png` und das Vorschaubild `website/img/vorschau.png` neu.
+`make.py` braucht die Schriftdatei `InterDisplay-ExtraBold.otf` (Pfad oben im Skript, Download: rsms.me/inter). `export.mjs` nutzt Playwright aus `tests/` und schreibt auch die Icons der Web-App (`webapp/icon*`, `favicon.svg`, `apple-touch-icon.png`) sowie `website/favicon.*`, `website/img/logo*.svg`, `website/img/apple-touch-icon.png` und das Vorschaubild `website/img/vorschau.png` neu.

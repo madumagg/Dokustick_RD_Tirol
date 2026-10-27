@@ -1,5 +1,5 @@
 [Unit]
-Description=DokuStick: neue Version von GitHub holen und Migrationen einspielen
+Description=ProtoPilot: neue Version von GitHub holen und Migrationen einspielen
 After=docker.service network-online.target
 Wants=network-online.target
 

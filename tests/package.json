@@ -2,7 +2,7 @@
   "name": "dokustick-tests",
   "private": true,
   "type": "module",
-  "description": "Automatische Tests für die DokuStick-Web-App und die Supabase-Datenbank",
+  "description": "Automatische Tests für die ProtoPilot-Web-App und die Supabase-Datenbank",
   "scripts": {
     "test": "node run.mjs",
     "test:offline": "node run.mjs --ohne-cloud",

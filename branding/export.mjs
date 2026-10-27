@@ -11,7 +11,7 @@ mkdirSync(PNG, { recursive: true });
 
 const jobs = [
   ...[16, 32, 48].map((s) => ['protopilot-favicon', s, s, `favicon-${s}`]),
-  ...[64, 128, 256, 512, 1024].map((s) => ['protopilot-icon', s, s, `protopilot-icon-${s}`]),
+  ...[64, 128, 192, 256, 512, 1024].map((s) => ['protopilot-icon', s, s, `protopilot-icon-${s}`]),
   ['protopilot-icon-quadratisch', 180, 180, 'apple-touch-icon'],
   ['protopilot-icon-quadratisch', 192, 192, 'android-192'],
   ['protopilot-icon-quadratisch', 512, 512, 'android-512'],
@@ -62,6 +62,16 @@ copy(join(PNG, 'apple-touch-icon.png'), 'img/apple-touch-icon.png');
 copy(join(SVG, 'protopilot-logo.svg'), 'img/logo.svg');
 copy(join(SVG, 'protopilot-logo-dunkel.svg'), 'img/logo-dunkel.svg');
 
+// Icons der Web-App (webapp/): Tab, Startbildschirm, Android
+const APP = join(HERE, '..', 'webapp');
+const toApp = (from, to) => writeFileSync(join(APP, to), readFileSync(from));
+toApp(join(SVG, 'protopilot-icon.svg'), 'icon.svg');
+toApp(join(SVG, 'protopilot-favicon.svg'), 'favicon.svg');
+toApp(join(PNG, 'protopilot-icon-192.png'), 'icon-192.png');
+toApp(join(PNG, 'protopilot-icon-512.png'), 'icon-512.png');
+toApp(join(PNG, 'android-maskable-512.png'), 'icon-maskable-512.png');
+toApp(join(PNG, 'apple-touch-icon.png'), 'apple-touch-icon.png');
+
 // Vorschaubild fuer WhatsApp & Co. (1200 x 630)
 await page.setViewportSize({ width: 1200, height: 630 });
 const shot = readFileSync(join(WEB, 'img/app-protokoll.webp')).toString('base64');
@@ -80,4 +90,5 @@ await page.setContent(`<!doctype html><meta charset="utf-8"><style>
 await page.waitForTimeout(200);
 writeFileSync(join(WEB, 'img/vorschau.png'), await page.screenshot());
 await browser.close();
+console.log('webapp/: icon.svg, favicon.svg, icon-192.png, icon-512.png, icon-maskable-512.png, apple-touch-icon.png');
 console.log('website/: favicon.svg, favicon.ico, img/logo.svg, img/logo-dunkel.svg, img/apple-touch-icon.png, img/vorschau.png');

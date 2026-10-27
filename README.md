@@ -1,4 +1,6 @@
-# DokuStick
+# ProtoPilot
+
+*Dein Pilot fürs Protokoll.* Früher hieß das Projekt „DokuStick“. Interne Bezeichnungen (Repository, Speicherschlüssel im Browser, Server-Ordner und -Dienste) heißen weiterhin `dokustick`, damit nichts verloren geht.
 
 Selbstgebaute Dokumentationshilfe: Text am Handy schreiben, diktieren oder aus Textbausteinen und Formularen zusammenstellen. Ein kleiner USB-Dongle tippt ihn dann am Zielgerät (z. B. NIDA-Pad, PC) ein, so als wäre er eine Tastatur. Am Zielgerät muss nichts installiert werden.
 
@@ -29,18 +31,18 @@ Der Bootloader auf dem Dongle bleibt immer erhalten. Du kannst also jederzeit ei
 1. **Taste gedrückt halten** und den Dongle dabei in den PC stecken, dann loslassen.
 2. Erscheint ein USB-Laufwerk (z. B. `MDK-DONGLE` oder ähnlich), hat der Dongle den **UF2-Bootloader**:
    - Öffne darauf die Datei `INFO_UF2.TXT` und sieh nach, was bei **SoftDevice** steht:
-     - `S140 …` → `firmware/out/dokustick-makerdiary-uf2-s140.uf2` auf das Laufwerk ziehen
-     - `not found` oder `S132 …` → `firmware/out/dokustick-makerdiary-uf2-ohne-softdevice.uf2` auf das Laufwerk ziehen. `S132 5.1.0` zeigen Makerdiary-Sticks ab Juli 2023 (Bootloader 0.7.1, `Date: Jul 20 2023`): Das ist die ab Werk aufgespielte Bluetooth-Firmware, sie wird dabei ersetzt. Der Bootloader selbst braucht kein SoftDevice.
+     - `S140 …` → `firmware/out/protopilot-makerdiary-uf2-s140.uf2` auf das Laufwerk ziehen
+     - `not found` oder `S132 …` → `firmware/out/protopilot-makerdiary-uf2-ohne-softdevice.uf2` auf das Laufwerk ziehen. `S132 5.1.0` zeigen Makerdiary-Sticks ab Juli 2023 (Bootloader 0.7.1, `Date: Jul 20 2023`): Das ist die ab Werk aufgespielte Bluetooth-Firmware, sie wird dabei ersetzt. Der Bootloader selbst braucht kein SoftDevice.
    - Während des Aufspielens blinkt die LED schnell rot. Das Laufwerk verschwindet von selbst (sonst den Dongle neu einstecken), die LED leuchtet kurz **rot, grün, blau** und blinkt dann blau.
    - **Nicht mit TeraCopy oder ähnlichen Kopierprogrammen kopieren**, nur mit dem Explorer oder in der Eingabeaufforderung mit `copy /b datei.uf2 E:\`. Steht danach in `INFO_UF2.TXT` noch dieselbe SoftDevice-Zeile, ist die Datei nicht angekommen.
-3. Erscheint **kein** Laufwerk, hat der Dongle den älteren **Nordic Open Bootloader**. Dann gehst du wie beim Nordic-Dongle vor (siehe unten), mit der Datei `firmware/out/dokustick-makerdiary-open-bootloader.hex`.
+3. Erscheint **kein** Laufwerk, hat der Dongle den älteren **Nordic Open Bootloader**. Dann gehst du wie beim Nordic-Dongle vor (siehe unten), mit der Datei `firmware/out/protopilot-makerdiary-open-bootloader.hex`.
 
 ### Nordic nRF52840 Dongle (PCA10059)
 
 1. **nRF Connect for Desktop** installieren und darin die App **Programmer** installieren.
 2. Den Dongle in den PC stecken und die kleine, seitlich angebrachte **RESET-Taste** drücken. Die rote LED pulsiert.
 3. Im Programmer das Gerät **„Open DFU Bootloader“** auswählen.
-4. **Add file** → `firmware/out/dokustick-nordic-pca10059.hex` → **Write**.
+4. **Add file** → `firmware/out/protopilot-nordic-pca10059.hex` → **Write**.
 
 ## 2. Weboberfläche bereitstellen
 
@@ -60,7 +62,7 @@ Web Bluetooth funktioniert nur über **https**. Am einfachsten ist **GitHub Page
 
 ### iPhone & iPad
 
-Safari kann auf iPhone und iPad kein Bluetooth für Webseiten. Deshalb läuft DokuStick dort in der kostenlosen App **[Bluefy – Web BLE Browser](https://apps.apple.com/app/id1492822055)**:
+Safari kann auf iPhone und iPad kein Bluetooth für Webseiten. Deshalb läuft ProtoPilot dort in der kostenlosen App **[Bluefy – Web BLE Browser](https://apps.apple.com/app/id1492822055)**:
 
 1. Bluefy aus dem App Store installieren.
 2. In Bluefy `https://madumagg.github.io/Dokustick_RD_Tirol/` öffnen. Öffnet man die Seite in Safari, zeigt die App beide Schritte mit „Bluefy laden“ und „Link kopieren“ direkt an.
@@ -71,7 +73,7 @@ Safari kann auf iPhone und iPad kein Bluetooth für Webseiten. Deshalb läuft Do
 ## 3. Erste Schritte
 
 1. Den Dongle am Zielgerät einstecken. Die LED blinkt blau, der Dongle ist koppelbereit.
-2. In der App auf **Verbinden** tippen, „DokuStick“ auswählen und die Kopplungsanfrage bestätigen.
+2. In der App auf **Verbinden** tippen, „ProtoPilot“ auswählen (Sticks mit Firmware 3 oder älter: „DokuStick“) und die Kopplungsanfrage bestätigen.
 3. Am Zielgerät in das gewünschte Textfeld klicken.
 4. In der App Text eingeben und auf **Senden** tippen.
 5. Einmal unter *Einstellungen* auf **Tastatur-Test senden** tippen und prüfen, ob alles korrekt ankommt.

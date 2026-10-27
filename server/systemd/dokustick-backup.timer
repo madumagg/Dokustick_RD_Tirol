@@ -1,5 +1,5 @@
 [Unit]
-Description=DokuStick: Backup jede Nacht um 03:15
+Description=ProtoPilot: Backup jede Nacht um 03:15
 
 [Timer]
 OnCalendar=*-*-* 03:15

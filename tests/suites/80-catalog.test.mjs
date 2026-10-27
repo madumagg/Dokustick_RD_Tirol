@@ -87,7 +87,7 @@ export default async function (t) {
   // Export: gleiches Format wie der Import, nur freigegebene Eintraege
   const [dl] = await Promise.all([A.waitForEvent('download'), A.click('#dbBody >> text=CSV exportieren')]);
   const exported = readFileSync(await dl.path(), 'utf8');
-  ok(/^dokustick-krankheiten-\d{4}-\d\d-\d\d\.csv$/.test(dl.suggestedFilename()) && exported.startsWith('\uFEFFName;Abkürzung/Beschreibung\r\n') && exported.includes(`Diabetes mellitus Typ 2 ${s};DM2`) && exported.includes(`${dx1};KHK`),
+  ok(/^protopilot-krankheiten-\d{4}-\d\d-\d\d\.csv$/.test(dl.suggestedFilename()) && exported.startsWith('\uFEFFName;Abkürzung/Beschreibung\r\n') && exported.includes(`Diabetes mellitus Typ 2 ${s};DM2`) && exported.includes(`${dx1};KHK`),
     'CSV-Export: ' + dl.suggestedFilename() + ', enthält importierte und angelegte Einträge');
 
   // --- Benutzer V nutzt die Datenbank im Protokoll

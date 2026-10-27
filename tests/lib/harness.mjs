@@ -125,7 +125,7 @@ const BLE_MOCK = () => {
     },
   };
   const device = {
-    name: 'DokuStick', addEventListener() {},
+    name: 'ProtoPilot', addEventListener() {},
     gatt: { connected: false, async connect() { this.connected = true; return { getPrimaryService: async () => ({ getCharacteristic: async (u) => (u.startsWith('6e7a0002') ? cmd : stat) }) }; }, disconnect() {} },
   };
   Object.defineProperty(navigator, 'bluetooth', { value: { requestDevice: async () => device } });

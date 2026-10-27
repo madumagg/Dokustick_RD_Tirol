@@ -1,4 +1,4 @@
-# DokuStick – Architektur
+# ProtoPilot – Architektur
 
 Überblick für Entwickler: wie die Teile zusammenhängen, wo welche Daten liegen und worauf man bei Änderungen achten muss.
 

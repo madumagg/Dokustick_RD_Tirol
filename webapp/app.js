@@ -3,7 +3,7 @@
 /* ================= Konstanten ================= */
 
 // Wird mit tools/version.sh zusammen mit sw.js und index.html erhoeht
-const APP_VERSION = '0.36';
+const APP_VERSION = '0.37';
 
 const SVC_UUID = '6e7a0001-4b3c-4f8e-9a1d-5c2b7d0a4e01';
 const CMD_UUID = '6e7a0002-4b3c-4f8e-9a1d-5c2b7d0a4e01';
@@ -389,7 +389,7 @@ function renderStatus() {
     if (IS_IOS) {
       // Safari auf iPhone/iPad kann kein Web Bluetooth -> Weg ueber die App Bluefy zeigen
       area.append(el('div', { class: 'note warn' },
-        el('div', {}, 'Safari kann auf iPhone und iPad kein Bluetooth für Webseiten. Öffne DokuStick deshalb in der kostenlosen App „Bluefy“.'),
+        el('div', {}, 'Safari kann auf iPhone und iPad kein Bluetooth für Webseiten. Öffne ProtoPilot deshalb in der kostenlosen App „Bluefy“.'),
         el('div', { class: 'row', style: 'margin-top:6px' },
           el('a', { class: 'btn small', href: BLUEFY_URL, target: '_blank', rel: 'noopener' }, '1. Bluefy laden'),
           el('button', { type: 'button', class: 'btn small', onclick: copyAppLink }, '2. Link kopieren'))));
@@ -679,7 +679,7 @@ $('#replacements').addEventListener('change', (e) => { settings.replacements = e
 $('#theme').addEventListener('change', (e) => { settings.theme = e.target.value; store.save('settings', settings); applyTheme(); });
 $('#unpairBtn').addEventListener('click', async () => {
   if (!ble.connected) return toast('Nicht mit dem Dongle verbunden', 'err');
-  if (!confirm('Alle gekoppelten Handys am Dongle löschen? Danach ist der Dongle wieder frei koppelbar. Entferne „DokuStick“ anschließend auch in den Bluetooth-Einstellungen dieses Handys.')) return;
+  if (!confirm('Alle gekoppelten Handys am Dongle löschen? Danach ist der Dongle wieder frei koppelbar. Entferne „ProtoPilot“ (ältere Firmware: „DokuStick“) anschließend auch in den Bluetooth-Einstellungen dieses Handys.')) return;
   ble.userDisconnect = true;
   try { await writeCmd(new Uint8Array([CMD_UNPAIR])); toast('Kopplungen gelöscht'); } catch (e) { toast('Fehlgeschlagen: ' + e.message, 'err'); }
 });
@@ -700,7 +700,7 @@ const exportable = (it) => ({ id: it.id, kind: it.kind, title: it.title, categor
 
 $('#exportBtn').addEventListener('click', () => {
   const data = JSON.stringify({ app: 'dokustick', version: 2, items: items.filter((i) => !i.deleted).map(exportable), settings }, null, 2);
-  const a = el('a', { href: URL.createObjectURL(new Blob([data], { type: 'application/json' })), download: 'dokustick-backup.json' });
+  const a = el('a', { href: URL.createObjectURL(new Blob([data], { type: 'application/json' })), download: 'protopilot-backup.json' });
   document.body.append(a); a.click(); a.remove();
 });
 $('#importBtn').addEventListener('click', () => $('#importFile').click());
@@ -723,7 +723,7 @@ $('#importFile').addEventListener('change', async (e) => {
   if (!file) return;
   try {
     const data = JSON.parse(await file.text());
-    if (data.app !== 'dokustick') throw new Error('Keine DokuStick-Sicherung');
+    if (data.app !== 'dokustick') throw new Error('Keine ProtoPilot-Sicherung');
     // Version 1 hatte getrennte Listen
     const list = data.items || [
       ...(data.modules || []).map((m) => ({ kind: 'module', title: m.title, category: m.cat, body: m.text })),
@@ -770,7 +770,8 @@ function boot() {
   // Bereits erlaubten Dongle merken, damit "Verbinden" ohne Geraeteauswahl klappt
   if (navigator.bluetooth && navigator.bluetooth.getDevices) {
     navigator.bluetooth.getDevices().then((devs) => {
-      const d = devs.find((x) => x.name === 'DokuStick') || devs[0];
+      // Firmware ab 4 heisst ProtoPilot, aeltere Sticks noch DokuStick
+      const d = devs.find((x) => x.name === 'ProtoPilot' || x.name === 'DokuStick') || devs[0];
       if (d && !ble.device) useDevice(d);
     }).catch(() => {});
   }

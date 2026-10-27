@@ -1,4 +1,4 @@
-# DokuStick – Hinweise für Claude Code
+# ProtoPilot – Hinweise für Claude Code
 
 Dokumentationshilfe für den Rettungsdienst: Eine Web-App (Handy/iPad) schickt Text per Bluetooth an einen nRF52840-Dongle, der ihn als USB-Tastatur am Zielgerät eintippt. Konto, Teams und Datenbanken über Supabase.
 
@@ -41,6 +41,7 @@ Dokumentationshilfe für den Rettungsdienst: Eine Web-App (Handy/iPad) schickt T
 
 - **Feld-Syntax in Bausteinen** (`{{Name+?:a|b}}`, `@med`, `@dx`): Sie steht so in der Datenbank. Eine Änderung braucht eine Umwandlung bestehender Daten.
 - **Speicherformat in localStorage** (`dokustick.u.<id>.items` usw.): Dort liegen eventuell noch nicht hochgeladene Änderungen der Benutzer. Formatwechsel nur mit Umwandlung in `loadItems()`.
+- **Interne Namen `dokustick`** (Speicherschlüssel `dokustick.*`, `DOKUSTICK_CONFIG`, Sicherungsformat `app: 'dokustick'`, Docker-Projekt `name: dokustick`, systemd-Dienste, `/opt/dokustick`): bleiben trotz des Namens ProtoPilot. Umbenennen würde Anmeldungen, nicht hochgeladene Änderungen oder die Datenbank-Volumes verlieren.
 - **Bluetooth-Protokoll / Firmware** (`firmware/`): Eine Änderung erfordert neue Firmware auf jedem Dongle. Nur erweitern, nichts Bestehendes ändern.
 - **Medizinische Inhalte** (Vorlagen, Medikamente, Optionen): fachlich prüfen lassen, keine Medikamentenlisten erfinden.
 

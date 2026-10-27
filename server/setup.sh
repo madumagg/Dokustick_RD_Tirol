@@ -21,7 +21,7 @@ ask() { # ask VAR "Frage" [Vorgabe]
   if [ -z "$cur" ]; then read -r -p "$2${3:+ [$3]}: " cur; cur="${cur:-${3:-}}"; fi
   printf -v "$1" '%s' "$cur"
 }
-ask DOMAIN "Adresse von DokuStick (ohne https://), z. B. dokustick.meinedomain.at"
+ask DOMAIN "Adresse der App (ohne https://), z. B. app.protopilot.at"
 ask SMTP_HOST "Mail-Server für den Versand (SMTP), z. B. smtp.meinanbieter.at"
 ask SMTP_PORT "SMTP-Port" 587
 ask SMTP_USER "SMTP-Benutzername (meist die E-Mail-Adresse)"
@@ -50,7 +50,7 @@ STUDIO_PASSWORD_HASH="$(docker run --rm caddy:2.10.2-alpine caddy hash-password 
 
 umask 077
 cat > "$ENV_FILE" <<ENV
-# DokuStick-Server – GEHEIM, nicht ins Repository (siehe .gitignore). Erzeugt am $(date '+%d.%m.%Y %H:%M').
+# ProtoPilot-Server – GEHEIM, nicht ins Repository (siehe .gitignore). Erzeugt am $(date '+%d.%m.%Y %H:%M').
 DOMAIN=$DOMAIN
 PUBLIC_URL=$PUBLIC_URL
 SITE_ADDRESS=$SITE_ADDRESS

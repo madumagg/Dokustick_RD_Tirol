@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b6f6a">
-<title>DokuStick</title>
+<title>ProtoPilot</title>
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
 :root {
   --bg: #f4f6f7;
@@ -74,6 +74,7 @@ header {
 .bar { display: flex; align-items: center; gap: 12px; max-width: 760px; margin: 0 auto; }
 .brand { font-weight: 700; font-size: 18px; letter-spacing: -.01em; flex: 1; display: flex; align-items: center; gap: 8px; }
 .brand svg { width: 26px; height: 26px; }
+.brand-name span { color: var(--accent); }
 .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); flex: none; }
 .dot.on { background: var(--ok); }
@@ -332,8 +333,8 @@ textarea.internal-input { background: var(--warn-soft); }
 <header>
   <div class="bar">
     <div class="brand">
-      <svg viewBox="0 0 64 64" aria-hidden="true"><rect x="4" y="4" width="56" height="56" rx="14" fill="var(--accent)"/><rect x="22" y="12" width="20" height="10" rx="2" fill="var(--accent-text)" opacity=".85"/><rect x="16" y="22" width="32" height="30" rx="6" fill="var(--accent-text)"/><path d="M26 33h12M26 40h8" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round"/></svg>
-      DokuStick
+      <svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#0b6f6a"/><g transform="translate(256 256) scale(1.2) translate(-254.6 -265.4)"><path d="M374.5 125.7 115 217 231.3 268.9z" fill="#fff"/><path d="M394.3 145.5 303 405 251.1 288.7z" fill="#bfe3df"/></g></svg>
+      <span class="brand-name">Proto<span>Pilot</span></span>
       <span class="sync" id="syncDot" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H8a5 5 0 1 1 1.4-9.8A6 6 0 0 1 21 12.5 3.5 3.5 0 0 1 17.5 19Z"/></svg></span>
       <span class="ver" id="hdrVer" title="App-Version"></span>
     </div>
@@ -482,7 +483,7 @@ textarea.internal-input { background: var(--warn-soft); }
       <ul style="margin:0;padding-left:18px">
         <li><b>Koppeln:</b> Dongle einstecken – er ist dann 60&nbsp;s koppelbereit (LED blinkt blau). „Verbinden“ tippen und die Kopplungsanfrage bestätigen. Die Taste am Dongle kurz drücken öffnet das Kopplungsfenster erneut.</li>
         <li><b>LEDs:</b> blau blinkend = koppelbereit · grün = verbunden · grün flackernd = tippt · rot blinkend = nicht am Zielgerät eingesteckt.</li>
-        <li><b>Verbindung klappt nicht mehr</b> (z.&nbsp;B. nach Löschen der Kopplungen): „DokuStick“ in den Bluetooth-Einstellungen des Handys entfernen und neu verbinden.</li>
+        <li><b>Verbindung klappt nicht mehr</b> (z.&nbsp;B. nach Löschen der Kopplungen): „ProtoPilot“ (ältere Firmware: „DokuStick“) in den Bluetooth-Einstellungen des Handys entfernen und neu verbinden.</li>
       </ul>
       <p>Firmware: <span id="fwVer">–</span> · App-Version: <span id="appVer">–</span></p>
       <button class="btn danger" id="unpairBtn">Alle Kopplungen löschen</button>
@@ -522,17 +523,17 @@ textarea.internal-input { background: var(--warn-soft); }
 <dialog id="dlg2"><form method="dialog" id="dlg2Form"></form></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=0.36"></script>
-<script src="vendor/supabase.js?v=0.36"></script>
-<script src="app.js?v=0.36"></script>
-<script src="compose.js?v=0.36"></script>
-<script src="protocols.js?v=0.36"></script>
-<script src="spell.js?v=0.36"></script>
-<script src="catalog.js?v=0.36"></script>
-<script src="cloud.js?v=0.36"></script>
-<script src="support.js?v=0.36"></script>
-<script src="admin.js?v=0.36"></script>
-<script src="virtual.js?v=0.36"></script>
+<script src="config.js?v=0.37"></script>
+<script src="vendor/supabase.js?v=0.37"></script>
+<script src="app.js?v=0.37"></script>
+<script src="compose.js?v=0.37"></script>
+<script src="protocols.js?v=0.37"></script>
+<script src="spell.js?v=0.37"></script>
+<script src="catalog.js?v=0.37"></script>
+<script src="cloud.js?v=0.37"></script>
+<script src="support.js?v=0.37"></script>
+<script src="admin.js?v=0.37"></script>
+<script src="virtual.js?v=0.37"></script>
 <script>boot(); $('#adminOpen').addEventListener('click', () => admin.open());</script>
 </body>
 </html>
