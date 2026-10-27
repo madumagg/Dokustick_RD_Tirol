@@ -1,0 +1,33 @@
+# ProtoPilot – Einstellungen fuer den Webserver (Apache bei Hetzner).
+# Alles in <IfModule>, damit die Seite auch ohne ein Modul nicht mit Fehler 500 ausfaellt.
+
+# Kurzadresse zur Web-App: protopilot.at/app
+# Nach dem Umzug der App nur hier die Zieladresse aendern.
+<IfModule mod_alias.c>
+  RedirectMatch 302 ^/app/?$ https://madumagg.github.io/Dokustick_RD_Tirol/webapp/
+</IfModule>
+
+ErrorDocument 404 /404.html
+
+<IfModule mod_mime.c>
+  AddType image/webp .webp
+  AddType image/svg+xml .svg
+  AddDefaultCharset utf-8
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+</IfModule>
+
+# Bilder einen Monat zwischenspeichern, Seiten und Stylesheet immer frisch pruefen
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/webp "access plus 30 days"
+  ExpiresByType image/png "access plus 30 days"
+  ExpiresByType image/svg+xml "access plus 30 days"
+  ExpiresByType text/css "access plus 0 seconds"
+  ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
