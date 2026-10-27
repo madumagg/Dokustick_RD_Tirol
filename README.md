@@ -16,6 +16,7 @@ Handy (Web-App)  ──Bluetooth LE──▶  nRF52840 Dongle  ──USB-Tastatu
 | `firmware/out/` | Fertig kompilierte Firmware zum Aufspielen |
 | `webapp/` | Weboberfläche (als App installierbar, funktioniert offline) |
 | `server/` | Eigener Server statt supabase.co und GitHub Pages: Docker-Aufbau, Backups, Umzug, siehe [`server/README.md`](server/README.md) |
+| `gehaeuse/` | 3D-druckbares Gehäuse für den Nordic-Dongle (STL und OpenSCAD), siehe [`gehaeuse/README.md`](gehaeuse/README.md) |
 | `branding/` | Logo und Icons von ProtoPilot (SVG, PNG, favicon), siehe [`branding/README.md`](branding/README.md) |
 | `website/` | Infoseite für protopilot.at (statisches HTML für das Webhosting), siehe [`website/README.md`](website/README.md) |
 | `supabase/migrations/` | Datenbank-Schema (Konto, Teams, Administration, Medikamente & Krankheiten, Standard-Bausteine & Protokollvorlagen, Support) |
