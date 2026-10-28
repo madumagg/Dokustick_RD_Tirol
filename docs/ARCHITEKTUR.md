@@ -31,7 +31,8 @@ Reines HTML/CSS/JavaScript **ohne Build-Schritt**. Die Skripte sind klassische `
 | `catalog.js` | Medikamente-/Krankheiten-Datenbank (Laden, Suche, Vorschlag, Freigabe, CSV-Import) |
 | `cloud.js` | Konto, Synchronisation, Teams |
 | `support.js` | Support & Feedback: Tickets, Ideen, häufige Fragen, „Was ist neu“ (`NEWS`), Geräteinfos, Abzeichen |
-| `admin.js` | Administration (nur App-Admins), darin der Reiter „Support“ |
+| `themes.js` | Themes: Liste `THEMES`, Freigabe prüfen, `data-skin` am `<html>` setzen, Auswahl in den Einstellungen. Aussehen in `themes.css` |
+| `admin.js` | Administration (nur App-Admins), darin die Reiter „Support“ und „Themes“ |
 | `virtual.js` | Virtueller Dongle mit PDF-Ausgabe (nur App-Admins); `vendor/jspdf.umd.min.js` wird erst bei Bedarf geladen |
 | `sw.js` | Service Worker: Offline-Speicher |
 
@@ -43,7 +44,8 @@ Eine Datei darf Funktionen einer **später** geladenen Datei nur zur Laufzeit au
 - DOM wird mit `el(tag, props, ...kinder)` gebaut. Benutzerinhalte immer als Text einfügen, nie als HTML.
 - `el()` lässt `null` als Kind weg, die eingebauten `replaceChildren`/`append`/`before`/`after` aber **nicht**: Sie schreiben „null“ als Text in die Seite. Können dort leere Einträge vorkommen (`bedingung ? el(…) : null`), die Liste mit `kids(…)` einpacken: `box.replaceChildren(...kids(a, b ? c : null))`. Die Tests melden „null“/„undefined“ als Text in jeder Testreihe als Fehler.
 - `localStorage` nur über `store.load/save/remove`. Das Präfix `dokustick.` wird automatisch ergänzt, und Fehler (privater Modus) werden abgefangen.
-- Farben nur über die CSS-Variablen in `:root` (heller und dunkler Modus).
+- Farben nur über die CSS-Variablen in `:root` (heller und dunkler Modus). Themes überschreiben diese Variablen in `themes.css` unter `[data-skin="…"]`.
+- **Neues Theme:** Eintrag in `THEMES` (`themes.js`) und ein Block `[data-skin="<id>"]` in `themes.css`, für hell und dunkel. Die ID nur aus Kleinbuchstaben, Ziffern und `-`. Es ist dann zuerst nur für App-Admins sichtbar und wird in der Administration unter „Themes“ freigegeben.
 
 ## Daten: wo liegt was?
 
@@ -51,7 +53,7 @@ Eine Datei darf Funktionen einer **später** geladenen Datei nur zur Laufzeit au
 
 | Schlüssel | Inhalt |
 |---|---|
-| `settings` | Einstellungen: `{ delay, lang, voiceCmds, replacements, blankLine, theme, defaultProtocol, spellcheck, dictionary }` |
+| `settings` | Einstellungen: `{ delay, lang, voiceCmds, replacements, blankLine, theme, skin, defaultProtocol, spellcheck, dictionary }`. `theme` (hell/dunkel) und `skin` (Theme) gelten nur auf diesem Gerät und werden nicht synchronisiert. |
 | `local.items` | Bausteine ohne Konto |
 | `account` | angemeldetes Konto `{ id, email }` |
 | `u.<userId>.items` | Bausteine des Kontos (lokale Kopie, inklusive noch nicht hochgeladener Änderungen!) |
@@ -59,7 +61,7 @@ Eine Datei darf Funktionen einer **später** geladenen Datei nur zur Laufzeit au
 | `u.<userId>.settingsDirty` | Einstellungen noch nicht hochgeladen |
 | `u.<userId>.lastSync` | Zeitpunkt der letzten Synchronisation |
 | `u.<userId>.catalog` | Medikamente/Krankheiten für die Offline-Suche |
-| `appInfo` | Registrierungsregeln, Hinweis an alle, Admin-Status (`app_info()`) |
+| `appInfo` | Registrierungsregeln, Hinweis an alle, Admin-Status, freigegebene Themes (`app_info()`) |
 | `announceSeen` | zuletzt ausgeblendeter Hinweis |
 | `lostSession` | `{ id, email, pending }`, wenn die Anmeldung ungültig wurde, ohne dass man sich abgemeldet hat |
 | `newsSeen` | Version, bis zu der „Was ist neu“ gelesen ist |
@@ -131,6 +133,8 @@ Schema als Migrationen in `supabase/migrations/` (Reihenfolge = Dateiname):
 | `…_diagnoses_beschreibung.sql` | `diagnoses.abbreviation` fasst jetzt Abkürzung **und/oder Beschreibung** (bis 300 Zeichen). Der Spaltenname bleibt aus Kompatibilitätsgründen. |
 | `…_standard_vorlagen.sql` | Standard-Bereich: `teams.is_standard` (genau ein Team „Standard“ ohne Mitglieder), `app_info().standard_team`; `items.kind` erlaubt `'protocol'`; Admin-Funktionen behandeln den Standard-Bereich nicht als Team |
 | `…_support.sql` | `support_tickets`, `support_messages` (`internal`, `system`), `support_reads`, `support_votes`, `support_faq`; Funktionen `support_*` (Benutzer) und `admin_ticket_*`, `admin_reply`, `admin_tickets` |
+| `…_name_protopilot.sql` | Häufige Fragen mit dem neuen Namen ProtoPilot |
+| `…_themes.sql` | `theme_settings` (Freigabe je Theme: `admins` oder `all`), `theme_unlocks` (einzelne Benutzer); `my_themes()`, `app_info().themes`, `admin_themes`, `admin_theme_release`, `admin_theme_unlock`, `admin_theme_lock` |
 
 Alle Tabellen haben **Row Level Security**. Kurzfassung:
 - **Eigene Einträge:** sieht und ändert nur der Besitzer.
@@ -139,6 +143,7 @@ Alle Tabellen haben **Row Level Security**. Kurzfassung:
 - **Admin-Funktionen** prüfen selbst `require_superadmin()`.
 - **Medikamente und Krankheiten:** freigegebene Einträge sind für alle sichtbar, Vorschläge nur für den Ersteller und die App-Admins.
 - **Support:** Tickets, Nachrichten, Lesestand und Stimmen haben **keine** Tabellenrechte, nur die `security definer`-Funktionen greifen zu. Sie prüfen Ersteller oder App-Admin (`support_get`). Interne Notizen und E-Mail-Adressen liefern sie nur an App-Admins, Ideen (`support_ideas`) nur mit Titel, Ideen-Text und Stimmen. Ist ein Ticket jemand anderem zugewiesen, verweigern `admin_reply` und `admin_ticket_assign` ohne `p_force` mit Fehlercode `DS409`; die App fragt dann nach. Häufige Fragen: lesen alle (auch `anon`), schreiben nur App-Admins (RLS).
+- **Themes:** `theme_settings` und `theme_unlocks` haben keine Tabellenrechte, nur die Funktionen greifen zu. `app_info().themes` nennt die für den Aufrufer freigegebenen Themes (für alle freigegebene auch ohne Anmeldung). App-Admins dürfen in der App alle Themes verwenden. Ohne Eintrag in `theme_settings` gilt ein Theme als „nur Admins“.
 - **Standard-Bereich:** Einträge mit `team_id` = Standard-Team sehen alle angemeldeten Benutzer, anlegen und ändern dürfen nur App-Admins. In der App ist es ein Pseudo-Team: `cloud.isStandard()`, `cloud.isAdmin()` (für App-Admins wahr), `cloud.adminTargets()` für „Speichern in“. Ältere App-Versionen behandeln Standard-Einträge wie fremde Team-Einträge.
 
 ### Regeln für Datenbank-Änderungen
@@ -182,7 +187,7 @@ Datenstrom: UTF-8-Text, `00 <mod> <key>` = Taste, `00 FF <n>` = Pause n×10 ms. 
 ## Veröffentlichen
 
 - **`main` ist live:** GitHub Pages veröffentlicht `main` automatisch, nach etwa 30–60 Sekunden ist der Stand online.
-- **Version erhöhen:** Vor jeder Veröffentlichung im Projektordner `tools/version.sh` ausführen (z. B. 0.18 → 0.19). Das ändert `sw.js`, `app.js` und die `?v=`-Adressen in `index.html`. Ohne neue Version laden Geräte mit Offline-Speicher das Update nicht zuverlässig.
+- **Version erhöhen:** Vor jeder Veröffentlichung im Projektordner `tools/version.sh` ausführen (z. B. 0.18 → 0.19). Das ändert `sw.js`, `app.js` und die `?v=`-Adressen der Skripte und Stylesheets in `index.html`. Ohne neue Version laden Geräte mit Offline-Speicher das Update nicht zuverlässig.
 - **Offline-Speicher:** Der Service Worker lädt online immer zuerst vom Netz (`cache: 'no-cache'`) und greift nur offline oder nach 4 s auf den Speicher zurück.
 - **Wörterbuch:** Hunspell und die Wörterbücher (ca. 2 MB, `DICT_FILES` in `sw.js`) liegen in einem eigenen Speicher `DICT_CACHE`, der App-Updates überdauert und zuerst gefragt wird. Bei neuen Wörterbuch- oder Hunspell-Dateien `DICT_CACHE` hochzählen.
 - **Neue Dateien:** zusätzlich in `FILES` in `sw.js` eintragen, sonst fehlen sie offline.

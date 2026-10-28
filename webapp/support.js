@@ -12,6 +12,7 @@
 // "Was ist neu": Neuerungen fuer Benutzer pro Version, neueste zuerst.
 // Bei jeder Version mit sichtbaren Neuerungen hier einen Eintrag ergaenzen.
 const NEWS = [
+  { v: '0.38', items: ['Vorbereitung für Themes: neue Designs, die über die ganze App gelegt werden. Sie werden nach und nach freigeschaltet und erscheinen dann in den Einstellungen unter „Allgemein → Theme“.'] },
   { v: '0.37', items: ['DokuStick heißt jetzt ProtoPilot: neuer Name und neues Logo. Deine Bausteine, Einstellungen und die Anmeldung bleiben erhalten.', 'Ältere Sticks funktionieren weiter. Mit der neuen Firmware (Version 4) heißt der Stick auch in den Bluetooth-Einstellungen „ProtoPilot“.'] },
   { v: '0.36', items: ['Baustein-Editor: Beim Tippen im Text schließt sich die iPad-Tastatur nicht mehr nach jedem Buchstaben.', 'Fester Text wird immer ein eigener, verschiebbarer Abschnitt, auch wenn er klein beginnt; kein doppelter Punkt mehr am Ende.'] },
   { v: '0.35', items: ['Läuft die Anmeldung ab, bleiben noch nicht hochgeladene Änderungen auf dem Gerät und werden nach dem erneuten Anmelden hochgeladen. Die E-Mail-Adresse ist dann schon eingetragen.'] },

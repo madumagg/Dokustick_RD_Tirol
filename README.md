@@ -195,6 +195,16 @@ Für Fortgeschrittene, so sieht ein Feld im Text aus:
 | `?` nach dem Namen | optional, z. B. `{{BZ?:#}}` oder `{{Maßnahmen+?:…}}` |
 | `{{Ergebnis?:=Summe}}` | Summe der Punkte der gewählten Optionen, z. B. bei `{{Augen öffnen:Spontan (4 Punkte)\|…}}` |
 
+### Themes
+
+Themes legen ein anderes Aussehen über die ganze App. Das erste ist **Liquid Glass**: durchscheinende Glasflächen auf farbigem Hintergrund, angelehnt an das neue iOS. Es funktioniert im hellen und im dunklen Modus.
+
+- **Auswählen:** *Einstellungen → Allgemein → Theme*. Die Auswahl gilt nur auf diesem Gerät. Die Zeile erscheint erst, wenn für dich ein Theme freigegeben ist.
+- **Freigabe:** Neue Themes sehen zuerst nur App-Admins. In der Administration unter **Themes** gibt ein App-Admin ein Theme **für alle** frei oder schaltet **einzelne Benutzer** per E-Mail-Adresse frei. Die Freischaltung kommt beim nächsten Abgleich an (spätestens nach 2 Minuten oder beim nächsten Öffnen der App). Wird sie entzogen, zeigt die App wieder das gewohnte Aussehen.
+- Ist am Gerät „Transparenz reduzieren“ eingeschaltet, werden die Glasflächen fast deckend.
+
+Einmalig einrichten: Im Supabase **SQL Editor** den Inhalt von [`supabase/migrations/20261028120000_themes.sql`](supabase/migrations/20261028120000_themes.sql) ausführen. Fehlt die Migration, können nur App-Admins Themes verwenden, und der Reiter „Themes“ in der Administration meldet einen Fehler.
+
 ## 4. Konto & Teams (optional)
 
 Mit einem Konto werden Textbausteine, Formulare und Einstellungen in der Cloud gesichert und auf allen Geräten synchronisiert. In **Teams** (z. B. eine Wache) teilen sich mehrere Personen gemeinsame Bausteine. Admins pflegen sie, alle Mitglieder können sie nutzen. Ohne Konto funktioniert die App wie bisher, dann wird nur lokal gespeichert.
@@ -249,6 +259,7 @@ Für App-Admins gibt es unter *Einstellungen → Administration* eine Verwaltung
 | Support | Tickets beantworten, zuweisen, Status setzen, interne Notizen; Vorschläge als Idee veröffentlichen; häufige Fragen pflegen (siehe [Support & Feedback](#support--feedback)) |
 | Benutzer | suchen, Passwort-Reset senden, sperren/entsperren, zum App-Admin machen, Konto löschen |
 | Teams | alle Teams sehen, anlegen, umbenennen, löschen; Mitglieder per E-Mail hinzufügen, entfernen, Rollen ändern; Beitrittscode erneuern |
+| Themes | je Theme: nur App-Admins oder für alle; einzelne Benutzer per E-Mail freischalten und wieder entfernen (siehe [Themes](#themes)) |
 | Einstellungen | Registrierung offen / nur bestimmte E-Mail-Domains / geschlossen; Team für neue Benutzer; Hinweis an alle |
 
 **Virtueller Dongle (nur App-Admins):** Beim Verbinden wählbar, auch in Browsern ohne Bluetooth. Er wertet die gesendeten Daten genauso aus wie die Firmware: Zeichen ohne Taste fallen weg, „–“ wird zu „-“. Im Schreiben-Fenster zeigt er an, was getippt würde, und speichert das mit **Als PDF speichern** als Testprotokoll.

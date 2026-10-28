@@ -67,8 +67,9 @@ In jeder Testreihe gelten als Fehler: JavaScript-Ausnahmen im Browser und Text �
 | `76-protokolle` | Protokollvorlagen: anlegen, mit 📋 einfügen, Reihenfolge, Import; mit Datenbank zusätzlich Standard-Vorlagen |
 | `77-rechtschreibung` | Rechtschreibprüfung: Hinweise, Korrektur, eigenes Wörterbuch, Prüfung vor dem Senden |
 | `78-support` | Support & Feedback: Ticket mit Geräteinfos, Abzeichen, Admin-Antwort übernimmt das Ticket, Warnung für zweiten Admin, interne Notizen unsichtbar, Ideen mit 👍, häufige Fragen, „Was ist neu“ nach Updates, Server ohne Migration *(Teile mit Datenbank)* |
+| `79-themes` | Themes: Auswahl nur für App-Admins, Liquid Glass anwenden, Benutzer in der Administration freischalten und wieder entfernen, Freigabe für alle (auch ohne Konto) *(Datenbank)* |
 | `80-catalog` | Medikamente & Krankheiten: Vorschlag, Freigabe, CSV-Import, Suche im Protokoll *(Datenbank)* |
-| `90-db-rls`, `91-db-admin`, `92-db-catalog`, `93-db-standard`, `94-db-support` | Zugriffsregeln der Datenbank direkt über die API *(Datenbank)* |
+| `90-db-rls`, `91-db-admin`, `92-db-catalog`, `93-db-standard`, `94-db-support`, `95-db-themes` | Zugriffsregeln der Datenbank direkt über die API *(Datenbank)* |
 
 ## Eigene Tests schreiben
 

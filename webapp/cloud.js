@@ -94,6 +94,7 @@ const cloud = {
     this.info = data;
     store.save('appInfo', data);
     this.render();
+    themes.refresh();
     renderStatus(); // Admin-Status beeinflusst die Verbinden-Schaltflaeche
     catalog.render();
     support.poll(); // Abzeichen fuer neue Antworten und Tickets

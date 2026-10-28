@@ -3,7 +3,7 @@
 /* ================= Konstanten ================= */
 
 // Wird mit tools/version.sh zusammen mit sw.js und index.html erhoeht
-const APP_VERSION = '0.37';
+const APP_VERSION = '0.38';
 
 const SVC_UUID = '6e7a0001-4b3c-4f8e-9a1d-5c2b7d0a4e01';
 const CMD_UUID = '6e7a0002-4b3c-4f8e-9a1d-5c2b7d0a4e01';
@@ -42,7 +42,7 @@ const DEFAULT_FORMS = [
   { title: 'Kurzbefund', body: 'Pat. {{Bewusstsein:wach, orientiert|wach, desorientiert|somnolent|soporös|komatös}}.\nAtmung: {{Atmung:unauffällig|Dyspnoe|Tachypnoe|Bradypnoe}}.\nHaut: {{Haut:rosig, warm, trocken|blass|kaltschweißig|zyanotisch}}.\nSchmerz NRS {{NRS:#}}/10.' },
   { title: 'Felder mit Tab füllen', body: '{{Feld 1}}{TAB}{{Feld 2}}{TAB}{{Feld 3}}' },
 ];
-const DEFAULT_SETTINGS = { delay: 5, lang: 'de-AT', voiceCmds: true, replacements: '', blankLine: true, theme: '', defaultProtocol: null, spellcheck: true, dictionary: [] };
+const DEFAULT_SETTINGS = { delay: 5, lang: 'de-AT', voiceCmds: true, replacements: '', blankLine: true, theme: '', skin: '', defaultProtocol: null, spellcheck: true, dictionary: [] };
 
 /* ================= Hilfsfunktionen ================= */
 
@@ -653,6 +653,7 @@ function openDialog(title, content, { onSave, onDelete, saveLabel = 'Speichern',
 function applyTheme() {
   if (settings.theme) document.documentElement.dataset.theme = settings.theme;
   else delete document.documentElement.dataset.theme;
+  themes.apply();
 }
 
 function renderSettings() {
@@ -663,6 +664,7 @@ function renderSettings() {
   $('#blankLine').checked = settings.blankLine;
   $('#replacements').value = settings.replacements;
   $('#theme').value = settings.theme;
+  themes.renderSetting();
   renderSpellState();
 }
 

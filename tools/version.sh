@@ -20,7 +20,7 @@ fi
 
 sed -i -E "s/^const VERSION = '[0-9.]+';/const VERSION = '$next';/" sw.js
 sed -i -E "s/^const APP_VERSION = '[0-9.]+';/const APP_VERSION = '$next';/" app.js
-sed -i -E "s/\.js\?v=[0-9.]+\"/.js?v=$next\"/g" index.html
+sed -i -E "s/\.(js|css)\?v=[0-9.]+\"/.\1?v=$next\"/g" index.html
 echo "Version $current -> $next"
 grep -H "VERSION = " sw.js app.js
-echo "index.html: $(grep -c "?v=$next\"" index.html) Skripte mit ?v=$next"
+echo "index.html: $(grep -c "?v=$next\"" index.html) Skripte und Stylesheets mit ?v=$next"

@@ -398,6 +398,53 @@ const admin = {
     ]);
   },
 
+  /* ---------- Themes ---------- */
+
+  async render_themes() {
+    const [rows, users] = await Promise.all([this.call('admin_themes'), this.call('admin_users')]);
+    const state = Object.fromEntries(rows.map((r) => [r.theme, r]));
+    return [
+      el('p', { class: 'help', style: 'margin-top:0' }, 'Neue Themes sehen zuerst nur App-Admins. Hier gibst du sie für alle oder für einzelne Benutzer frei. Ausprobieren und auswählen: Einstellungen → Allgemein → Theme.'),
+      ...THEMES.map((t) => this.themeCard(t, state[t.id] || { release: 'admins', users: [] }, users)),
+    ];
+  },
+
+  themeCard(t, st, users) {
+    const done = async () => { await cloud.loadInfo(); };
+    const release = el('select', { 'aria-label': 'Freigabe' },
+      el('option', { value: 'admins', selected: st.release === 'admins' }, 'Nur App-Admins und freigeschaltete Benutzer'),
+      el('option', { value: 'all', selected: st.release === 'all' }, 'Alle Benutzer'));
+    release.addEventListener('change', () => this.act(async () => { await this.call('admin_theme_release', { p_theme: t.id, p_release: release.value }); await done(); },
+      release.value === 'all' ? `„${t.name}“ für alle freigegeben` : `„${t.name}“ nur noch für Admins und Freigeschaltete`));
+    // Vorschlaege: Benutzer, die das Theme noch nicht haben (App-Admins haben es ohnehin)
+    const unlocked = new Set(st.users.map((u) => u.id));
+    const listId = 'themeUsers-' + t.id;
+    const email = el('input', { type: 'email', placeholder: 'E-Mail-Adresse', autocomplete: 'off', list: listId, 'aria-label': 'E-Mail-Adresse freischalten' });
+    const unlock = () => {
+      if (!email.value.trim()) return toast('E-Mail-Adresse eingeben', 'err');
+      this.act(() => this.call('admin_theme_unlock', { p_theme: t.id, p_email: email.value }), 'Freigeschaltet');
+    };
+    email.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); unlock(); } });
+    return el('div', { class: 'card pad theme-card' },
+      el('div', {}, el('b', {}, t.name),
+        st.release === 'all' ? el('span', { class: 'badge ok' }, 'Für alle') : el('span', { class: 'badge warn' }, 'Nur Admins' + (st.users.length ? ` + ${st.users.length}` : ''))),
+      el('div', { class: 'help' }, t.desc),
+      el('div', { class: 'skin-preview', 'data-preview': t.id, 'aria-hidden': 'true' }, el('i'), el('i'), el('i')),
+      el('label', { class: 'field' }, el('span', {}, 'Freigabe'), release),
+      st.release === 'all'
+        ? el('p', { class: 'help', style: 'margin:0' }, 'Alle Benutzer sehen das Theme in den Einstellungen und können es auswählen.')
+        : [
+          el('h2', { style: 'margin-top:14px' }, `Freigeschaltete Benutzer (${st.users.length})`),
+          el('div', { class: 'members' }, st.users.length ? st.users.map((u) => el('div', { class: 'member' },
+            el('div', { class: 'grow' }, el('div', {}, u.email || 'Gelöschtes Konto'), el('div', { class: 'help' }, 'seit ' + fmtDate(u.created_at))),
+            el('button', { type: 'button', class: 'btn small danger', onclick: () => this.act(() => this.call('admin_theme_lock', { p_theme: t.id, p_user: u.id }), 'Freischaltung entfernt') }, 'Entfernen')))
+            : el('p', { class: 'help', style: 'margin:0' }, 'Noch niemand freigeschaltet.')),
+          el('datalist', { id: listId }, users.filter((u) => !u.is_admin && !unlocked.has(u.id)).map((u) => el('option', { value: u.email }))),
+          el('div', { class: 'row', style: 'margin-top:8px' }, el('div', { class: 'grow', style: 'min-width:180px' }, email),
+            el('button', { type: 'button', class: 'btn', onclick: unlock }, 'Freischalten')),
+        ]);
+  },
+
   /* ---------- Einstellungen ---------- */
 
   async render_settings() {

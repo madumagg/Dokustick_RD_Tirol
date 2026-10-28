@@ -261,10 +261,8 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 .badge.std { background: transparent; color: var(--ok); border: 1px solid var(--ok); }
 .badge.ok { background: transparent; color: var(--ok); border: 1px solid var(--ok); }
 .seg.seg-3 { grid-template-columns: repeat(3, 1fr); }
-#adminTabs { grid-template-columns: repeat(6, 1fr); }
-#adminTabs button { grid-column: span 2; }
-#adminTabs button:nth-child(n+4) { grid-column: span 3; }
-@media (min-width: 640px) { #adminTabs { grid-template-columns: repeat(5, 1fr); } #adminTabs button, #adminTabs button:nth-child(n+4) { grid-column: auto; } }
+#adminTabs { grid-template-columns: repeat(3, 1fr); }
+@media (min-width: 640px) { #adminTabs { grid-template-columns: repeat(6, 1fr); } }
 #adminTabs .badge { margin-left: 4px; }
 .mod .prev .badge { margin-left: 0; vertical-align: 0; }
 .thread { display: grid; gap: 8px; margin: 12px 0; }
@@ -327,6 +325,7 @@ textarea.internal-input { background: var(--warn-soft); }
 #toast.show { opacity: 1; }
 #toast.err { background: var(--danger); color: #fff; }
 </style>
+<link rel="stylesheet" href="themes.css?v=0.38">
 </head>
 <body>
 
@@ -410,7 +409,7 @@ textarea.internal-input { background: var(--warn-soft); }
     <div class="card pad" id="teamsCard" hidden></div>
     <h2 id="adminHead" hidden>Administration</h2>
     <div class="card pad" id="adminCard" hidden>
-      <p class="help" style="margin-top:0">Du bist App-Admin: Benutzer, Teams, Support-Tickets, Registrierung und den Hinweis an alle verwalten.</p>
+      <p class="help" style="margin-top:0">Du bist App-Admin: Benutzer, Teams, Support-Tickets, Themes, Registrierung und den Hinweis an alle verwalten.</p>
       <button class="btn primary" id="adminOpen">Administration öffnen</button>
       <div id="adminSupport"></div>
     </div>
@@ -465,6 +464,10 @@ textarea.internal-input { background: var(--warn-soft); }
           <option value="dark">Dunkel</option>
         </select>
       </label>
+      <label class="field" id="skinField" hidden><span>Theme</span>
+        <select id="skin"></select>
+      </label>
+      <p class="help" id="skinHelp" style="margin:-4px 0 0" hidden></p>
     </div>
 
     <h2>Daten</h2>
@@ -502,6 +505,7 @@ textarea.internal-input { background: var(--warn-soft); }
       <button role="tab" data-view="support" aria-selected="false">Support</button>
       <button role="tab" data-view="users" aria-selected="false">Benutzer</button>
       <button role="tab" data-view="teams" aria-selected="false">Teams</button>
+      <button role="tab" data-view="themes" aria-selected="false">Themes</button>
       <button role="tab" data-view="settings" aria-selected="false">Einstellungen</button>
     </div>
     <div id="adminBody"></div>
@@ -523,17 +527,18 @@ textarea.internal-input { background: var(--warn-soft); }
 <dialog id="dlg2"><form method="dialog" id="dlg2Form"></form></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=0.37"></script>
-<script src="vendor/supabase.js?v=0.37"></script>
-<script src="app.js?v=0.37"></script>
-<script src="compose.js?v=0.37"></script>
-<script src="protocols.js?v=0.37"></script>
-<script src="spell.js?v=0.37"></script>
-<script src="catalog.js?v=0.37"></script>
-<script src="cloud.js?v=0.37"></script>
-<script src="support.js?v=0.37"></script>
-<script src="admin.js?v=0.37"></script>
-<script src="virtual.js?v=0.37"></script>
+<script src="config.js?v=0.38"></script>
+<script src="vendor/supabase.js?v=0.38"></script>
+<script src="app.js?v=0.38"></script>
+<script src="compose.js?v=0.38"></script>
+<script src="protocols.js?v=0.38"></script>
+<script src="spell.js?v=0.38"></script>
+<script src="catalog.js?v=0.38"></script>
+<script src="cloud.js?v=0.38"></script>
+<script src="support.js?v=0.38"></script>
+<script src="themes.js?v=0.38"></script>
+<script src="admin.js?v=0.38"></script>
+<script src="virtual.js?v=0.38"></script>
 <script>boot(); $('#adminOpen').addEventListener('click', () => admin.open());</script>
 </body>
 </html>
