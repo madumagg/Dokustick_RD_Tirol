@@ -1,7 +1,8 @@
 'use strict';
 
 /*
- * Medikamente- und Krankheiten-Datenbank (siehe supabase/migrations/*_catalog.sql).
+ * Medikamente- und Krankheiten-Datenbank (siehe supabase/migrations/*_catalog.sql)
+ * sowie Arzneimittelliste 1 und 2 (supabase/migrations/*_arzneimittellisten.sql).
  *
  * Die Listen werden beim Synchronisieren geladen und auf dem Geraet gespeichert,
  * damit die Suche in den Bausteinen auch ohne Internet funktioniert.
@@ -35,7 +36,38 @@ const CATALOGS = {
     ],
     csv: ['Name', 'Abkürzung/Beschreibung'],
   },
+  al1: drugList(1),
+  al2: drugList(2),
 };
+
+// Arzneimittelliste 1/2: ein Eintrag = ein Medikament fuer ein Krankheitsbild (beide Listen in einer Tabelle)
+function drugList(n) {
+  return {
+    table: 'drug_list_entries', list: n, title: `Arzneimittelliste ${n}`, tab: `Liste ${n}`, one: 'Medikament', slug: `arzneimittelliste-${n}`,
+    none: `Noch keine Einträge in Arzneimittelliste ${n}.`,
+    cols: 'id,list,name,indication,ingredient,dose,note,approved,created_by,created_at',
+    label: (e) => e.name,
+    detail: (e) => [e.ingredient, e.dose, e.note].filter(Boolean).join(' · '),
+    haystack: (e) => `${e.name} ${e.ingredient} ${e.indication}`,
+    primary: (e) => e.name,
+    group: (e) => e.indication,
+    fields: [
+      { key: 'name', label: 'Medikament', required: true, max: 120, placeholder: 'z. B. Glucose 33 % i.v.' },
+      { key: 'indication', label: 'Krankheitsbild', required: true, max: 150, placeholder: 'z. B. Hypoglykämie' },
+      { key: 'ingredient', label: 'Wirkstoff', max: 200, placeholder: 'z. B. Glucose' },
+      { key: 'dose', label: 'Dosierung (nur zur Information)', max: 400, multiline: true, placeholder: 'z. B. ab 6. vLJ 15 g i.v.' },
+      { key: 'note', label: 'Hinweise, z. B. Kontraindikationen', max: 300, multiline: true, placeholder: 'z. B. KI: Kinder unter 6. vLJ' },
+    ],
+    csv: ['Medikament', 'Krankheitsbild', 'Wirkstoff', 'Dosierung', 'Hinweise'],
+  };
+}
+const LIST_KINDS = ['al1', 'al2'];
+const LIST_INFO = {
+  al1: 'Für Notfallsanitäter:innen freigegeben, die Nachforderung eines Notarztes ist nicht zwingend.',
+  al2: 'Notkompetenz (NKA/NKV) nach § 11 SanG: Notarzt vorher informieren bzw. nachfordern.',
+};
+// Tabelle fehlt -> Migration noch nicht eingespielt
+const missingTable = (error) => error.code === '42P01' || error.code === 'PGRST205' || /does not exist|schema cache/i.test(error.message);
 
 // Fuer die Suche: Gross/Klein und Akzente ignorieren
 const normText = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
@@ -43,8 +75,12 @@ const normText = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
 const catalog = {
   med: [],
   dx: [],
+  al1: [],
+  al2: [],
   available: null, // false = Tabellen fehlen (Katalog-Migration nicht eingespielt)
+  listsAvailable: null, // false = Arzneimittellisten fehlen (eigene Migration)
   view: 'med',
+  lastList: null, // zuletzt gewaehlte Arzneimittelliste
   onlyPending: false,
   query: '',
 
@@ -53,26 +89,29 @@ const catalog = {
 
   load() {
     const c = this.key() ? store.load(this.key(), null) : null;
-    this.med = (c && c.med) || [];
-    this.dx = (c && c.dx) || [];
+    for (const kind of Object.keys(CATALOGS)) this[kind] = (c && c[kind]) || [];
     this.available = c ? c.available : null;
+    this.listsAvailable = c && c.listsAvailable !== undefined ? c.listsAvailable : null;
     this.render();
   },
 
   save() {
-    if (this.key()) store.save(this.key(), { med: this.med, dx: this.dx, available: this.available });
+    if (this.key()) store.save(this.key(), { med: this.med, dx: this.dx, al1: this.al1, al2: this.al2, available: this.available, listsAvailable: this.listsAvailable });
   },
 
   async pull() {
     if (!cloud.sb || !cloud.account || !navigator.onLine) return;
-    for (const kind of ['med', 'dx']) {
-      const { data, error } = await this.fetchAll(CATALOGS[kind]);
+    for (const kind of Object.keys(CATALOGS)) {
+      const C = CATALOGS[kind];
+      const { data, error } = await this.fetchAll(C);
       if (error) {
-        // Tabelle existiert nicht -> Datenbank noch nicht eingerichtet
-        if (error.code === '42P01' || error.code === 'PGRST205' || /does not exist|schema cache/i.test(error.message)) { this.available = false; this.save(); this.render(); return; }
-        throw error;
+        if (!missingTable(error)) throw error;
+        // Arzneimittellisten haben eine eigene Migration: Medikamente/Krankheiten gehen trotzdem
+        if (C.list) { this.listsAvailable = false; this[kind] = []; continue; }
+        this.available = false; this.save(); this.render(); return;
       }
-      this[kind] = data.sort((a, b) => CATALOGS[kind].label(a).localeCompare(CATALOGS[kind].label(b), 'de'));
+      if (C.list) this.listsAvailable = true;
+      this[kind] = data.sort((a, b) => (C.group ? C.group(a).localeCompare(C.group(b), 'de') : 0) || C.label(a).localeCompare(C.label(b), 'de'));
     }
     this.available = true;
     this.save();
@@ -84,7 +123,9 @@ const catalog = {
     const rows = [];
     let total = Infinity;
     while (rows.length < total) {
-      const { data, error, count } = await cloud.sb.from(C.table).select(C.cols, { count: 'exact' }).order('id').range(rows.length, rows.length + 999);
+      let q = cloud.sb.from(C.table).select(C.cols, { count: 'exact' });
+      if (C.list) q = q.eq('list', C.list);
+      const { data, error, count } = await q.order('id').range(rows.length, rows.length + 999);
       if (error) return { error };
       if (count != null) total = count;
       if (!data.length) break;
@@ -94,6 +135,26 @@ const catalog = {
   },
 
   pending(kind) { return this[kind].filter((e) => !e.approved); },
+
+  // Eintraege einer Arzneimittelliste, die man verwenden kann: freigegebene und eigene Vorschlaege
+  // (Admins laden auch fremde Vorschlaege, die gehoeren nicht in die Bausteine)
+  usable(kind) {
+    const me = cloud.account && cloud.account.id;
+    return this[kind].filter((e) => e.approved || e.created_by === me);
+  },
+
+  // Fuer Bausteine: Medikamente bzw. Krankheitsbilder einer Arzneimittelliste (ohne Doppelte)
+  drugNames(kind) {
+    return [...new Set(this.usable(kind).map((e) => e.name.trim()))].sort((a, b) => a.localeCompare(b, 'de'));
+  },
+  indications(kind) {
+    return [...new Set(this.usable(kind).map((e) => e.indication.trim()))].sort((a, b) => a.localeCompare(b, 'de'));
+  },
+  // Eintraege zu gewaehlten Medikamenten, z.B. fuer Dosierung und Kontraindikationen
+  drugEntries(kind, names) {
+    const set = new Set(names.map(normText));
+    return this.usable(kind).filter((e) => set.has(normText(e.name)));
+  },
 
   // Jedes Suchwort muss vorkommen (Reihenfolge egal), z.B. "thrombo 100" -> "Thrombo ASS 100 mg".
   // Reihenfolge: Treffer im Namen (am Wortanfang zuerst) vor Treffern nur in
@@ -122,6 +183,8 @@ const catalog = {
     if (!main) return [];
     return this[kind].filter((e) => e.id !== ignoreId).filter((e) => {
       const other = normText(kind === 'med' ? e.trade_name : e.name);
+      // Arzneimittellisten: dasselbe Medikament darf fuer mehrere Krankheitsbilder eingetragen sein
+      if (C.list && normText(e.indication) !== normText(entry.indication)) return false;
       if (other === main || (main.length >= 4 && (other.startsWith(main) || main.startsWith(other)))) return true;
       if (kind === 'med' && entry.ingredient && normText(e.ingredient) === normText(entry.ingredient) && normText(e.dose) === normText(entry.dose)) return true;
       if (kind === 'dx' && entry.abbreviation && normText(e.abbreviation) === normText(entry.abbreviation)) return true;
@@ -135,7 +198,7 @@ const catalog = {
   edit(kind, entry = null, prefill = {}) {
     const C = CATALOGS[kind];
     if (!cloud.account) { toast('Bitte zuerst unter Einstellungen anmelden.', 'err'); return Promise.resolve(null); }
-    if (this.available === false) { toast('Die Datenbank ist noch nicht eingerichtet.', 'err'); return Promise.resolve(null); }
+    if (this.available === false || (C.list && this.listsAvailable === false)) { toast('Die Datenbank ist noch nicht eingerichtet.', 'err'); return Promise.resolve(null); }
     const isNew = !entry;
     const values = { ...prefill, ...(entry || {}) };
     const inputs = Object.fromEntries(C.fields.map((f) => [f.key, f.multiline
@@ -147,6 +210,7 @@ const catalog = {
       openDialog(isNew ? (this.isAdmin ? `${C.one} hinzufügen` : `${C.one} vorschlagen`) : `${C.one} bearbeiten`, [
         ...C.fields.map((f) => field(f.label, inputs[f.key])),
         kind === 'med' ? el('p', { class: 'help', style: 'margin-top:-4px' }, 'Im Protokoll erscheinen nur Handelsname und Dosis. Der Wirkstoff hilft beim Suchen.') : null,
+        C.list ? el('p', { class: 'help', style: 'margin-top:-4px' }, 'Im Protokoll erscheint der Name des Medikaments, im Feld „Krankheitsbild“ das Krankheitsbild. Dosierung und Hinweise sieht man beim Auswählen im Baustein. Gibt es das Medikament für ein weiteres Krankheitsbild, einen eigenen Eintrag mit demselben Namen anlegen.') : null,
         isNew && !this.isAdmin ? el('p', { class: 'note' }, 'Dein Vorschlag ist für dich sofort nutzbar. Für alle anderen erscheint er, sobald ein Admin ihn freigegeben hat.') : null,
       ], {
         saveLabel: isNew ? (this.isAdmin ? 'Hinzufügen' : 'Vorschlagen') : 'Speichern',
@@ -156,7 +220,7 @@ const catalog = {
           if (sim.length && !confirm(`Ähnliche Einträge gibt es schon:\n\n${sim.slice(0, 8).join('\n')}\n\nTrotzdem speichern?`)) return false;
           if (!navigator.onLine) { toast('Dafür wird eine Internetverbindung benötigt.', 'err'); return false; }
           const q = isNew
-            ? cloud.sb.from(C.table).insert({ ...row, approved: this.isAdmin }).select(C.cols).single()
+            ? cloud.sb.from(C.table).insert({ ...row, ...(C.list ? { list: C.list } : {}), approved: this.isAdmin }).select(C.cols).single()
             : cloud.sb.from(C.table).update(row).eq('id', entry.id).select(C.cols).single();
           const { data, error } = await q;
           if (error) {
@@ -236,7 +300,7 @@ const catalog = {
     const d = new Date(), pad = (n) => String(n).padStart(2, '0');
     const a = el('a', {
       href: URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })),
-      download: `protopilot-${C.title.toLowerCase()}-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.csv`,
+      download: `protopilot-${C.slug || C.title.toLowerCase()}-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.csv`,
     });
     document.body.append(a); a.click(); a.remove();
     toast(`${rows.length} ${C.title} exportiert`);
@@ -248,14 +312,17 @@ const catalog = {
     const box = $('#dbBody');
     if (!box) return;
     // Hinweis auf offene Vorschlaege fuer Admins (Reiter und Umschalter)
-    const pend = { med: this.pending('med').length, dx: this.pending('dx').length };
+    const pend = Object.fromEntries(Object.keys(CATALOGS).map((k) => [k, this.isAdmin ? this.pending(k).length : 0]));
+    const total = Object.values(pend).reduce((a, b) => a + b, 0);
     const navBadge = $('#dbNavBadge');
-    navBadge.hidden = !(this.isAdmin && pend.med + pend.dx);
-    navBadge.textContent = pend.med + pend.dx;
+    navBadge.hidden = !total;
+    navBadge.textContent = total;
+    const isList = LIST_KINDS.includes(this.view);
     document.querySelectorAll('#dbTabs button').forEach((b) => {
       const k = b.dataset.kind;
-      b.setAttribute('aria-selected', k === this.view);
-      b.textContent = CATALOGS[k].title + (this.isAdmin && pend[k] ? ` (${pend[k]})` : '');
+      const n = k === 'al' ? pend.al1 + pend.al2 : pend[k];
+      b.setAttribute('aria-selected', k === this.view || (k === 'al' && isList));
+      b.textContent = (k === 'al' ? 'Arzneimittel­listen' : CATALOGS[k].title) + (n ? ` (${n})` : '');
     });
 
     if (!cloud.enabled || !cloud.account) {
@@ -267,7 +334,19 @@ const catalog = {
       return;
     }
     const kind = this.view, C = CATALOGS[kind];
-    const search = el('input', { type: 'search', placeholder: kind === 'med' ? 'Name oder Wirkstoff …' : 'Name, Abkürzung, Beschreibung …', value: this.query });
+    // Arzneimittellisten: Umschalter Liste 1 / Liste 2 mit kurzer Erklaerung
+    const sub = isList ? [
+      el('div', { class: 'seg seg-2', id: 'dbListTabs', role: 'tablist' }, LIST_KINDS.map((k) => el('button', {
+        type: 'button', role: 'tab', 'aria-selected': String(k === kind), 'data-kind': k,
+        onclick: () => { this.view = this.lastList = k; this.query = ''; this.render(); },
+      }, CATALOGS[k].tab + (pend[k] ? ` (${pend[k]})` : '')))),
+      el('p', { class: 'help', style: 'margin:-8px 0 12px' }, `${C.title}: ${LIST_INFO[kind]}`),
+    ] : [];
+    if (isList && this.listsAvailable === false) {
+      box.replaceChildren(...sub, el('div', { class: 'note warn' }, 'Die Arzneimittellisten sind noch nicht eingerichtet. Ein Admin muss einmalig die Migration supabase/migrations/20261028180000_arzneimittellisten.sql im Supabase-SQL-Editor ausführen.'));
+      return;
+    }
+    const search = el('input', { type: 'search', placeholder: kind === 'med' ? 'Name oder Wirkstoff …' : C.list ? 'Medikament, Wirkstoff oder Krankheitsbild …' : 'Name, Abkürzung, Beschreibung …', value: this.query });
     const list = el('div', { class: 'mods' });
     const draw = () => {
       this.query = search.value;
@@ -277,13 +356,21 @@ const catalog = {
       const words = q.split(' ').filter(Boolean);
       if (words.length) entries = entries.filter((e) => { const h = normText(C.haystack(e)); return words.every((w) => h.includes(w)); });
       const shown = entries.slice(0, 200);
-      list.replaceChildren(...shown.map((e) => this.entryCard(kind, e)));
-      if (!shown.length) list.append(el('div', { class: 'empty' }, this[kind].length ? 'Nichts gefunden.' : `Noch keine ${C.title}. Mit „＋“ den ersten Eintrag anlegen.`));
+      // Arzneimittellisten nach Krankheitsbild gruppiert, wie in der Uebersicht der Liste
+      const cards = [];
+      let group = null;
+      for (const e of shown) {
+        if (C.group && C.group(e) !== group) { group = C.group(e); cards.push(el('h3', { class: 'db-group' }, group)); }
+        cards.push(this.entryCard(kind, e));
+      }
+      list.replaceChildren(...cards);
+      if (!shown.length) list.append(el('div', { class: 'empty' }, this[kind].length ? 'Nichts gefunden.' : `${C.none || `Noch keine ${C.title}.`} Mit „＋“ den ersten Eintrag anlegen.`));
       if (entries.length > shown.length) list.append(el('p', { class: 'help' }, `${entries.length - shown.length} weitere – bitte Suche verfeinern.`));
     };
     search.addEventListener('input', draw);
     draw();
     box.replaceChildren(...kids(
+      ...sub,
       el('div', { class: 'row', style: 'margin-bottom:10px' },
         el('div', { class: 'grow', style: 'min-width:180px' }, search),
         el('button', { type: 'button', class: 'btn primary', onclick: () => this.edit(kind).then((e) => {
@@ -296,7 +383,7 @@ const catalog = {
           `Nur offene Vorschläge (${pend[kind]})`),
         el('button', { type: 'button', class: 'btn small', onclick: () => this.importCsv(kind) }, 'CSV importieren'),
         el('button', { type: 'button', class: 'btn small', onclick: () => this.exportCsv(kind) }, 'CSV exportieren')) : null,
-      el('p', { class: 'help', style: 'margin:0 0 10px' }, `${this[kind].filter((e) => e.approved).length} freigegeben` + (pend[kind] ? ` · ${pend[kind]} ${this.isAdmin ? 'offen' : 'eigene Vorschläge offen'}` : '')),
+      el('p', { class: 'help', style: 'margin:0 0 10px' }, `${this[kind].filter((e) => e.approved).length} freigegeben` + (this.pending(kind).length ? ` · ${this.pending(kind).length} ${this.isAdmin ? 'offen' : 'eigene Vorschläge offen'}` : '')),
       list));
   },
 
@@ -304,10 +391,14 @@ const catalog = {
     const C = CATALOGS[kind];
     const mine = cloud.account && e.created_by === cloud.account.id;
     const canEditEntry = this.isAdmin || (mine && !e.approved);
+    // Arzneimittellisten: Wirkstoff, Dosierung und Hinweise vollstaendig, je eine Zeile
+    const detail = C.list
+      ? [e.ingredient, e.dose, e.note].filter(Boolean).map((t) => el('span', { style: 'display:block' }, t))
+      : C.detail(e);
     return el('div', { class: 'mod card' },
       el('div', { class: 'send', style: 'cursor:default' },
         el('span', { class: 'title' }, C.label(e), !e.approved ? el('span', { class: 'badge warn' }, 'wartet auf Freigabe') : null),
-        C.detail(e) ? el('span', { class: 'prev' }, C.detail(e)) : null),
+        detail && detail.length ? el('span', { class: 'prev' + (C.list ? ' full' : '') }, detail) : null),
       canEditEntry ? el('div', { class: 'acts' },
         this.isAdmin && !e.approved ? el('button', { title: 'Freigeben', 'aria-label': 'Freigeben', class: 'ok-act', onclick: () => this.approve(kind, e) }, '✓') : null,
         el('button', { title: 'Bearbeiten', 'aria-label': 'Bearbeiten', onclick: () => this.edit(kind, e) }, '✎'),
@@ -315,4 +406,10 @@ const catalog = {
   },
 };
 
-document.querySelectorAll('#dbTabs button').forEach((b) => b.addEventListener('click', () => { catalog.view = b.dataset.kind; catalog.query = ''; catalog.render(); }));
+document.querySelectorAll('#dbTabs button').forEach((b) => b.addEventListener('click', () => {
+  const k = b.dataset.kind;
+  // "Arzneimittellisten": zuletzt gewaehlte Liste, sonst Liste 1
+  if (k === 'al') { if (!LIST_KINDS.includes(catalog.view)) catalog.view = catalog.lastList || 'al1'; } else catalog.view = k;
+  catalog.query = '';
+  catalog.render();
+}));

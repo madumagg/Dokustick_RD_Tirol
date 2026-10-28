@@ -11,6 +11,9 @@
  *   *a                    Vorauswahl, z.B. {{Atmung:*unauffällig|Dyspnoe}}
  *   {{Name?}} / {{Name+?:a|b}}  optional (sonst Pflichtfeld: Senden erst, wenn ausgefuellt)
  *   {{Name:@med}} / {{Name:@dx}}  Suche in der Medikamente- bzw. Krankheiten-Datenbank (mehrere)
+ *   {{Name:@al1}} / {{Name:@al2}} Medikamente aus Arzneimittelliste 1 bzw. 2 (Knoepfe, mehrere)
+ *   {{Name:@kb1}} / {{Name:@kb2}} Krankheitsbild aus Arzneimittelliste 1 bzw. 2 (Knoepfe, eines);
+ *                         wird beim Waehlen eines Medikaments derselben Liste vorbelegt
  *   {{Name?:=Summe}}      Summe der Punkte aller gewaehlten Optionen im Baustein; Punkte stehen
  *                         in der Option in Klammern, z.B. "Spontan (4 Punkte)" (GCS, Scores).
  *                         Das "?" sorgt dafuer, dass aeltere App-Versionen das Feld leer lassen.
@@ -18,9 +21,14 @@
  */
 
 const FIELD_RE = /\{\{\s*([^}:|]+?)\s*(?::([^}]*))?\}\}/g;
-const FIELD_TYPES = { single: 'Einfachauswahl', multi: 'Mehrfachauswahl', text: 'Text', number: 'Zahl', med: 'Medikamente (Datenbank)', dx: 'Krankheiten (Datenbank)', sum: 'Summe der Punkte' };
+const FIELD_TYPES = {
+  single: 'Einfachauswahl', multi: 'Mehrfachauswahl', text: 'Text', number: 'Zahl', med: 'Medikamente (Datenbank)', dx: 'Krankheiten (Datenbank)', sum: 'Summe der Punkte',
+  al1: 'Arzneimittelliste 1: Medikamente', kb1: 'Arzneimittelliste 1: Krankheitsbild', al2: 'Arzneimittelliste 2: Medikamente', kb2: 'Arzneimittelliste 2: Krankheitsbild',
+};
+// Felder aus den Arzneimittellisten: Liste im Katalog und ob Medikament oder Krankheitsbild
+const DRUG_FIELDS = { al1: { kind: 'al1', role: 'drug' }, al2: { kind: 'al2', role: 'drug' }, kb1: { kind: 'al1', role: 'kb' }, kb2: { kind: 'al2', role: 'kb' } };
 // Feldarten, deren Wert eine Liste ist
-const isListField = (f) => f.type === 'multi' || f.type === 'med' || f.type === 'dx';
+const isListField = (f) => f.type === 'multi' || f.type === 'med' || f.type === 'dx' || f.type === 'al1' || f.type === 'al2';
 // Schnellauswahl in Datenbank-Feldern (hebt die anderen Eintraege auf)
 const LOOKUP_QUICK = ['keine', 'unbekannt'];
 
@@ -39,6 +47,14 @@ const TEMPLATES = [
   { category: 'SAMPLER', title: 'R – Risikofaktoren', body: 'R – Risikofaktoren: {{Risikofaktoren+:keine bekannt|Rauchen|Diabetes|Hypertonie|Adipositas|Schwangerschaft}}.' },
   { category: 'Allgemein', title: 'Vitalparameter', body: 'RR {{RR}} mmHg, HF {{HF:#}}/min, SpO2 {{SpO2:#}} %, AF {{AF:#}}/min, BZ {{BZ:#}} mg/dl, Temp. {{Temp:#}} °C, GCS {{GCS:15|14|13|12|11|10|9|8|7|6|5|4|3}}' },
   { category: 'Allgemein', title: 'Schmerz', body: 'Schmerz NRS {{NRS:0|1|2|3|4|5|6|7|8|9|10}}/10, Lokalisation {{Lokalisation}}.' },
+  {
+    category: 'Maßnahmen', title: 'Venenzugang und Medikamente (Liste 2)',
+    body: 'Venenzugang und Medikamente:\n{{Aufklärung:*Patient wurde über mögliche Folgen des Zuganges sowie des zu gebenden Medikamentes aufgeklärt und ist mit der Maßnahme einverstanden.|Aufklärung nicht möglich, da Patient nicht ansprechbar.}}\nGröße: {{Größe Venflon:Venflon Blau|Venflon Pink|Venflon Grün|Venflon Orange|Venflon Grau}}, \nOrt: {{Ort:Handrücken Links|Handrücken Rechts|Ellenbeuge Links|Ellenbeuge Rechts|Unterarm Links|Unterarm Rechts}}, \nKrankheitsbild: {{Krankheitsbild?:@kb2}}, \nMedikamente (Arzneimittelliste 2): {{Medikamente:@al2}}, \nDosis: {{Dosis?}}.',
+  },
+  {
+    category: 'Maßnahmen', title: 'Medikamente Arzneimittelliste 1',
+    body: 'Medikamente nach Arzneimittelliste 1:\n{{Aufklärung:*Patient wurde über die Maßnahme sowie mögliche Folgen des zu gebenden Medikamentes aufgeklärt und ist mit der Maßnahme einverstanden.|Aufklärung nicht möglich, da Patient nicht ansprechbar.}}\nKrankheitsbild: {{Krankheitsbild?:@kb1}}, \nMedikamente: {{Medikamente:@al1}}, \nDosis: {{Dosis?}}.',
+  },
   { category: 'Scores', title: 'GCS', body: 'GCS – Augen öffnen: {{Augen öffnen:Spontan (4 Punkte)|auf Ansprache (3 Punkte)|auf Schmerzreiz (2 Punkte)|kein Öffnen (1 Punkt)}}\nVerbal: {{Verbal:orientiert (5 Punkte)|desorientiert (4 Punkte)|einzelne Worte (3 Punkte)|sinnlose Laute (2 Punkte)|keine (1 Punkt)}}\nMotorisch: {{Motorisch:auf Aufforderung (6 Punkte)|gezielte Bewegung (5 Punkte)|ungezielte Bewegung (4 Punkte)|Beugesynergismen (3 Punkte)|Strecksynergismen (2 Punkte)|keine (1 Punkt)}}\nErgebnis: {{Ergebnis?:=Summe}} Punkte' },
 ];
 
@@ -54,7 +70,7 @@ function parseField(rawName, rawOpt) {
   }
   const opt = (rawOpt || '').trim();
   if (opt === '#') return { name, type: 'number', optional, options: [], defaults: [] };
-  if (opt === '@med' || opt === '@dx') return { name, type: opt.slice(1), optional, options: [], defaults: [] };
+  if (opt === '@med' || opt === '@dx' || (opt[0] === '@' && DRUG_FIELDS[opt.slice(1)])) return { name, type: opt.slice(1), optional, options: [], defaults: [] };
   if (opt.startsWith('=')) return { name, type: 'sum', optional: true, options: [], defaults: [] };
   if (!opt) return { name, type: 'text', optional, options: [], defaults: [] };
   const parts = opt.split('|').map((o) => o.trim()).filter(Boolean);
@@ -90,7 +106,7 @@ function fieldToken(f) {
   const name = cleanName(f.name) + (f.type === 'multi' ? '+' : '') + (f.optional ? '?' : '');
   if (f.type === 'text') return `{{${name}}}`;
   if (f.type === 'number') return `{{${name}:#}}`;
-  if (f.type === 'med' || f.type === 'dx') return `{{${cleanName(f.name)}${f.optional ? '?' : ''}:@${f.type}}}`;
+  if (f.type === 'med' || f.type === 'dx' || DRUG_FIELDS[f.type]) return `{{${cleanName(f.name)}${f.optional ? '?' : ''}:@${f.type}}}`;
   if (f.type === 'sum') return `{{${cleanName(f.name)}?:=Summe}}`;
   const opts = f.options.map(cleanOption).filter(Boolean).map((o) => (f.defaults.includes(o) ? '*' + o : o));
   return `{{${name}:${opts.join('|')}}}`;
@@ -161,6 +177,7 @@ function fillTemplate(tpl, values) {
   for (let k = 0; k < parts.length; k += 2) {
     if (!allEmpty(parts[k].s)) continue;
     const next = parts[k + 1];
+    if (dropLabelled(parts, k)) continue;
     if (next && next.s === ', ') { parts[k].drop = next.drop = true; continue; }
     // Sonst das naechste noch vorhandene Komma davor entfernen, Satzzeichen am Ende behalten
     let j = k - 1;
@@ -171,7 +188,38 @@ function fillTemplate(tpl, values) {
     }
   }
   return parts.map((p) => (p.drop ? p.keep || '' : p.s)).join('')
-    .replace(FIELD_RE, (_, n, o) => valueOf(n, o));
+    .replace(FIELD_RE, (m, n, o, at, str) => {
+      const v = valueOf(n, o);
+      // Wert endet mit Abkuerzungspunkt ("i.v.") und im Baustein folgt ein Punkt: nur einer
+      return v.endsWith('.') && str[at + m.length] === '.' ? v.slice(0, -1) : v;
+    });
+}
+
+/*
+ * "Beschriftung: {{leeres Feld}}" in einer Aufzaehlung faellt samt Beschriftung weg,
+ * z.B. "Medikamente: Glucose, Dosis: {{Dosis?}}." -> "Medikamente: Glucose."
+ * Beschriftung = letzte Zeile vor dem ": ", kurz und ohne Satzzeichen (sonst bleibt alles wie bisher).
+ */
+function dropLabelled(parts, k) {
+  if (k < 2 || parts[k - 1].s !== ': ' || parts[k - 2].drop) return false;
+  // Weiterer Text in einer neuen Zeile hinter dem Feld wuerde mit wegfallen
+  if (/\}\}[^]*\n/.test(parts[k].s)) return false;
+  const seg = parts[k - 2].s;
+  const label = seg.match(/\n?[^\n]*$/)[0];
+  const words = label.trim().split(/\s+/);
+  if (!label.trim() || label.length > 41 || words.length > 4 || /[.!?:;{}]/.test(label)) return false;
+  const cut = () => { if (label.length === seg.length) parts[k - 2].drop = true; else parts[k - 2].s = seg.slice(0, seg.length - label.length); };
+  const next = parts[k + 1];
+  if (next && next.s === ', ') { cut(); parts[k - 1].drop = parts[k].drop = next.drop = true; return true; }
+  let j = k - 3;
+  while (j > 0 && parts[j].drop) j -= 2;
+  if (j > 0 && parts[j].s === ', ') {
+    cut();
+    parts[j].drop = parts[k - 1].drop = parts[k].drop = true;
+    parts[k].keep = (parts[k].s.match(/[.!?]\s*$/) || [''])[0];
+    return true;
+  }
+  return false;
 }
 
 // Kurzansicht fuer Listen: Felder als [Name]
@@ -349,6 +397,8 @@ function renderModuleBlock(b) {
     const n = blockProblems(b).length;
     const sum = scoreSum(b.tpl, b.values);
     card.querySelectorAll('[data-sum]').forEach((o) => { o.textContent = sum == null ? '– (noch nicht alles gewählt)' : `${sum} Punkte`; });
+    // Arzneimittellisten: Hinweise und vorbelegtes Krankheitsbild neu zeichnen
+    card.querySelectorAll('[data-dyn]').forEach((n) => n.dispatchEvent(new Event('refresh')));
     card.classList.toggle('incomplete', n > 0);
     missing.hidden = !n;
     missing.textContent = n === 1 ? '1 fehlt' : `${n} fehlen`;
@@ -360,13 +410,18 @@ function renderModuleBlock(b) {
     el('button', { type: 'button', title: 'Entfernen', 'aria-label': 'Entfernen', onclick: () => removeBlock(b) }, '✕'));
   // Kopfzeile gedrueckt halten (Touch) bzw. ziehen (Maus) verschiebt die Karte
   enableDrag(head, b, card);
-  card.append(head, ...formFields(b.tpl).map((f) => renderFieldInput(f, b.values, update)), pre);
+  const fields = formFields(b.tpl);
+  card.append(head, ...fields.map((f) => renderFieldInput(f, b.values, update, fields)), pre);
   update();
   return card;
 }
 
 // Eingabe fuer ein Feld: Knoepfe fuer Auswahl, Eingabefeld fuer Text/Zahl
-function renderFieldInput(f, values, onChange) {
+// fields = alle Felder des Bausteins (fuer Medikament und Krankheitsbild aus derselben Arzneimittelliste)
+function renderFieldInput(f, values, onChange, fields = []) {
+  // Arzneimittelliste: Knoepfe wie bei einer Auswahl, die Optionen kommen aus der Datenbank
+  const drug = DRUG_FIELDS[f.type];
+  if (drug) f = { ...f, type: drug.role === 'drug' ? 'multi' : 'single', defaults: [] };
   const label = el('span', {}, f.name,
     f.type === 'multi' ? el('small', { class: 'help' }, ' · mehrere möglich') : null,
     f.optional ? el('small', { class: 'help' }, ' · optional') : null);
@@ -393,13 +448,19 @@ function renderFieldInput(f, values, onChange) {
   }
   const chips = el('div', { class: 'chips' });
   const selected = () => (f.type === 'multi' ? (Array.isArray(values[f.name]) ? values[f.name] : []) : [values[f.name]].filter(Boolean));
+  const ctx = drug && drugContext(drug, fields, values);
+  const options = () => (drug ? ctx.options(drug.role) : f.options);
+  const info = drug ? el('div', { class: 'drug-info' }) : null;
   const draw = () => {
     const sel = selected();
     mark(chips);
-    const custom = sel.filter((v) => !f.options.includes(v));
+    const opts = options();
+    const custom = sel.filter((v) => !opts.includes(v));
+    // Passend zum gewaehlten Krankheitsbild bzw. Medikament hervorheben
+    const hint = drug ? ctx.hints(drug.role) : new Set();
     chips.replaceChildren(
-      ...[...f.options, ...custom].map((o) => el('button', {
-        type: 'button', class: 'chip' + (sel.includes(o) ? ' sel' : ''), 'aria-pressed': String(sel.includes(o)),
+      ...[...opts, ...custom].map((o) => el('button', {
+        type: 'button', class: 'chip' + (sel.includes(o) ? ' sel' : hint.has(o) ? ' hint' : ''), 'aria-pressed': String(sel.includes(o)),
         onclick: () => toggle(o),
       }, o)),
       el('button', { type: 'button', class: 'chip more', title: 'Eigenen Wert eingeben', onclick: () => {
@@ -410,11 +471,14 @@ function renderFieldInput(f, values, onChange) {
   const toggle = (o, forceOn = false) => {
     if (f.type === 'multi') {
       let sel = selected();
-      if (sel.includes(o) && !forceOn) sel = sel.filter((x) => x !== o);
+      const on = !sel.includes(o) || forceOn;
+      if (!on) sel = sel.filter((x) => x !== o);
       else if (isExclusive(o)) sel = [o];
       else sel = [...sel.filter((x) => !isExclusive(x) && x !== o), o];
       // Reihenfolge wie in den Optionen, eigene Werte am Ende
-      values[f.name] = [...f.options.filter((x) => sel.includes(x)), ...sel.filter((x) => !f.options.includes(x))];
+      const opts = options();
+      values[f.name] = [...opts.filter((x) => sel.includes(x)), ...sel.filter((x) => !opts.includes(x))];
+      if (drug && on) ctx.prefillKb(o);
     } else {
       values[f.name] = values[f.name] === o && !forceOn ? '' : o;
     }
@@ -422,7 +486,65 @@ function renderFieldInput(f, values, onChange) {
     onChange();
   };
   draw();
-  return el('div', { class: 'field compact', 'data-field': f.name }, label, chips);
+  if (!drug) return el('div', { class: 'field compact', 'data-field': f.name }, label, chips);
+  const drawInfo = () => { if (info) info.replaceChildren(...ctx.info(drug.role, selected())); };
+  drawInfo();
+  return el('div', { class: 'field compact', 'data-field': f.name, 'data-dyn': '', onrefresh: () => { draw(); drawInfo(); } }, label, chips, info);
+}
+
+/*
+ * Medikament und Krankheitsbild aus einer Arzneimittelliste im selben Baustein:
+ * Optionen aus der Datenbank, gegenseitige Hinweise, Krankheitsbild vorbelegen,
+ * Dosierung und Kontraindikationen der gewaehlten Medikamente anzeigen.
+ */
+function drugContext(drug, fields, values) {
+  const kind = drug.kind;
+  const partner = fields.find((g) => DRUG_FIELDS[g.type] && DRUG_FIELDS[g.type].kind === kind && DRUG_FIELDS[g.type].role !== drug.role);
+  const val = (g) => (g ? values[g.name] : null);
+  const drugsChosen = () => {
+    const g = drug.role === 'drug' ? null : partner;
+    const v = g ? val(g) : null;
+    return (Array.isArray(v) ? v : []).filter((x) => !isExclusive(x));
+  };
+  const kbChosen = () => (drug.role === 'kb' ? null : (partner && val(partner)) || null);
+  return {
+    options(role) {
+      return role === 'drug' ? ['keine', ...catalog.drugNames(kind)] : catalog.indications(kind);
+    },
+    hints(role) {
+      if (role === 'drug') {
+        const kb = kbChosen();
+        return new Set(kb ? catalog.usable(kind).filter((e) => normText(e.indication) === normText(kb)).map((e) => e.name.trim()) : []);
+      }
+      const names = drugsChosen();
+      return new Set(names.length ? catalog.drugEntries(kind, names).map((e) => e.indication.trim()) : []);
+    },
+    // Ein Medikament mit genau einem Krankheitsbild belegt das noch leere Krankheitsbild vor
+    prefillKb(name) {
+      if (drug.role !== 'drug' || !partner || val(partner) || isExclusive(name)) return;
+      const inds = [...new Set(catalog.drugEntries(kind, [name]).map((e) => e.indication.trim()))];
+      if (inds.length === 1) values[partner.name] = inds[0];
+    },
+    info(role, sel) {
+      if (role !== 'drug') return [];
+      if (!catalog.drugNames(kind).length) {
+        return [el('p', {}, cloud.account ? 'Die Arzneimittelliste ist noch leer oder noch nicht geladen (Datenbank → Arzneimittellisten).' : 'Für die Arzneimittelliste anmelden (Einstellungen → Konto).')];
+      }
+      const names = sel.filter((x) => !isExclusive(x));
+      const kb = kbChosen();
+      const out = [];
+      for (const name of names) {
+        let rows = catalog.drugEntries(kind, [name]);
+        // Zum gewaehlten Krankheitsbild passende Zeile, sonst alle
+        const match = kb ? rows.filter((e) => normText(e.indication) === normText(kb)) : [];
+        if (match.length) rows = match;
+        for (const e of rows) {
+          out.push(el('p', {}, el('strong', {}, e.name), ` – ${e.indication}: `, e.dose || '', e.note ? el('span', { style: 'display:block' }, e.note) : null));
+        }
+      }
+      return out;
+    },
+  };
 }
 
 const shorten = (s, n) => (s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s);

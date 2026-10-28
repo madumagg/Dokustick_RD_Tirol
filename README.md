@@ -19,7 +19,7 @@ Handy (Web-App)  ──Bluetooth LE──▶  nRF52840 Dongle  ──USB-Tastatu
 | `gehaeuse/` | 3D-druckbares Gehäuse für den Nordic-Dongle (STL und OpenSCAD), siehe [`gehaeuse/README.md`](gehaeuse/README.md) |
 | `branding/` | Logo und Icons von ProtoPilot (SVG, PNG, favicon), siehe [`branding/README.md`](branding/README.md) |
 | `website/` | Infoseite für protopilot.at (statisches HTML für das Webhosting), siehe [`website/README.md`](website/README.md) |
-| `supabase/migrations/` | Datenbank-Schema (Konto, Teams, Administration, Medikamente & Krankheiten, Standard-Bausteine & Protokollvorlagen, Support) |
+| `supabase/migrations/` | Datenbank-Schema (Konto, Teams, Administration, Medikamente & Krankheiten, Arzneimittellisten, Standard-Bausteine & Protokollvorlagen, Support, Themes) |
 | `tests/` | Automatische Tests, siehe [`tests/README.md`](tests/README.md) |
 | `docs/ARCHITEKTUR.md` | Technischer Aufbau für Entwickler |
 
@@ -126,6 +126,7 @@ Bausteine können **Auswahlfelder** enthalten, z. B. beim ABCDE-Schema:
 - **Einsatz beenden:** Der Knopf ganz unten setzt nach einer Sicherheitsabfrage alle Bausteine im Protokoll zurück und löscht den Freitext. Die gespeicherten Bausteine bleiben erhalten.
 - **Pflichtfelder:** Alle Felder sind standardmäßig Pflichtfelder. Fehlende Angaben werden rot markiert („fehlt“, bei Zahlenfeldern mit Text „keine Zahl“), die Karte bekommt einen roten Rand und ein Abzeichen wie „2 fehlen“. Beim Senden erscheint dann die Meldung **„Fehlende Angaben“** mit allen offenen Feldern, und **es wird nichts gesendet**. „Zum ersten fehlenden Feld“ springt direkt dorthin. Freitext wird nicht geprüft.
 - **Optionale Felder:** Im Feld-Editor den Haken „Pflichtfeld“ entfernen, z. B. für Werte, die nicht immer gemessen werden. Bleibt ein optionaler Messwert leer, fällt er samt Beschriftung weg: Aus „RR … mmHg, HF 80/min“ wird „HF 80/min“.
+  - Das gilt auch für kurze Beschriftungen mit Doppelpunkt in einer Aufzählung: Aus „Medikamente: Glucose, Dosis: …“ wird „Medikamente: Glucose.“ Die Beschriftung muss dafür kurz sein (höchstens vier Wörter, ohne Punkt) und mit Komma oder in einer neuen Zeile beginnen.
 - **Mehrfachauswahl:** Optionen, die mit „kein“ beginnen (z. B. „keine Maßnahmen erforderlich“), heben die anderen auf und umgekehrt.
 - **Felder anlegen:** Baustein bearbeiten (✎) → **＋ Feld**: Name, Art (Einfachauswahl, Mehrfachauswahl, Text, Zahl), Auswahlmöglichkeiten und Vorauswahl festlegen. Vorhandene Felder antippen, um sie zu ändern.
 - **Reihenfolge ändern:** Im Baustein-Editor stehen unter den Feldern die Abschnitte des Bausteins, jeweils ein Feld samt Beschriftung und Einheit, z. B. „HF [HF]/min“.
@@ -139,6 +140,7 @@ Bausteine können **Auswahlfelder** enthalten, z. B. beim ABCDE-Schema:
   - das ABCDE-Schema (A nach Vorgabe, B–E als anpassbare Vorschläge)
   - Vitalparameter und Schmerz
   - unter „Scores“ die **GCS** mit Augen öffnen, Verbal und Motorisch
+  - unter „Maßnahmen“ **Venenzugang und Medikamente (Liste 2)** und **Medikamente Arzneimittelliste 1** (siehe Arzneimittellisten unten)
 
   Bei der GCS erscheinen im Protokoll nur die gewählten Optionen, das Ergebnis wird automatisch zusammengezählt („Ergebnis: 13 Punkte“).
 - **Punkte zusammenzählen:** Im Feld-Editor gibt es die Art **„Summe der Punkte“**.
@@ -309,6 +311,26 @@ Für Beschreibungen bei Krankheiten zusätzlich [`supabase/migrations/2026102323
   - „keine“ und „unbekannt“ stehen immer zur Auswahl. Nicht gefundene Einträge lassen sich als Freitext übernehmen oder gleich „in der Datenbank vorschlagen“.
   - Die Listen werden auf dem Gerät gespeichert, die Suche funktioniert also auch offline.
 - **Vorlage SAMPLER(R):** *Bausteine → Vorlagen → SAMPLER*. M sucht in den Medikamenten, P in den Krankheiten. Die übrigen Punkte sind Vorschläge zum Anpassen.
+
+### Datenbank: Arzneimittellisten
+
+Medikamente, die wir selbst geben dürfen, nach der *Arzneimittelliste I + II NEU* (RD Tirol, Update 2022). Einmalig einrichten: Im Supabase **SQL Editor** den Inhalt von [`supabase/migrations/20261028180000_arzneimittellisten.sql`](supabase/migrations/20261028180000_arzneimittellisten.sql) ausführen. Das legt auch die Startdaten an (10 Einträge je Liste, abgeschrieben aus der Liste). Bitte vor der Verwendung fachlich prüfen.
+
+- **Reiter „Datenbank → Arzneimittellisten“:** Umschalter **Liste 1** (für Notfallsanitäter:innen, ohne zwingende Notarzt-Nachforderung) und **Liste 2** (Notkompetenz NKA/NKV nach § 11 SanG).
+  - Die Einträge stehen nach **Krankheitsbild** geordnet, wie in der Übersicht der Liste. Zu jedem Medikament gibt es Wirkstoff, Dosierung und Hinweise (z. B. Kontraindikationen).
+  - Ein Eintrag ist ein Medikament für ein Krankheitsbild. Gibt es ein Medikament für mehrere Krankheitsbilder (z. B. Dibondrin), steht es mehrmals da.
+  - **Ergänzen:** „＋ Neu“ bzw. „＋ Vorschlagen“, wie bei den Medikamenten (Freigabe durch einen App-Admin). Pflicht sind Medikament (so erscheint es im Protokoll) und Krankheitsbild.
+  - **CSV:** `Medikament;Krankheitsbild;Wirkstoff;Dosierung;Hinweise`, Import und Export wie oben.
+- **In Bausteinen:** Feldarten „Arzneimittelliste 1/2: Medikamente“ (`{{Medikamente:@al2}}`) und „Arzneimittelliste 1/2: Krankheitsbild“ (`{{Krankheitsbild?:@kb2}}`).
+  - Medikamente und Krankheitsbilder erscheinen als Knöpfe, ganz ohne Tippen. Mehrere Medikamente sind möglich, „keine“ steht immer zur Auswahl.
+  - Wählt man zuerst das Medikament, wird das Krankheitsbild automatisch eingetragen, wenn es nur eines gibt. Wählt man zuerst das Krankheitsbild, sind die passenden Medikamente farbig umrandet.
+  - Unter den Medikamenten stehen **Dosierung und Kontraindikationen** der gewählten Medikamente. Ins Protokoll kommt nur der Name.
+  - Die Listen werden auf dem Gerät gespeichert und funktionieren offline.
+- **Vorlagen** (*Bausteine → Vorlagen → Maßnahmen*):
+  - **Venenzugang und Medikamente (Liste 2):** Aufklärung, Größe und Ort des Venflons, Krankheitsbild, Medikamente aus Liste 2 und Dosis.
+  - **Medikamente Arzneimittelliste 1:** Aufklärung, Krankheitsbild, Medikamente aus Liste 1 und Dosis.
+  - Die **Aufklärung** („Patient wurde über … aufgeklärt und ist mit der Maßnahme einverstanden.“) ist vorausgewählt. Für bewusstlose Patienten gibt es „Aufklärung nicht möglich, da Patient nicht ansprechbar.“
+  - Krankheitsbild und Dosis sind optional. Bleiben sie leer, fallen sie samt Beschriftung weg.
 
 ## 5. Gehäuse (3D-Druck)
 

@@ -75,13 +75,14 @@ const spell = {
     const dict = settings.dictionary || [];
     let latest = '';
     for (const i of items) if (i.updated_at && i.updated_at > latest) latest = i.updated_at;
-    const sig = [items.length, latest, catalog.med.length, catalog.dx.length, dict.join('|')].join(':');
+    const sig = [items.length, latest, catalog.med.length, catalog.dx.length, catalog.al1.length, catalog.al2.length, dict.join('|')].join(':');
     if (sig === this.extraSig) return;
     this.extraSig = sig;
     const sources = [
       ...items.filter((i) => !i.deleted && i.kind !== 'protocol').flatMap((i) => [i.title, i.body]),
       ...catalog.med.flatMap((e) => [e.trade_name, e.ingredient]),
       ...catalog.dx.flatMap((e) => [e.name, e.abbreviation]),
+      ...[...catalog.al1, ...catalog.al2].flatMap((e) => [e.name, e.ingredient, e.indication]),
       ...dict,
       RD_WORDS,
     ];
@@ -90,7 +91,7 @@ const spell = {
     for (const s of sources) for (const w of String(s || '').match(SPELL_WORD) || []) { this.extra.add(w.toLowerCase()); this.extraExact.add(w); }
     // Bausteintexte zaehlen hier nicht: dort steht am Satzanfang jedes Wort gross
     this.extraCased = new Set();
-    for (const s of [...catalog.med.flatMap((e) => [e.trade_name, e.ingredient]), ...catalog.dx.map((e) => e.name), ...dict, RD_WORDS]) {
+    for (const s of [...catalog.med.flatMap((e) => [e.trade_name, e.ingredient]), ...catalog.dx.map((e) => e.name), ...[...catalog.al1, ...catalog.al2].flatMap((e) => [e.name, e.ingredient]), ...dict, RD_WORDS]) {
       for (const w of String(s || '').match(SPELL_WORD) || []) this.extraCased.add(w);
     }
     // Unbekannte Woerter kennt Hunspell dann auch fuer Vorschlaege (z.B. "Larynxtubs" -> "Larynxtubus").

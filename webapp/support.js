@@ -12,6 +12,11 @@
 // "Was ist neu": Neuerungen fuer Benutzer pro Version, neueste zuerst.
 // Bei jeder Version mit sichtbaren Neuerungen hier einen Eintrag ergaenzen.
 const NEWS = [
+  { v: '0.39', items: [
+    'Neu im Reiter Datenbank: „Arzneimittellisten“ mit Liste 1 und Liste 2 (RD Tirol), nach Krankheitsbild geordnet, mit Dosierung und Kontraindikationen. Neue Medikamente lassen sich ergänzen.',
+    'Neue Vorlagen „Venenzugang und Medikamente (Liste 2)“ und „Medikamente Arzneimittelliste 1“: Medikament und Krankheitsbild antippen, die Aufklärung steht schon drin.',
+    'Wählt man zuerst das Medikament, wird das Krankheitsbild automatisch eingetragen. Unter der Auswahl stehen Dosierung und Kontraindikationen.',
+    'Leere optionale Angaben mit Beschriftung (z. B. „Dosis:“) fallen im Text ganz weg, und nach „i.v.“ steht kein doppelter Punkt mehr.'] },
   { v: '0.38', items: ['Vorbereitung für Themes: neue Designs, die über die ganze App gelegt werden. Sie werden nach und nach freigeschaltet und erscheinen dann in den Einstellungen unter „Allgemein → Theme“.'] },
   { v: '0.37', items: ['DokuStick heißt jetzt ProtoPilot: neuer Name und neues Logo. Deine Bausteine, Einstellungen und die Anmeldung bleiben erhalten.', 'Ältere Sticks funktionieren weiter. Mit der neuen Firmware (Version 4) heißt der Stick auch in den Bluetooth-Einstellungen „ProtoPilot“.'] },
   { v: '0.36', items: ['Baustein-Editor: Beim Tippen im Text schließt sich die iPad-Tastatur nicht mehr nach jedem Buchstaben.', 'Fester Text wird immer ein eigener, verschiebbarer Abschnitt, auch wenn er klein beginnt; kein doppelter Punkt mehr am Ende.'] },

@@ -28,7 +28,7 @@ Reines HTML/CSS/JavaScript **ohne Build-Schritt**. Die Skripte sind klassische `
 | `compose.js` | Feld-Syntax, Vorlagen, Protokoll im Schreiben-Fenster, Feld-Editor, Pflichtfeld-Prüfung, Verschieben per Ziehen |
 | `protocols.js` | Protokollvorlagen: Knopf 📋 im Schreiben-Reiter, Auswahl, Editor |
 | `spell.js` | Rechtschreibprüfung (Hunspell als WebAssembly, lädt `vendor/hunspell` und `vendor/dict` erst bei Bedarf per `import()`) |
-| `catalog.js` | Medikamente-/Krankheiten-Datenbank (Laden, Suche, Vorschlag, Freigabe, CSV-Import) |
+| `catalog.js` | Medikamente-/Krankheiten-Datenbank und Arzneimittellisten 1/2 (Laden, Suche, Vorschlag, Freigabe, CSV-Import) |
 | `cloud.js` | Konto, Synchronisation, Teams |
 | `support.js` | Support & Feedback: Tickets, Ideen, häufige Fragen, „Was ist neu“ (`NEWS`), Geräteinfos, Abzeichen |
 | `themes.js` | Themes: Liste `THEMES`, Freigabe prüfen, `data-skin` am `<html>` setzen, Auswahl in den Einstellungen. Aussehen in `themes.css` |
@@ -60,7 +60,7 @@ Eine Datei darf Funktionen einer **später** geladenen Datei nur zur Laufzeit au
 | `u.<userId>.teams` | Teams des Kontos `[{ id, name, role }]` |
 | `u.<userId>.settingsDirty` | Einstellungen noch nicht hochgeladen |
 | `u.<userId>.lastSync` | Zeitpunkt der letzten Synchronisation |
-| `u.<userId>.catalog` | Medikamente/Krankheiten für die Offline-Suche |
+| `u.<userId>.catalog` | Medikamente/Krankheiten und Arzneimittellisten für die Offline-Suche (`med`, `dx`, `al1`, `al2`, `available`, `listsAvailable`) |
 | `appInfo` | Registrierungsregeln, Hinweis an alle, Admin-Status, freigegebene Themes (`app_info()`) |
 | `announceSeen` | zuletzt ausgeblendeter Hinweis |
 | `lostSession` | `{ id, email, pending }`, wenn die Anmeldung ungültig wurde, ohne dass man sich abgemeldet hat |
@@ -94,6 +94,8 @@ In `sessionStorage` liegen `dokustick.doc` (das Protokoll, bleibt beim Neuladen 
 | `*a` | Vorauswahl |
 | `{{Name?…}}` | optional (sonst Pflichtfeld) |
 | `{{Name:@med}}` / `{{Name:@dx}}` | Suche in Medikamenten / Krankheiten (Liste) |
+| `{{Name:@al1}}` / `{{Name:@al2}}` | Medikamente aus Arzneimittelliste 1 / 2 als Knöpfe (Liste, „keine“ immer dabei) |
+| `{{Name:@kb1}}` / `{{Name:@kb2}}` | Krankheitsbild aus Arzneimittelliste 1 / 2 als Knöpfe (ein Wert) |
 | `{{Name?:=Summe}}` | Summe der Punkte aller gewählten Optionen im Baustein (`scoreSum`); Punkte stehen in der Option als „(4 Punkte)“, „(1 Punkt)“, „(2 Pkt.)“. Erst gefüllt, wenn jedes Feld mit Punkten gewählt ist. Das `?` lässt ältere App-Versionen das Feld als leere optionale Auswahl behandeln. |
 
 Sondertasten im Text: `{TAB}`, `{SHIFT+TAB}`, `{ENTER}`, `{PAUSE}`, `{PAUSE:ms}`, `{DATUM}`, `{ZEIT}`, Pfeiltasten usw. (`KEYS` in `app.js`).
@@ -102,7 +104,11 @@ Sondertasten im Text: `{TAB}`, `{SHIFT+TAB}`, `{ENTER}`, `{PAUSE}`, `{PAUSE:ms}`
 
 Regeln beim Ausfüllen (`fillTemplate` in `compose.js`):
 - **Leere Felder:** Abschnitte (getrennt durch `, `, `: `, Satzende), deren Felder alle leer sind, fallen weg.
+- **Beschriftung mit Doppelpunkt** (`dropLabelled`): Steht vor dem leeren Feld `Beschriftung: ` und beginnt die Beschriftung mit `, ` oder in einer neuen Zeile, fällt sie mit weg. Beschriftung = letzte Zeile vor dem `: `, höchstens 4 Wörter/40 Zeichen, ohne `.!?:;`. Steht hinter dem Feld noch Text in einer neuen Zeile, bleibt alles wie bisher.
+- **Doppelter Punkt:** Endet ein Wert mit `.` (z. B. „Aspro Classic 320 mg p.o.“) und folgt im Baustein ein `.`, bleibt nur einer.
 - **Ausschließende Optionen:** Optionen, die mit „kein“ oder „unbekannt“ beginnen, heben bei Mehrfachauswahl die anderen auf (`isExclusive`).
+
+**Arzneimittellisten in Bausteinen** (`DRUG_FIELDS`, `drugContext` in `compose.js`): `renderFieldInput` zeigt `al`/`kb`-Felder als Mehrfach- bzw. Einfachauswahl, die Optionen kommen bei jedem Zeichnen aus `catalog.drugNames()`/`catalog.indications()` (freigegebene und eigene Einträge). Medikament und Krankheitsbild derselben Liste im selben Baustein kennen sich über die Feldliste (`fields`): Ein Medikament mit genau einem Krankheitsbild belegt das leere Krankheitsbild vor, passende Optionen bekommen die Klasse `hint`, unter den Medikamenten stehen Dosierung und Hinweise (`.drug-info`). Nach jeder Änderung schickt `renderModuleBlock` ein `refresh`-Ereignis an alle `[data-dyn]`-Felder.
 
 **Achtung:** Diese Syntax steht so in der Datenbank. Eine neue Syntax braucht eine Umwandlung der vorhandenen Bausteine (beim Laden in `loadItems()` oder per Datenbank-Migration).
 
@@ -135,6 +141,7 @@ Schema als Migrationen in `supabase/migrations/` (Reihenfolge = Dateiname):
 | `…_support.sql` | `support_tickets`, `support_messages` (`internal`, `system`), `support_reads`, `support_votes`, `support_faq`; Funktionen `support_*` (Benutzer) und `admin_ticket_*`, `admin_reply`, `admin_tickets` |
 | `…_name_protopilot.sql` | Häufige Fragen mit dem neuen Namen ProtoPilot |
 | `…_themes.sql` | `theme_settings` (Freigabe je Theme: `admins` oder `all`), `theme_unlocks` (einzelne Benutzer); `my_themes()`, `app_info().themes`, `admin_themes`, `admin_theme_release`, `admin_theme_unlock`, `admin_theme_lock` |
+| `…_arzneimittellisten.sql` | `drug_list_entries` (`list` 1/2, `name`, `indication`, `ingredient`, `dose`, `note`; eindeutig je Liste + Name + Krankheitsbild), Regeln wie `medications`; `admin_import_catalog` kennt zusätzlich `al1`/`al2`; Startdaten aus der Arzneimittelliste RD Tirol 2022. Fehlt die Tabelle, setzt die App nur `catalog.listsAvailable = false`, Medikamente und Krankheiten laufen weiter. |
 
 Alle Tabellen haben **Row Level Security**. Kurzfassung:
 - **Eigene Einträge:** sieht und ändert nur der Besitzer.

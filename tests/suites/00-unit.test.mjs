@@ -19,9 +19,20 @@ export default async function (t) {
     eq(fillTemplate(tpl('Schmerz'), { NRS: '5' }), 'Schmerz NRS 5/10.', 'Satzende bleibt erhalten');
     eq(fillTemplate('{{Feld 1}}{TAB}{{Feld 2}}', { 'Feld 2': 'x' }), '{TAB}x', 'Platzhalter bleiben stehen');
     eq(fillTemplate('Pat. {{B:wach, orientiert|somnolent}}.', { B: 'wach, orientiert' }), 'Pat. wach, orientiert.', 'Kommas in Optionen');
+    // "Beschriftung: {{leer}}" faellt samt Beschriftung weg
+    const L = 'Kopf:\nText.\nKrankheitsbild: {{K?}}, \nMedikamente: {{M:@al2}}, \nDosis: {{D?}}.';
+    eq(fillTemplate(L, { M: ['Glucose'] }), 'Kopf:\nText.\nMedikamente: Glucose.', 'Leere beschriftete Felder fallen samt Beschriftung weg');
+    eq(fillTemplate(L, { K: 'Hypo', M: ['Glucose'], D: '15 g' }), 'Kopf:\nText.\nKrankheitsbild: Hypo, \nMedikamente: Glucose, \nDosis: 15 g.', 'Ausgefüllt bleibt alles stehen');
+    eq(fillTemplate('Pat. wach, Schmerz: {{S?}}, RR {{RR}}', { RR: '120/80' }), 'Pat. wach, RR 120/80', 'Beschriftung in einer Zeile');
+    eq(fillTemplate('Pat. wach. Schmerz: {{S?}}.', {}), 'Pat. wach. Schmerz: .', 'Ohne Komma davor bleibt alles wie bisher');
+    eq(fillTemplate('A, Lange Beschriftung mit vielen Woertern: {{S?}}.', {}), 'A, Lange Beschriftung mit vielen Woertern: .', 'Lange Texte gelten nicht als Beschriftung');
+    eq(fillTemplate('A, Dosis: {{S?}}.\nWeiterer Satz.', {}), 'A, Dosis: .\nWeiterer Satz.', 'Text in neuer Zeile hinter dem Feld bleibt erhalten');
+    eq(fillTemplate('Gabe von {{M:@al1}}.', { M: ['Aspro Classic 320 mg p.o.'] }), 'Gabe von Aspro Classic 320 mg p.o.', 'Kein doppelter Punkt nach Abkürzung');
+    eq(fillTemplate('M: {{M:@al1}}, Dosis: {{D?}}.', { M: ['Midazolam i.v.'] }), 'M: Midazolam i.v.', 'Kein doppelter Punkt, wenn das letzte Feld wegfällt');
+    eq(fillTemplate('Pat. {{B}}...', { B: 'wach' }), 'Pat. wach...', 'Auslassungspunkte bleiben');
 
     // Feld-Syntax: Einlesen und Zurueckschreiben
-    for (const tok of ['{{Name}}', '{{HF:#}}', '{{Haut:rosig|*blass}}', '{{M+:*keine|O2}}', '{{BZ?:#}}', '{{Maßnahmen+?:a|b}}', '{{Dauermedikation:@med}}', '{{Vorerkrankungen?:@dx}}']) {
+    for (const tok of ['{{Name}}', '{{HF:#}}', '{{Haut:rosig|*blass}}', '{{M+:*keine|O2}}', '{{BZ?:#}}', '{{Maßnahmen+?:a|b}}', '{{Dauermedikation:@med}}', '{{Vorerkrankungen?:@dx}}', '{{Medikamente:@al1}}', '{{Medikamente?:@al2}}', '{{Krankheitsbild?:@kb1}}', '{{Krankheitsbild:@kb2}}']) {
       const [f] = formFields(tok);
       eq(fieldToken(f), tok, 'Feld-Syntax hin und zurück ' + tok);
     }
@@ -29,6 +40,9 @@ export default async function (t) {
     eq(fieldProblem(formFields('{{HF:#}}')[0], '18a'), 'keine Zahl', 'Zahlenprüfung');
     eq(fieldProblem(formFields('{{BZ?:#}}')[0], ''), null, 'Optionales leeres Feld ist in Ordnung');
     eq(fieldProblem(formFields('{{M:@med}}')[0], []), 'fehlt', 'Leeres Datenbank-Feld fehlt');
+    eq([formFields('{{M:@al2}}')[0].type, isListField(formFields('{{M:@al2}}')[0]), isListField(formFields('{{K:@kb2}}')[0])], ['al2', true, false], 'Arzneimittelliste: Medikamente als Liste, Krankheitsbild als Einzelwert');
+    eq(formFields('{{M:al2}}')[0].type, 'single', 'Ohne @ normale Auswahl');
+    eq(fillTemplate('{{M:@al2}} ({{K:@kb2}})', { M: ['Dibondrin 30 mg i.v.', 'Prednisolon i.v.'], K: 'Allergische Reaktion' }), 'Dibondrin 30 mg i.v., Prednisolon i.v. (Allergische Reaktion)', 'Arzneimittelliste im Text');
     eq([isExclusive('keine Maßnahmen erforderlich'), isExclusive('unbekannt'), isExclusive('Guedeltubus')], [true, true, false], 'Ausschließende Optionen');
 
     // Kodierung fuer den Dongle
