@@ -30,6 +30,20 @@ export default async function (t) {
     eq(fillTemplate('Gabe von {{M:@al1}}.', { M: ['Aspro Classic 320 mg p.o.'] }), 'Gabe von Aspro Classic 320 mg p.o.', 'Kein doppelter Punkt nach Abkürzung');
     eq(fillTemplate('M: {{M:@al1}}, Dosis: {{D?}}.', { M: ['Midazolam i.v.'] }), 'M: Midazolam i.v.', 'Kein doppelter Punkt, wenn das letzte Feld wegfällt');
     eq(fillTemplate('Pat. {{B}}...', { B: 'wach' }), 'Pat. wach...', 'Auslassungspunkte bleiben');
+    // Satz ohne Auswahl faellt samt festem Text weg
+    const MON = 'Monitoring {{Monitoring+?:SpO2|EKG|NIBP}} angelegt.';
+    eq(fillTemplate(MON, { Monitoring: [] }), '', 'Ganzer Baustein ohne Auswahl: kein Text');
+    eq(fillTemplate(MON, { Monitoring: ['SpO2', 'EKG'] }), 'Monitoring SpO2, EKG angelegt.', 'Mit Auswahl: fester Text bleibt');
+    eq(fillTemplate('Pat. wach. ' + MON, {}), 'Pat. wach.', 'Leerer Satz am Ende fällt weg');
+    eq(fillTemplate(MON.replace('.', '. Pat. stabil.'), {}), 'Pat. stabil.', 'Leerer Satz am Anfang fällt weg');
+    eq(fillTemplate('Pat. wach. ' + MON + ' Transport liegend.', {}), 'Pat. wach. Transport liegend.', 'Leerer Satz in der Mitte fällt weg');
+    eq(fillTemplate('Monitoring {{M?}} angelegt.\nTransport liegend.', {}), 'Monitoring  angelegt.\nTransport liegend.', 'Abschnitt mit weiterer Zeile bleibt (eigener Text)');
+    eq(fillTemplate('Ergebnis: {{S?}} Punkte', {}), 'Ergebnis:  Punkte', 'Nach Doppelpunkt kein eigener Satz');
+    eq(fillTemplate('RR {{RR?}} mmHg, HF {{HF?}}/min', {}), '', 'Alle Messwerte leer: kein Text');
+    {
+      const blocks = [{ type: 'module', tpl: MON, values: { Monitoring: [] } }, { type: 'text', text: 'Freitext' }];
+      eq(joinBlocks(blocks), 'Freitext', 'Leerer Baustein erscheint nicht im Protokoll');
+    }
     eq(fillTemplate('Kopf:\r\nOrt: {{O}}, \r\nKrankheitsbild: {{K?}}, \r\nMedikamente: {{M:@al2}}, \r\nDosis: {{D?}}.', { O: 'Hand', M: ['Glucose i.v.'] }), 'Kopf:\nOrt: Hand, \nMedikamente: Glucose i.v.', 'Windows-Zeilenenden: leere Zeilen fallen sauber weg');
 
     // Feld-Syntax: Einlesen und Zurueckschreiben

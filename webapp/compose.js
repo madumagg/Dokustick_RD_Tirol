@@ -191,7 +191,9 @@ function fillTemplate(tpl, values) {
     if (j > 0 && parts[j].s === ', ') {
       parts[j].drop = parts[k].drop = true;
       parts[k].keep = (parts[k].s.match(/[.!?]\s*$/) || [''])[0];
+      continue;
     }
+    dropSentence(parts, k, j);
   }
   return parts.map((p) => (p.drop ? p.keep || '' : p.s)).join('')
     .replace(FIELD_RE, (m, n, o, at, str) => {
@@ -226,6 +228,23 @@ function dropLabelled(parts, k) {
     return true;
   }
   return false;
+}
+
+/*
+ * Eigener Satz, in dem nichts ausgewaehlt ist, faellt samt festem Text weg,
+ * z.B. der ganze Baustein "Monitoring {{Monitoring+?:SpO2|EKG}} angelegt." oder
+ * "Pat. wach. Monitoring {{…}} angelegt." -> "Pat. wach."
+ * Nur einzeilige Abschnitte: weitere Zeilen im selben Abschnitt sind eigener Text.
+ * j = naechstes noch vorhandenes Trennzeichen davor (-1 = Anfang des Bausteins).
+ */
+function dropSentence(parts, k, j) {
+  if (/\n/.test(parts[k].s.trim())) return;
+  const next = parts[k + 1];
+  const sentenceEnd = (p) => /^[.!?] $/.test(p.s);
+  if ((j >= 0 && !sentenceEnd(parts[j])) || (next && !sentenceEnd(next))) return;
+  parts[k].drop = true;
+  if (next) next.drop = true;
+  else if (j >= 0) { parts[j].drop = true; parts[k].keep = (parts[k].s.match(/[.!?]\s*$/) || [''])[0]; }
 }
 
 // Kurzansicht fuer Listen: Felder als [Name]
