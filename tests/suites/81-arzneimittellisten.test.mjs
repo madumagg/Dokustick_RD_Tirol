@@ -93,6 +93,16 @@ export default async function (t) {
     'Liste 1: Krankheitsbild vorbelegt, Dosis entfällt: ' + JSON.stringify(got3));
   await V.screenshot({ path: t.out + '/al2-liste1.png', fullPage: true });
 
+  // --- Baustein Liste 2 ohne Venenzugang (z. B. Penthrox)
+  await V.evaluate(() => { clearDoc(); addToDoc(TEMPLATES.find((x) => x.title === 'Medikamente Arzneimittelliste 2 (ohne Venenzugang)'), { quiet: true }); });
+  const P = V.locator('.block-mod').first();
+  ok(await P.locator('[data-field="Größe Venflon"]').count() === 0 && await P.locator('[data-field=Medikamente] .chip:has-text("Glucose 33 % i.v.")').count() === 1, 'Liste 2 ohne Venenzugang: keine Venflon-Felder, Medikamente aus Liste 2');
+  await P.locator('[data-field=Krankheitsbild] .chip:has-text("Hypoglykämie")').click();
+  await P.locator('[data-field=Medikamente] .chip:has-text("Glucose 33 % i.v.")').click();
+  const got4 = await V.evaluate(() => blockText(doc.find((b) => b.type === 'module')));
+  ok(got4 === 'Medikamente nach Arzneimittelliste 2 (ohne Venenzugang):\nVenenzugang nicht möglich.\nPatient wurde über die Maßnahme sowie mögliche Folgen des zu gebenden Medikamentes aufgeklärt und ist mit der Maßnahme einverstanden.\nKrankheitsbild: Hypoglykämie, \nMedikamente: Glucose 33 % i.v.',
+    'Liste 2 ohne Venenzugang: Text: ' + JSON.stringify(got4));
+
   // --- Feld-Editor bietet die neuen Feldarten an
   ok(await V.evaluate(() => fieldToken({ name: 'Medikamente', type: 'al2', optional: false, options: [], defaults: [] }) === '{{Medikamente:@al2}}'
     && Object.keys(FIELD_TYPES).includes('kb1')), 'Feld-Editor: Feldarten für Arzneimittellisten');

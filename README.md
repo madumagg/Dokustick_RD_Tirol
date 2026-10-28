@@ -140,7 +140,7 @@ Bausteine können **Auswahlfelder** enthalten, z. B. beim ABCDE-Schema:
   - das ABCDE-Schema (A nach Vorgabe, B–E als anpassbare Vorschläge)
   - Vitalparameter und Schmerz
   - unter „Scores“ die **GCS** mit Augen öffnen, Verbal und Motorisch
-  - unter „Maßnahmen“ **Venenzugang und Medikamente (Liste 2)** und **Medikamente Arzneimittelliste 1** (siehe Arzneimittellisten unten)
+  - unter „Maßnahmen“ **Venenzugang und Medikamente (Liste 2)**, **Medikamente Arzneimittelliste 2 (ohne Venenzugang)** und **Medikamente Arzneimittelliste 1** (siehe Arzneimittellisten unten)
 
   Bei der GCS erscheinen im Protokoll nur die gewählten Optionen, das Ergebnis wird automatisch zusammengezählt („Ergebnis: 13 Punkte“).
 - **Punkte zusammenzählen:** Im Feld-Editor gibt es die Art **„Summe der Punkte“**.
@@ -328,6 +328,7 @@ Medikamente, die wir selbst geben dürfen, nach der *Arzneimittelliste I + II NE
   - Die Listen werden auf dem Gerät gespeichert und funktionieren offline.
 - **Vorlagen** (*Bausteine → Vorlagen → Maßnahmen*):
   - **Venenzugang und Medikamente (Liste 2):** Aufklärung, Größe und Ort des Venflons, Krankheitsbild, Medikamente aus Liste 2 und Dosis.
+  - **Medikamente Arzneimittelliste 2 (ohne Venenzugang):** „Venenzugang nicht möglich.“, Aufklärung, Krankheitsbild, Medikamente aus Liste 2 und Dosis. Gedacht z. B. für den Penthrox Inhaler, der in Tirol nur ohne möglichen Venenzugang sofort gegeben werden darf.
   - **Medikamente Arzneimittelliste 1:** Aufklärung, Krankheitsbild, Medikamente aus Liste 1 und Dosis.
   - Die **Aufklärung** („Patient wurde über … aufgeklärt und ist mit der Maßnahme einverstanden.“) ist vorausgewählt. Für bewusstlose Patienten gibt es „Aufklärung nicht möglich, da Patient nicht ansprechbar.“
   - Krankheitsbild und Dosis sind optional. Bleiben sie leer, fallen sie samt Beschriftung weg.

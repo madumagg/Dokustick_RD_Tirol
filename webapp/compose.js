@@ -55,6 +55,10 @@ const TEMPLATES = [
     category: 'Maßnahmen', title: 'Medikamente Arzneimittelliste 1',
     body: 'Medikamente nach Arzneimittelliste 1:\n{{Aufklärung:*Patient wurde über die Maßnahme sowie mögliche Folgen des zu gebenden Medikamentes aufgeklärt und ist mit der Maßnahme einverstanden.|Aufklärung nicht möglich, da Patient nicht ansprechbar.}}\nKrankheitsbild: {{Krankheitsbild?:@kb1}}, \nMedikamente: {{Medikamente:@al1}}, \nDosis: {{Dosis?}}.',
   },
+  {
+    category: 'Maßnahmen', title: 'Medikamente Arzneimittelliste 2 (ohne Venenzugang)',
+    body: 'Medikamente nach Arzneimittelliste 2 (ohne Venenzugang):\nVenenzugang nicht möglich.\n{{Aufklärung:*Patient wurde über die Maßnahme sowie mögliche Folgen des zu gebenden Medikamentes aufgeklärt und ist mit der Maßnahme einverstanden.|Aufklärung nicht möglich, da Patient nicht ansprechbar.}}\nKrankheitsbild: {{Krankheitsbild?:@kb2}}, \nMedikamente: {{Medikamente:@al2}}, \nDosis: {{Dosis?}}.',
+  },
   { category: 'Scores', title: 'GCS', body: 'GCS – Augen öffnen: {{Augen öffnen:Spontan (4 Punkte)|auf Ansprache (3 Punkte)|auf Schmerzreiz (2 Punkte)|kein Öffnen (1 Punkt)}}\nVerbal: {{Verbal:orientiert (5 Punkte)|desorientiert (4 Punkte)|einzelne Worte (3 Punkte)|sinnlose Laute (2 Punkte)|keine (1 Punkt)}}\nMotorisch: {{Motorisch:auf Aufforderung (6 Punkte)|gezielte Bewegung (5 Punkte)|ungezielte Bewegung (4 Punkte)|Beugesynergismen (3 Punkte)|Strecksynergismen (2 Punkte)|keine (1 Punkt)}}\nErgebnis: {{Ergebnis?:=Summe}} Punkte' },
 ];
 
