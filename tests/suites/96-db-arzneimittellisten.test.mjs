@@ -23,6 +23,7 @@ export default async function (t) {
   ok(!l1.concat(l2).some((e) => /nitrolingual/i.test(e.name)), 'Gestrichene Medikamente (Nitrolingual) nicht enthalten');
   // Korrektur nach fachlicher Pruefung (20261028200000_arzneimittellisten_korrektur.sql)
   ok(['Stesolid Rektiole 5 mg', 'Stesolid Rektiole 10 mg'].every((n) => l1.some((e) => e.name === n)) && !l1.some((e) => e.name === 'Stesolid Rektiole'), 'Liste 1: Stesolid als 5 mg und 10 mg');
+  ok(l2.some((e) => e.name === 'Penthrox Inhaler' && e.indication === 'Starke Schmerzen'), 'Liste 2: Penthrox Inhaler bei starken Schmerzen');
   ok(['Amiodaron 300 mg i.v.', 'Amiodaron 150 mg i.v.'].every((n) => l2.some((e) => e.name === n && e.indication === 'Atem-Kreislauf-Stillstand')) && !l2.some((e) => e.name.startsWith('Sedacoron')), 'Liste 2: Amiodaron als 300 mg und 150 mg');
 
   // Vorschlagen, Freigeben, Doppelte
