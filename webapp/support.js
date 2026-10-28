@@ -12,6 +12,7 @@
 // "Was ist neu": Neuerungen fuer Benutzer pro Version, neueste zuerst.
 // Bei jeder Version mit sichtbaren Neuerungen hier einen Eintrag ergaenzen.
 const NEWS = [
+  { v: '0.40', items: ['Behoben: Bei Bausteinen, die direkt in der Datenbank eingetragen wurden, entstand eine leere Zeile im Text, wenn eine optionale Angabe (z. B. „Dosis“) leer blieb.'] },
   { v: '0.39', items: [
     'Neu im Reiter Datenbank: „Arzneimittellisten“ mit Liste 1 und Liste 2 (RD Tirol), nach Krankheitsbild geordnet, mit Dosierung und Kontraindikationen. Neue Medikamente lassen sich ergänzen.',
     'Neue Vorlagen „Venenzugang und Medikamente (Liste 2)“ und „Medikamente Arzneimittelliste 1“: Medikament und Krankheitsbild antippen, die Aufklärung steht schon drin.',

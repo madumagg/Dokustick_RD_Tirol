@@ -163,6 +163,8 @@ function splitSegments(tpl) {
  * z.B. wird aus "RR {{RR}} mmHg, HF {{HF:#}}/min" ohne RR einfach "HF 80/min".
  */
 function fillTemplate(tpl, values) {
+  // Windows-Zeilenenden (z.B. aus dem Supabase-SQL-Editor) wie normale behandeln
+  tpl = String(tpl).replace(/\r\n?/g, '\n');
   let sum;
   const valueOf = (n, o) => {
     const f = parseField(n, o);

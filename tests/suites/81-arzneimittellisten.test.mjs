@@ -112,6 +112,18 @@ export default async function (t) {
   await W.evaluate(() => { clearDoc(); addToDoc(TEMPLATES.find((x) => x.title.startsWith('Venenzugang und Medikamente')), { quiet: true }); });
   ok((await W.textContent('.block-mod [data-field=Medikamente] .drug-info')).includes('noch nicht geladen'), 'Ohne Migration: Hinweis im Baustein');
 
+  // Im Supabase-SQL-Editor eingetragene Bausteine haben Windows-Zeilenenden: nach dem Sync nur \n
+  const crBody = 'Medikamente nach Arzneimittelliste 1:\r\nKrankheitsbild: {{Krankheitsbild?:@kb1}}, \r\nMedikamente: {{Medikamente:@al1}}, \r\nDosis: {{Dosis?}}.';
+  const crId = await A.evaluate(async (body) => {
+    const id = uid();
+    await cloud.sb.from('items').insert({ id, owner_id: cloud.account.id, kind: 'module', title: 'CRLF-Test', body });
+    await cloud.sync();
+    return id;
+  }, crBody);
+  ok(await A.evaluate((id) => { const it = items.find((i) => i.id === id); return !!it && !it.body.includes('\r') && !it.dirty; }, crId), 'Windows-Zeilenenden aus der Datenbank werden beim Sync zu \\n');
+  const crText = await A.evaluate((id) => { const it = items.find((i) => i.id === id); const b = moduleBlock(it); b.values.Medikamente = ['Aspro Classic 320 mg p.o.']; return blockText(b); }, crId);
+  ok(crText === 'Medikamente nach Arzneimittelliste 1:\nMedikamente: Aspro Classic 320 mg p.o.', 'Baustein mit Windows-Zeilenenden: Text ohne Leerzeilen: ' + JSON.stringify(crText));
+
   // Aufraeumen: Testeintrag nicht in Liste 2 lassen
   await A.evaluate((n) => cloud.sb.from('drug_list_entries').delete().eq('name', n), `Testamin ${s} i.v.`);
 }

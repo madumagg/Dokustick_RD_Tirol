@@ -206,6 +206,7 @@ Datenstrom: UTF-8-Text, `00 <mod> <key>` = Taste, `00 FF <n>` = Pause n×10 ms. 
 - **iOS:** Safari kann kein Web Bluetooth, auf iPhone/iPad läuft die App in **Bluefy**. iPadOS meldet sich als Mac (`IS_IOS` in `app.js`).
 - **Web Bluetooth und Diktat** funktionieren nur über https oder `localhost`.
 - **Mehrere Supabase-Clients:** Die App nutzt `storageKey: 'dokustick.auth'`.
+- **Zeilenenden aus dem Supabase-SQL-Editor:** Dort eingetragene Texte haben Windows-Zeilenenden (`\r\n`). `cloud.pullItems()` und `fillTemplate()` wandeln sie in `\n` um, sonst blieb beim Wegfallen leerer Felder ein einzelnes `\r` stehen (Leerzeile im Protokoll).
 - **Supabase liefert höchstens 1000 Zeilen pro Abfrage** (`max_rows`). Größere Listen seitenweise laden, siehe `catalog.fetchAll()`.
 - **Neue Einstellungen:** Ältere App-Versionen laden beim Speichern der Einstellungen nur ihre eigenen Schlüssel hoch (`SYNCED_SETTINGS`) und überschreiben damit neuere Schlüssel. Neue Einstellungen deshalb immer mit sinnvollem Standardwert behandeln.
 - **Globale Namen:** Alle Skripte teilen sich einen Gültigkeitsbereich. Ein zweites `const` mit demselben Namen in einer anderen Datei (z. B. `fmtDate` aus `admin.js`) bricht das spätere Skript komplett ab. Vor neuen globalen Namen kurz suchen.

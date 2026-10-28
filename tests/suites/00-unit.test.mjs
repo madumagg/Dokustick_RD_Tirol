@@ -30,6 +30,7 @@ export default async function (t) {
     eq(fillTemplate('Gabe von {{M:@al1}}.', { M: ['Aspro Classic 320 mg p.o.'] }), 'Gabe von Aspro Classic 320 mg p.o.', 'Kein doppelter Punkt nach Abkürzung');
     eq(fillTemplate('M: {{M:@al1}}, Dosis: {{D?}}.', { M: ['Midazolam i.v.'] }), 'M: Midazolam i.v.', 'Kein doppelter Punkt, wenn das letzte Feld wegfällt');
     eq(fillTemplate('Pat. {{B}}...', { B: 'wach' }), 'Pat. wach...', 'Auslassungspunkte bleiben');
+    eq(fillTemplate('Kopf:\r\nOrt: {{O}}, \r\nKrankheitsbild: {{K?}}, \r\nMedikamente: {{M:@al2}}, \r\nDosis: {{D?}}.', { O: 'Hand', M: ['Glucose i.v.'] }), 'Kopf:\nOrt: Hand, \nMedikamente: Glucose i.v.', 'Windows-Zeilenenden: leere Zeilen fallen sauber weg');
 
     // Feld-Syntax: Einlesen und Zurueckschreiben
     for (const tok of ['{{Name}}', '{{HF:#}}', '{{Haut:rosig|*blass}}', '{{M+:*keine|O2}}', '{{BZ?:#}}', '{{Maßnahmen+?:a|b}}', '{{Dauermedikation:@med}}', '{{Vorerkrankungen?:@dx}}', '{{Medikamente:@al1}}', '{{Medikamente?:@al2}}', '{{Krankheitsbild?:@kb1}}', '{{Krankheitsbild:@kb2}}']) {

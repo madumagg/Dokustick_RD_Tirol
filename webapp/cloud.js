@@ -235,7 +235,8 @@ const cloud = {
     const pendingIds = new Set(pendingLocal.map((i) => i.id));
     items = [
       ...pendingLocal,
-      ...data.filter((r) => !r.deleted && !pendingIds.has(r.id)).map((r) => ({ ...r, dirty: 0 })),
+      // Windows-Zeilenenden (z.B. im Supabase-SQL-Editor eingetragen) wie in der App: nur \n
+      ...data.filter((r) => !r.deleted && !pendingIds.has(r.id)).map((r) => ({ ...r, body: String(r.body || '').replace(/\r\n?/g, '\n'), dirty: 0 })),
     ];
     saveItems();
     renderItems();
