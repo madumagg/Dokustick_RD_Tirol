@@ -314,7 +314,7 @@ Für Beschreibungen bei Krankheiten zusätzlich [`supabase/migrations/2026102323
 
 ### Datenbank: Arzneimittellisten
 
-Medikamente, die wir selbst geben dürfen, nach der *Arzneimittelliste I + II NEU* (RD Tirol, Update 2022). Einmalig einrichten: Im Supabase **SQL Editor** den Inhalt von [`supabase/migrations/20261028180000_arzneimittellisten.sql`](supabase/migrations/20261028180000_arzneimittellisten.sql) ausführen. Das legt auch die Startdaten an (10 Einträge je Liste, abgeschrieben aus der Liste). Bitte vor der Verwendung fachlich prüfen.
+Medikamente, die wir selbst geben dürfen, nach der *Arzneimittelliste I + II NEU* (RD Tirol, Update 2022). Einmalig einrichten: Im Supabase **SQL Editor** den Inhalt von [`supabase/migrations/20261028180000_arzneimittellisten.sql`](supabase/migrations/20261028180000_arzneimittellisten.sql) ausführen. Das legt auch die Startdaten an, abgeschrieben aus der Liste. Danach [`supabase/migrations/20261028200000_arzneimittellisten_korrektur.sql`](supabase/migrations/20261028200000_arzneimittellisten_korrektur.sql) ausführen: Sie trennt nach der fachlichen Prüfung Stesolid (5 mg / 10 mg) und Amiodaron (300 mg / 150 mg). Danach sind es 11 Einträge je Liste.
 
 - **Reiter „Datenbank → Arzneimittellisten“:** Umschalter **Liste 1** (für Notfallsanitäter:innen, ohne zwingende Notarzt-Nachforderung) und **Liste 2** (Notkompetenz NKA/NKV nach § 11 SanG).
   - Die Einträge stehen nach **Krankheitsbild** geordnet, wie in der Übersicht der Liste. Zu jedem Medikament gibt es Wirkstoff, Dosierung und Hinweise (z. B. Kontraindikationen).

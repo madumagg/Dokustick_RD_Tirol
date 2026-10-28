@@ -21,6 +21,9 @@ export default async function (t) {
   ok(l1.some((e) => e.name === 'Aspro Classic 320 mg p.o.' && e.indication === 'Akutes Koronarsyndrom'), 'Liste 1: Aspro Classic bei akutem Koronarsyndrom');
   ok(l2.filter((e) => e.name === 'Dibondrin 30 mg i.v.').length === 2, 'Dasselbe Medikament für zwei Krankheitsbilder (Dibondrin)');
   ok(!l1.concat(l2).some((e) => /nitrolingual/i.test(e.name)), 'Gestrichene Medikamente (Nitrolingual) nicht enthalten');
+  // Korrektur nach fachlicher Pruefung (20261028200000_arzneimittellisten_korrektur.sql)
+  ok(['Stesolid Rektiole 5 mg', 'Stesolid Rektiole 10 mg'].every((n) => l1.some((e) => e.name === n)) && !l1.some((e) => e.name === 'Stesolid Rektiole'), 'Liste 1: Stesolid als 5 mg und 10 mg');
+  ok(['Amiodaron 300 mg i.v.', 'Amiodaron 150 mg i.v.'].every((n) => l2.some((e) => e.name === n && e.indication === 'Atem-Kreislauf-Stillstand')) && !l2.some((e) => e.name.startsWith('Sedacoron')), 'Liste 2: Amiodaron als 300 mg und 150 mg');
 
   // Vorschlagen, Freigeben, Doppelte
   const name = `Testamin ${s} i.v.`;

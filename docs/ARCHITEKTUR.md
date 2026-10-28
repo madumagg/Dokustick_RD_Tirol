@@ -142,6 +142,7 @@ Schema als Migrationen in `supabase/migrations/` (Reihenfolge = Dateiname):
 | `…_name_protopilot.sql` | Häufige Fragen mit dem neuen Namen ProtoPilot |
 | `…_themes.sql` | `theme_settings` (Freigabe je Theme: `admins` oder `all`), `theme_unlocks` (einzelne Benutzer); `my_themes()`, `app_info().themes`, `admin_themes`, `admin_theme_release`, `admin_theme_unlock`, `admin_theme_lock` |
 | `…_arzneimittellisten.sql` | `drug_list_entries` (`list` 1/2, `name`, `indication`, `ingredient`, `dose`, `note`; eindeutig je Liste + Name + Krankheitsbild), Regeln wie `medications`; `admin_import_catalog` kennt zusätzlich `al1`/`al2`; Startdaten aus der Arzneimittelliste RD Tirol 2022. Fehlt die Tabelle, setzt die App nur `catalog.listsAvailable = false`, Medikamente und Krankheiten laufen weiter. |
+| `…_arzneimittellisten_korrektur.sql` | Startdaten nach fachlicher Prüfung: Stesolid Rektiole 5 mg / 10 mg, Amiodaron 300 mg / 150 mg i.v.; die alten Sammel-Einträge werden nur gelöscht, wenn sie unverändert sind |
 
 Alle Tabellen haben **Row Level Security**. Kurzfassung:
 - **Eigene Einträge:** sieht und ändert nur der Besitzer.
