@@ -46,6 +46,8 @@ function drugList(n) {
     table: 'drug_list_entries', list: n, title: `Arzneimittelliste ${n}`, tab: `Liste ${n}`, one: 'Medikament', slug: `arzneimittelliste-${n}`,
     none: `Noch keine Einträge in Arzneimittelliste ${n}.`,
     cols: 'id,list,name,indication,ingredient,dose,note,approved,created_by,created_at',
+    // Spalte url erst ab Migration *_arzneimittellisten_laengere_texte.sql
+    extraCols: 'url',
     label: (e) => e.name,
     detail: (e) => [e.ingredient, e.dose, e.note].filter(Boolean).join(' · '),
     haystack: (e) => `${e.name} ${e.ingredient} ${e.indication}`,
@@ -55,10 +57,11 @@ function drugList(n) {
       { key: 'name', label: 'Medikament', required: true, max: 120, placeholder: 'z. B. Glucose 33 % i.v.' },
       { key: 'indication', label: 'Krankheitsbild', required: true, max: 150, placeholder: 'z. B. Hypoglykämie' },
       { key: 'ingredient', label: 'Wirkstoff', max: 200, placeholder: 'z. B. Glucose' },
-      { key: 'dose', label: 'Dosierung (nur zur Information)', max: 400, multiline: true, placeholder: 'z. B. ab 6. vLJ 15 g i.v.' },
-      { key: 'note', label: 'Hinweise, z. B. Kontraindikationen', max: 300, multiline: true, placeholder: 'z. B. KI: Kinder unter 6. vLJ' },
+      { key: 'dose', label: 'Dosierung (nur zur Information)', max: 2000, multiline: true, placeholder: 'z. B. ab 6. vLJ 15 g i.v.' },
+      { key: 'note', label: 'Hinweise, z. B. Kontraindikationen', max: 2000, multiline: true, placeholder: 'z. B. KI: Kinder unter 6. vLJ' },
+      { key: 'url', label: 'Link für mehr Infos (optional)', max: 500, inputType: 'url', extra: true, placeholder: 'https://… (z. B. Medikamentenlexikon)' },
     ],
-    csv: ['Medikament', 'Krankheitsbild', 'Wirkstoff', 'Dosierung', 'Hinweise'],
+    csv: ['Medikament', 'Krankheitsbild', 'Wirkstoff', 'Dosierung', 'Hinweise', 'Link'],
   };
 }
 const LIST_KINDS = ['al1', 'al2'];
@@ -67,6 +70,8 @@ const LIST_INFO = {
   al2: 'Notkompetenz (NKA/NKV) nach § 11 SanG: Notarzt vorher informieren bzw. nachfordern.',
 };
 // Tabelle fehlt -> Migration noch nicht eingespielt
+// Nur Links mit http/https anzeigen (Datenbank prueft das auch)
+const safeUrl = (u) => (/^https?:\/\/\S+$/i.test(String(u || '')) ? u : '');
 const missingTable = (error) => error.code === '42P01' || error.code === 'PGRST205' || /does not exist|schema cache/i.test(error.message);
 
 // Fuer die Suche: Gross/Klein und Akzente ignorieren
@@ -79,6 +84,7 @@ const catalog = {
   al2: [],
   available: null, // false = Tabellen fehlen (Katalog-Migration nicht eingespielt)
   listsAvailable: null, // false = Arzneimittellisten fehlen (eigene Migration)
+  extraMissing: false, // true = Spalten aus extraCols fehlen noch (Migration nicht eingespielt)
   view: 'med',
   lastList: null, // zuletzt gewaehlte Arzneimittelliste
   onlyPending: false,
@@ -101,6 +107,7 @@ const catalog = {
 
   async pull() {
     if (!cloud.sb || !cloud.account || !navigator.onLine) return;
+    this.extraMissing = false;
     for (const kind of Object.keys(CATALOGS)) {
       const C = CATALOGS[kind];
       const { data, error } = await this.fetchAll(C);
@@ -118,12 +125,26 @@ const catalog = {
     this.render();
   },
 
+  // Spalten fuer Abfragen: extraCols nur, solange der Server sie kennt
+  colsOf(C) { return C.extraCols && !this.extraMissing ? `${C.cols},${C.extraCols}` : C.cols; },
+  fields(C) { return C.fields.filter((f) => !(f.extra && this.extraMissing)); },
+
   // Supabase liefert pro Abfrage hoechstens 1000 Zeilen (max_rows), daher seitenweise bis zur Gesamtzahl laden
   async fetchAll(C) {
+    const r = await this.fetchPages(C);
+    // Spalte fehlt (neue Migration noch nicht eingespielt): ohne sie weiter
+    if (r.error && C.extraCols && !this.extraMissing && (r.error.code === '42703' || /column .* does not exist/i.test(r.error.message))) {
+      this.extraMissing = true;
+      return this.fetchPages(C);
+    }
+    return r;
+  },
+
+  async fetchPages(C) {
     const rows = [];
     let total = Infinity;
     while (rows.length < total) {
-      let q = cloud.sb.from(C.table).select(C.cols, { count: 'exact' });
+      let q = cloud.sb.from(C.table).select(this.colsOf(C), { count: 'exact' });
       if (C.list) q = q.eq('list', C.list);
       const { data, error, count } = await q.order('id').range(rows.length, rows.length + 999);
       if (error) return { error };
@@ -201,27 +222,29 @@ const catalog = {
     if (this.available === false || (C.list && this.listsAvailable === false)) { toast('Die Datenbank ist noch nicht eingerichtet.', 'err'); return Promise.resolve(null); }
     const isNew = !entry;
     const values = { ...prefill, ...(entry || {}) };
-    const inputs = Object.fromEntries(C.fields.map((f) => [f.key, f.multiline
+    const fields = this.fields(C);
+    const inputs = Object.fromEntries(fields.map((f) => [f.key, f.multiline
       ? el('textarea', { name: f.key, rows: 3, maxlength: f.max, placeholder: f.placeholder }, values[f.key] || '')
-      : el('input', { type: 'text', name: f.key, value: values[f.key] || '', required: !!f.required, maxlength: f.max, placeholder: f.placeholder, autocomplete: 'off' })]));
+      : el('input', { type: f.inputType || 'text', name: f.key, value: values[f.key] || '', required: !!f.required, maxlength: f.max, placeholder: f.placeholder, autocomplete: 'off' })]));
     return new Promise((resolve) => {
       let result = null;
       $('#dlg').addEventListener('close', () => resolve(result), { once: true });
       openDialog(isNew ? (this.isAdmin ? `${C.one} hinzufügen` : `${C.one} vorschlagen`) : `${C.one} bearbeiten`, [
-        ...C.fields.map((f) => field(f.label, inputs[f.key])),
+        ...fields.map((f) => field(f.label, inputs[f.key])),
         kind === 'med' ? el('p', { class: 'help', style: 'margin-top:-4px' }, 'Im Protokoll erscheinen nur Handelsname und Dosis. Der Wirkstoff hilft beim Suchen.') : null,
         C.list ? el('p', { class: 'help', style: 'margin-top:-4px' }, 'Im Protokoll erscheint der Name des Medikaments, im Feld „Krankheitsbild“ das Krankheitsbild. Dosierung und Hinweise sieht man beim Auswählen im Baustein. Gibt es das Medikament für ein weiteres Krankheitsbild, einen eigenen Eintrag mit demselben Namen anlegen.') : null,
         isNew && !this.isAdmin ? el('p', { class: 'note' }, 'Dein Vorschlag ist für dich sofort nutzbar. Für alle anderen erscheint er, sobald ein Admin ihn freigegeben hat.') : null,
       ], {
         saveLabel: isNew ? (this.isAdmin ? 'Hinzufügen' : 'Vorschlagen') : 'Speichern',
         onSave: async () => {
-          const row = Object.fromEntries(C.fields.map((f) => [f.key, inputs[f.key].value.trim()]));
+          const row = Object.fromEntries(fields.map((f) => [f.key, inputs[f.key].value.trim()]));
+          if (row.url && !safeUrl(row.url)) { toast('Der Link muss mit http:// oder https:// beginnen.', 'err'); return false; }
           const sim = this.similar(kind, row, entry && entry.id);
           if (sim.length && !confirm(`Ähnliche Einträge gibt es schon:\n\n${sim.slice(0, 8).join('\n')}\n\nTrotzdem speichern?`)) return false;
           if (!navigator.onLine) { toast('Dafür wird eine Internetverbindung benötigt.', 'err'); return false; }
           const q = isNew
-            ? cloud.sb.from(C.table).insert({ ...row, ...(C.list ? { list: C.list } : {}), approved: this.isAdmin }).select(C.cols).single()
-            : cloud.sb.from(C.table).update(row).eq('id', entry.id).select(C.cols).single();
+            ? cloud.sb.from(C.table).insert({ ...row, ...(C.list ? { list: C.list } : {}), approved: this.isAdmin }).select(this.colsOf(C)).single()
+            : cloud.sb.from(C.table).update(row).eq('id', entry.id).select(this.colsOf(C)).single();
           const { data, error } = await q;
           if (error) {
             toast(error.code === '23505' ? 'Diesen Eintrag gibt es schon (eventuell als Vorschlag, der noch auf Freigabe wartet).'
@@ -393,7 +416,8 @@ const catalog = {
     const canEditEntry = this.isAdmin || (mine && !e.approved);
     // Arzneimittellisten: Wirkstoff, Dosierung und Hinweise vollstaendig, je eine Zeile
     const detail = C.list
-      ? [e.ingredient, e.dose, e.note].filter(Boolean).map((t) => el('span', { style: 'display:block' }, t))
+      ? [...[e.ingredient, e.dose, e.note].filter(Boolean).map((t) => el('span', { style: 'display:block' }, t)),
+        ...(safeUrl(e.url) ? [el('a', { href: e.url, target: '_blank', rel: 'noopener', class: 'drug-link' }, 'Mehr Infos ↗')] : [])]
       : C.detail(e);
     return el('div', { class: 'mod card' },
       el('div', { class: 'send', style: 'cursor:default' },

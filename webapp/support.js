@@ -12,6 +12,7 @@
 // "Was ist neu": Neuerungen fuer Benutzer pro Version, neueste zuerst.
 // Bei jeder Version mit sichtbaren Neuerungen hier einen Eintrag ergaenzen.
 const NEWS = [
+  { v: '0.46', items: ['Arzneimittellisten: Dosierung und Hinweise (z. B. Kontraindikationen) dürfen jetzt bis 2000 Zeichen lang sein, Zeilenumbrüche bleiben erhalten. Neu ist ein Link für mehr Infos, z. B. ins Medikamentenlexikon, der in der Datenbank und im Baustein erscheint.'] },
   { v: '0.45', items: [
     'ProtoPilot startet jetzt mit einer Anmeldeseite: anmelden, registrieren, Link zu protopilot.at und „Was ist neu“. Die App selbst sieht man nur angemeldet. Offline bleibt man angemeldet.',
     'Neu: Vorschau. Die App mit Beispiel-Bausteinen ausprobieren, ohne Konto. Gesendet und gespeichert wird dabei nichts, „Senden“ zeigt nur, was getippt würde.',

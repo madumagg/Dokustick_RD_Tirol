@@ -45,6 +45,15 @@ export default async function (t) {
   ok(r.error?.code === '23514', 'Krankheitsbild ist Pflicht');
   r = await U.from(T).insert({ list: 1, name: 'Selbstfreigabe ' + s, indication: 'x', approved: true });
   ok(!!r.error, 'Benutzer kann nicht selbst freigeben');
+  // Lange Texte (z. B. vollstaendige Kontraindikationen) und Link
+  r = await U.from(T).update({ note: 'K'.repeat(2000), dose: 'D'.repeat(2000) }).eq('id', id).select();
+  ok(r.data?.length === 1, 'Dosierung und Hinweise mit 2000 Zeichen erlaubt');
+  r = await U.from(T).update({ note: 'K'.repeat(2001) }).eq('id', id).select();
+  ok(r.error?.code === '23514', 'Mehr als 2000 Zeichen abgelehnt');
+  r = await U.from(T).update({ url: 'https://rdmed.example.at/books/medikamentenlexikon/page/test' }).eq('id', id).select();
+  ok(r.data?.[0]?.url?.startsWith('https://'), 'Link gespeichert');
+  r = await U.from(T).update({ url: 'javascript:alert(1)' }).eq('id', id).select();
+  ok(r.error?.code === '23514', 'Link nur mit http/https');
   r = await U.from(T).update({ dose: '2 mg' }).eq('id', id).select();
   ok(r.data?.length === 1 && r.data[0].dose === '2 mg', 'Benutzer korrigiert eigenen offenen Vorschlag');
   r = await V.from(T).update({ dose: 'x' }).eq('id', id).select();
@@ -65,11 +74,12 @@ export default async function (t) {
     { name: 'Import A ' + s, indication: 'Import KB', dose: '1 mg' },
     { name: 'import a ' + s, indication: 'import kb' },
     { name: 'Import B ' + s, indication: '' },
-    { name: 'Import C ' + s, indication: 'Import KB', note: 'KI: keine' },
+    { name: 'Import C ' + s, indication: 'Import KB', note: 'KI: keine', url: 'https://example.at/c' },
   ] });
   ok(r.data === 2, 'Import: 2 von 4 übernommen (Doppelte und ohne Krankheitsbild übersprungen): ' + r.data);
   r = await V.from(T).select().ilike('name', 'Import % ' + s);
   ok(r.data?.length === 2 && r.data.every((e) => e.approved && e.list === 1), 'Importierte Einträge in Liste 1, sofort für alle sichtbar');
+  ok(r.data?.find((e) => e.name.startsWith('Import C'))?.url === 'https://example.at/c', 'Import übernimmt den Link');
   r = await admin.rpc('admin_import_catalog', { p_kind: 'dx', p_rows: [{ name: 'Import dx ' + s }] });
   ok(r.data === 1, 'Import für Krankheiten funktioniert weiter');
 

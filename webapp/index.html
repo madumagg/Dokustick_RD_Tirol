@@ -288,7 +288,9 @@ body.previewing #tab-settings > :not(#previewSettings) { display: none; }
 .db-group { margin: 12px 0 0; font-size: 15px; }
 .chip.hint:not(.sel) { border-color: var(--accent); color: var(--accent); }
 .drug-info { margin-top: 6px; font-size: 13px; color: var(--muted); }
-.drug-info p { margin: 4px 0 0; }
+.drug-info p { margin: 4px 0 0; white-space: pre-line; }
+.mod .prev.full > span { white-space: pre-line; }
+.drug-link { display: inline-block; margin-top: 2px; }
 .thread { display: grid; gap: 8px; margin: 12px 0; }
 .msg { max-width: 88%; justify-self: start; padding: 8px 12px; border-radius: 14px 14px 14px 4px; background: var(--surface-2); }
 .msg.mine { justify-self: end; border-radius: 14px 14px 4px 14px; background: var(--accent-soft); }
@@ -349,7 +351,7 @@ textarea.internal-input { background: var(--warn-soft); }
 #toast.show { opacity: 1; }
 #toast.err { background: var(--danger); color: #fff; }
 </style>
-<link rel="stylesheet" href="themes.css?v=0.45">
+<link rel="stylesheet" href="themes.css?v=0.46">
 </head>
 <body>
 
@@ -580,19 +582,19 @@ textarea.internal-input { background: var(--warn-soft); }
 <dialog id="dlg2"><form method="dialog" id="dlg2Form"></form></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=0.45"></script>
-<script src="vendor/supabase.js?v=0.45"></script>
-<script src="app.js?v=0.45"></script>
-<script src="compose.js?v=0.45"></script>
-<script src="protocols.js?v=0.45"></script>
-<script src="spell.js?v=0.45"></script>
-<script src="catalog.js?v=0.45"></script>
-<script src="cloud.js?v=0.45"></script>
-<script src="support.js?v=0.45"></script>
-<script src="themes.js?v=0.45"></script>
-<script src="admin.js?v=0.45"></script>
-<script src="virtual.js?v=0.45"></script>
-<script src="gate.js?v=0.45"></script>
+<script src="config.js?v=0.46"></script>
+<script src="vendor/supabase.js?v=0.46"></script>
+<script src="app.js?v=0.46"></script>
+<script src="compose.js?v=0.46"></script>
+<script src="protocols.js?v=0.46"></script>
+<script src="spell.js?v=0.46"></script>
+<script src="catalog.js?v=0.46"></script>
+<script src="cloud.js?v=0.46"></script>
+<script src="support.js?v=0.46"></script>
+<script src="themes.js?v=0.46"></script>
+<script src="admin.js?v=0.46"></script>
+<script src="virtual.js?v=0.46"></script>
+<script src="gate.js?v=0.46"></script>
 <script>boot(); $('#adminOpen').addEventListener('click', () => admin.open());</script>
 </body>
 </html>

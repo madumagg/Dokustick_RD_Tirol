@@ -23,9 +23,19 @@ export default async function (t) {
   ok((await A.textContent('#dbBody')).includes('§ 11 SanG'), 'Liste 2: Hinweis auf Notkompetenz');
   // Neues Medikament fuer Liste 2
   await A.click('#dbBody >> text=＋ Neu');
-  await dlgFill(A, { name: `Testamin ${s} i.v.`, indication: `Testkrankheit ${s}`, dose: '1 mg i.v.', note: 'KI: Test' });
+  const longNote = 'KI: erste Zeile\nzweite Zeile ' + 'x'.repeat(400);
+  await dlgFill(A, { name: `Testamin ${s} i.v.`, indication: `Testkrankheit ${s}`, dose: '1 mg i.v.', note: longNote, url: 'https://example.at/lexikon/testamin' });
   await A.waitForSelector(`#dbBody h3.db-group:has-text("Testkrankheit ${s}") + .mod:has-text("Testamin ${s} i.v.")`);
   ok(true, 'Admin: neues Medikament mit neuem Krankheitsbild in Liste 2');
+  const tcard = A.locator(`#dbBody .mod:has-text("Testamin ${s} i.v.")`);
+  ok(await tcard.locator('a.drug-link').getAttribute('href') === 'https://example.at/lexikon/testamin', 'Link „Mehr Infos“ in der Datenbank');
+  ok(await tcard.evaluate((n) => { const sp = [...n.querySelectorAll('.prev span')].find((x) => x.textContent.startsWith('KI: erste')); return sp && sp.textContent.length > 400 && getComputedStyle(sp).whiteSpace === 'pre-line'; }), 'Langer Hinweis vollständig, mit Zeilenumbrüchen');
+  await A.click('#dbBody >> text=＋ Neu');
+  await A.fill('#dlg [name=name]', `Falschlink ${s}`); await A.fill('#dlg [name=indication]', 'x'); await A.fill('#dlg [name=url]', 'ftp://x');
+  await A.click('#dlg button[type=submit]');
+  await A.waitForSelector('#toast.err >> text=http');
+  ok(true, 'Link ohne http(s) abgelehnt');
+  await A.click('#dlg >> text=Abbrechen');
   await A.click('#dbTabs button[data-kind=med]');
   await A.click('#dbTabs button[data-kind=al]');
   ok(await A.getAttribute('#dbListTabs button[data-kind=al2]', 'aria-selected') === 'true', 'Zuletzt gewählte Liste bleibt gewählt');
@@ -50,6 +60,9 @@ export default async function (t) {
   ok(await med.locator('.chip.hint').allTextContents().then((x) => x.join('|') === 'Glucose 33 % i.v.'), 'Krankheitsbild gewählt: passendes Medikament hervorgehoben');
   await med.locator('.chip:has-text("Glucose 33 % i.v.")').click();
   ok((await med.locator('.drug-info').textContent()).includes('15 g i.v.') && (await med.locator('.drug-info').textContent()).includes('KI: Kinder unter 6. vLJ'), 'Dosierung und Kontraindikation des gewählten Medikaments angezeigt');
+  await med.locator(`.chip:has-text("Testamin ${s} i.v.")`).click();
+  ok(await med.locator('.drug-info a.drug-link').getAttribute('href') === 'https://example.at/lexikon/testamin', 'Link „Mehr Infos“ auch im Baustein');
+  await med.locator(`.chip:has-text("Testamin ${s} i.v.")`).click();
   await B.locator('[data-field=Dosis] input').fill('15 g');
   const exp = 'Venenzugang und Medikamente:\nPatient wurde über mögliche Folgen des Zuganges sowie des zu gebenden Medikamentes aufgeklärt und ist mit der Maßnahme einverstanden.\n'
     + 'Größe: Venflon Grün, \nOrt: Ellenbeuge Links, \nKrankheitsbild: Hypoglykämie, \nMedikamente (Arzneimittelliste 2): Glucose 33 % i.v., \nDosis: 15 g.';
@@ -133,6 +146,15 @@ export default async function (t) {
   ok(await A.evaluate((id) => { const it = items.find((i) => i.id === id); return !!it && !it.body.includes('\r') && !it.dirty; }, crId), 'Windows-Zeilenenden aus der Datenbank werden beim Sync zu \\n');
   const crText = await A.evaluate((id) => { const it = items.find((i) => i.id === id); const b = moduleBlock(it); b.values.Medikamente = ['Aspro Classic 320 mg p.o.']; return blockText(b); }, crId);
   ok(crText === 'Medikamente nach Arzneimittelliste 1:\nMedikamente: Aspro Classic 320 mg p.o.', 'Baustein mit Windows-Zeilenenden: Text ohne Leerzeilen: ' + JSON.stringify(crText));
+
+  // Server ohne die Spalte url (Migration *_laengere_texte.sql fehlt): Listen laden trotzdem
+  const X = await device('X');
+  await X.ctx.route('**/rest/v1/drug_list_entries**', (r) => (/select=[^&]*url/.test(decodeURIComponent(r.request().url()))
+    ? r.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: '42703', message: 'column drug_list_entries.url does not exist' }) })
+    : r.continue()));
+  await login(X, `al-x-${s}@test.at`, { signup: true });
+  await X.waitForFunction(() => catalog.al2.length > 0 && catalog.extraMissing === true);
+  ok(await X.evaluate(() => catalog.drugNames('al2').includes('Glucose 33 % i.v.') && !catalog.fields(CATALOGS.al2).some((f) => f.key === 'url')), 'Ohne Spalte url: Listen geladen, kein Link-Feld');
 
   // Aufraeumen: Testeintrag nicht in Liste 2 lassen
   await A.evaluate((n) => cloud.sb.from('drug_list_entries').delete().eq('name', n), `Testamin ${s} i.v.`);

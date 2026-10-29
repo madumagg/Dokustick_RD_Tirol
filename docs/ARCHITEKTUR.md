@@ -157,6 +157,7 @@ Schema als Migrationen in `supabase/migrations/` (Reihenfolge = Dateiname):
 | `…_arzneimittelliste_penthrox.sql` | Penthrox Inhaler (Methoxyfluran) in Liste 2 bei „Starke Schmerzen“, Anwendungsregel in `dose`; Dosierung und Kontraindikationen fehlen noch (in der App ergänzen) |
 | `…_superadmin.sql` | `app_admins.owner` (Superadmin), `is_owner()`, `require_not_owner()`, `admin_set_owner()`; Schutz in `admin_set_superadmin`, `admin_set_banned`, `admin_delete_user`; `admin_users()` und `app_info()` mit `is_owner` |
 | `…_hinweis_nur_angemeldet.sql` | `app_info().announcement` nur für Angemeldete (ohne Anmeldung `''`) |
+| `…_arzneimittellisten_laengere_texte.sql` | `drug_list_entries.dose`/`note` bis 2000 Zeichen, neue Spalte `url` (nur http/https), `admin_import_catalog` mit `url`. Die App fragt `url` über `CATALOGS.al*.extraCols` ab; fehlt die Spalte (`42703`), setzt `catalog.extraMissing` und lädt ohne sie, das Link-Feld entfällt. |
 
 Alle Tabellen haben **Row Level Security**. Kurzfassung:
 - **Eigene Einträge:** sieht und ändert nur der Besitzer.

@@ -344,7 +344,8 @@ Medikamente, die wir selbst geben dürfen, nach der *Arzneimittelliste I + II NE
   - Die Einträge stehen nach **Krankheitsbild** geordnet, wie in der Übersicht der Liste. Zu jedem Medikament gibt es Wirkstoff, Dosierung und Hinweise (z. B. Kontraindikationen).
   - Ein Eintrag ist ein Medikament für ein Krankheitsbild. Gibt es ein Medikament für mehrere Krankheitsbilder (z. B. Dibondrin), steht es mehrmals da.
   - **Ergänzen:** „＋ Neu“ bzw. „＋ Vorschlagen“, wie bei den Medikamenten (Freigabe durch einen App-Admin). Pflicht sind Medikament (so erscheint es im Protokoll) und Krankheitsbild.
-  - **CSV:** `Medikament;Krankheitsbild;Wirkstoff;Dosierung;Hinweise`, Import und Export wie oben.
+  - **Dosierung und Hinweise** dürfen bis 2000 Zeichen lang sein, Zeilenumbrüche bleiben erhalten. Optional gibt es einen **Link für mehr Infos** (nur `http`/`https`, z. B. ins Medikamentenlexikon). Er erscheint als „Mehr Infos ↗“ in der Datenbank und im Baustein. Dafür muss [`supabase/migrations/20261030090000_arzneimittellisten_laengere_texte.sql`](supabase/migrations/20261030090000_arzneimittellisten_laengere_texte.sql) ausgeführt sein. Vorher gelten 400 bzw. 300 Zeichen, und das Link-Feld fehlt.
+  - **CSV:** `Medikament;Krankheitsbild;Wirkstoff;Dosierung;Hinweise;Link`, Import und Export wie oben.
 - **In Bausteinen:** Feldarten „Arzneimittelliste 1/2: Medikamente“ (`{{Medikamente:@al2}}`) und „Arzneimittelliste 1/2: Krankheitsbild“ (`{{Krankheitsbild?:@kb2}}`).
   - Medikamente und Krankheitsbilder erscheinen als Knöpfe, ganz ohne Tippen. Mehrere Medikamente sind möglich, „keine“ steht immer zur Auswahl.
   - Wählt man zuerst das Medikament, wird das Krankheitsbild automatisch eingetragen, wenn es nur eines gibt. Wählt man zuerst das Krankheitsbild, sind die passenden Medikamente farbig umrandet.

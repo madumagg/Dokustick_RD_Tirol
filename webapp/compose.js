@@ -570,7 +570,9 @@ function drugContext(drug, fields, values) {
         const match = kb ? rows.filter((e) => normText(e.indication) === normText(kb)) : [];
         if (match.length) rows = match;
         for (const e of rows) {
-          out.push(el('p', {}, el('strong', {}, e.name), ` – ${e.indication}: `, e.dose || '', e.note ? el('span', { style: 'display:block' }, e.note) : null));
+          out.push(el('p', {}, el('strong', {}, e.name), ` – ${e.indication}${e.dose ? ': ' : ''}`, e.dose || '',
+            e.note ? el('span', { style: 'display:block' }, e.note) : null,
+            safeUrl(e.url) ? el('a', { href: e.url, target: '_blank', rel: 'noopener', class: 'drug-link' }, 'Mehr Infos ↗') : null));
         }
       }
       return out;
