@@ -105,6 +105,7 @@ Sondertasten im Text: `{TAB}`, `{SHIFT+TAB}`, `{ENTER}`, `{PAUSE}`, `{PAUSE:ms}`
 Regeln beim Ausfüllen (`fillTemplate` in `compose.js`):
 - **Leere Felder:** Abschnitte (getrennt durch `, `, `: `, Satzende), deren Felder alle leer sind, fallen weg.
 - **Beschriftung mit Doppelpunkt** (`dropLabelled`): Steht vor dem leeren Feld `Beschriftung: ` und beginnt die Beschriftung mit `, ` oder in einer neuen Zeile, fällt sie mit weg. Beschriftung = letzte Zeile vor dem `: `, höchstens 4 Wörter/40 Zeichen, ohne `.!?:;`. Steht hinter dem Feld noch Text in einer neuen Zeile, bleibt alles wie bisher.
+- `dropLabelled` und `dropSentence` greifen nur, wenn **alle Felder des Abschnitts optional** sind (`allOptional`). Leere Pflichtfelder lassen Beschriftung und Satz in der Vorschau stehen.
 - **Leerer Satz** (`dropSentence`): Greift keine Komma-Regel und steht der leere Abschnitt für sich (am Anfang/Ende des Bausteins oder zwischen Satzenden `. `), fällt er samt festem Text und einem Satzende weg. Ein Baustein, der nur aus so einem Satz besteht, ergibt leeren Text und erscheint nicht im Protokoll (`joinBlocks` lässt leere Blöcke aus). Mehrzeilige Abschnitte bleiben, weil die weiteren Zeilen eigener Text sind.
 - **Doppelter Punkt:** Endet ein Wert mit `.` (z. B. „Aspro Classic 320 mg p.o.“) und folgt im Baustein ein `.`, bleibt nur einer.
 - **Ausschließende Optionen:** Optionen, die mit „kein“ oder „unbekannt“ beginnen, heben bei Mehrfachauswahl die anderen auf (`isExclusive`).

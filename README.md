@@ -126,6 +126,7 @@ Bausteine können **Auswahlfelder** enthalten, z. B. beim ABCDE-Schema:
 - **Einsatz beenden:** Der Knopf ganz unten setzt nach einer Sicherheitsabfrage alle Bausteine im Protokoll zurück und löscht den Freitext. Die gespeicherten Bausteine bleiben erhalten.
 - **Pflichtfelder:** Alle Felder sind standardmäßig Pflichtfelder. Fehlende Angaben werden rot markiert („fehlt“, bei Zahlenfeldern mit Text „keine Zahl“), die Karte bekommt einen roten Rand und ein Abzeichen wie „2 fehlen“. Beim Senden erscheint dann die Meldung **„Fehlende Angaben“** mit allen offenen Feldern, und **es wird nichts gesendet**. „Zum ersten fehlenden Feld“ springt direkt dorthin. Freitext wird nicht geprüft.
 - **Optionale Felder:** Im Feld-Editor den Haken „Pflichtfeld“ entfernen, z. B. für Werte, die nicht immer gemessen werden. Bleibt ein optionaler Messwert leer, fällt er samt Beschriftung weg: Aus „RR … mmHg, HF 80/min“ wird „HF 80/min“.
+  - Beides gilt nur für **optionale** Felder. Ein leeres Pflichtfeld muss vor dem Senden ohnehin ausgefüllt werden, bis dahin bleiben Beschriftung und Satz in der Vorschau stehen.
   - **Fester Text nur mit Auswahl:** Ein Satz, in dem bei optionalen Feldern nichts gewählt ist, fällt samt festem Text weg. Aus dem Baustein „Monitoring [SpO2 | EKG | NIBP] angelegt.“ wird ohne Auswahl gar nichts, er erscheint dann nicht im Protokoll. Ein Satz endet mit Punkt und Leerzeichen vor einem Großbuchstaben oder am Ende des Bausteins. Der feste Text muss also im selben Satz wie das Feld stehen, ohne Komma oder Doppelpunkt dazwischen.
   - Das gilt auch für kurze Beschriftungen mit Doppelpunkt in einer Aufzählung: Aus „Medikamente: Glucose, Dosis: …“ wird „Medikamente: Glucose.“ Die Beschriftung muss dafür kurz sein (höchstens vier Wörter, ohne Punkt) und mit Komma oder in einer neuen Zeile beginnen.
 - **Mehrfachauswahl:** Optionen, die mit „kein“ beginnen (z. B. „keine Maßnahmen erforderlich“), heben die anderen auf und umgekehrt.
@@ -138,7 +139,8 @@ Bausteine können **Auswahlfelder** enthalten, z. B. beim ABCDE-Schema:
   - Neue Felder („＋ Feld“) bekommen automatisch ein Komma bzw. Leerzeichen, wenn der Cursor direkt an einem anderen Feld oder Wort steht. Fester Text hinter einem Feld wird ein eigener Satz, damit er nicht mit einem leeren optionalen Feld wegfällt.
 - **Fester Text:** **＋ Feld** → Art **„Fester Text (immer mitschreiben)“** setzt einen Text an der Cursor-Stelle in den Baustein (ohne Cursor: ans Ende), z. B. „Pat. über Risiken aufgeklärt.“ Er wird immer mitgeschrieben und ist ein eigener Abschnitt, den man in der Reihenfolge verschieben kann. Genauso gut kann man ihn direkt ins Feld „Text“ des Bausteins tippen.
 - **Vorlagen:** *Bausteine → Vorlagen* enthält:
-  - das ABCDE-Schema (A nach Vorgabe, B–E als anpassbare Vorschläge)
+  - das cABCDE-Schema mit „c – Kritische Blutung“ (A nach Vorgabe, B–E als anpassbare Vorschläge) und „TNC – Traumacheck“
+  - „Verlauf“ (stabil, komplikationsloser Transport, Zustand bei Übergabe), wie im SAN-Protokoll Tirol
   - Vitalparameter und Schmerz
   - unter „Scores“ die **GCS** mit Augen öffnen, Verbal und Motorisch
   - unter „Maßnahmen“ **Venenzugang und Medikamente (Liste 2)**, **Medikamente Arzneimittelliste 2 (ohne Venenzugang)** und **Medikamente Arzneimittelliste 1** (siehe Arzneimittellisten unten)

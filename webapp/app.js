@@ -3,7 +3,7 @@
 /* ================= Konstanten ================= */
 
 // Wird mit tools/version.sh zusammen mit sw.js und index.html erhoeht
-const APP_VERSION = '0.42';
+const APP_VERSION = '0.43';
 
 const SVC_UUID = '6e7a0001-4b3c-4f8e-9a1d-5c2b7d0a4e01';
 const CMD_UUID = '6e7a0002-4b3c-4f8e-9a1d-5c2b7d0a4e01';
@@ -113,7 +113,8 @@ function defaultItems() {
   return [
     ...DEFAULT_MODULES.map((m, i) => newItem('module', { ...m, sort: i })),
     ...DEFAULT_FORMS.map((f, i) => newItem('form', { ...f, sort: i })),
-    ...TEMPLATES.filter((t) => t.category === 'ABCDE').map((t, i) => newItem('module', { ...t, sort: 100 + i })),
+    // A–E wie bisher; c und TNC gibt es ueber die Vorlagen
+    ...TEMPLATES.filter((t) => t.category === 'ABCDE' && /^[A-E] – /.test(t.title)).map((t, i) => newItem('module', { ...t, sort: 100 + i })),
   ];
 }
 

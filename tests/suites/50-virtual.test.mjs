@@ -29,7 +29,7 @@ export default async function (t) {
   await A.evaluate(() => {
     clearDoc();
     doc[0].pinned = false; // Freitext nach dem Baustein (wie vor dem Anheften)
-    addToDoc(TEMPLATES[0], { quiet: true });
+    addToDoc(TEMPLATES.find((x) => x.title === 'A – Atemwege'), { quiet: true });
     const b = doc[0]; b.values.Atemwege = 'gefährdet'; b.values['Maßnahmen A'] = ['Guedeltubus', 'i-gel Larynxmaske'];
     doc[doc.length - 1].text = 'Größe 1,80 m – „ok“ … 5 µg, 38 °C, Ä Ö Ü ß € @ 😀\nRR 120/80{TAB}Fertig{ENTER}Ende';
     saveDoc(); renderDoc();

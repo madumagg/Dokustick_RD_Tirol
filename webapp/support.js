@@ -12,6 +12,9 @@
 // "Was ist neu": Neuerungen fuer Benutzer pro Version, neueste zuerst.
 // Bei jeder Version mit sichtbaren Neuerungen hier einen Eintrag ergaenzen.
 const NEWS = [
+  { v: '0.43', items: [
+    'Neue Vorlagen nach dem SAN-Protokoll Tirol: „c – Kritische Blutung“ (inkl. V.a. HWS-Verletzung), „TNC – Traumacheck“ und „Verlauf“ (Bausteine → Vorlagen).',
+    'Bleibt ein Pflichtfeld leer, bleiben Beschriftung und Satz in der Vorschau stehen, damit man sieht, was noch fehlt. Wegfallen tun sie nur bei optionalen Feldern.'] },
   { v: '0.42', items: ['Fester Text nur mit Auswahl: Ist in einem Satz mit optionalem Feld nichts gewählt, fällt der ganze Satz weg. Ein Baustein wie „Monitoring [SpO2 | EKG | NIBP] angelegt.“ erscheint ohne Auswahl nicht im Protokoll.'] },
   { v: '0.41', items: ['Neue Vorlage „Medikamente Arzneimittelliste 2 (ohne Venenzugang)“, z. B. für den Penthrox Inhaler, wenn kein Venenzugang möglich ist (Bausteine → Vorlagen → Maßnahmen).'] },
   { v: '0.40', items: ['Behoben: Bei Bausteinen, die direkt in der Datenbank eingetragen wurden, entstand eine leere Zeile im Text, wenn eine optionale Angabe (z. B. „Dosis“) leer blieb.'] },

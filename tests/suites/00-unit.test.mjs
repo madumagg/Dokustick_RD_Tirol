@@ -40,6 +40,14 @@ export default async function (t) {
     eq(fillTemplate('Monitoring {{M?}} angelegt.\nTransport liegend.', {}), 'Monitoring  angelegt.\nTransport liegend.', 'Abschnitt mit weiterer Zeile bleibt (eigener Text)');
     eq(fillTemplate('Ergebnis: {{S?}} Punkte', {}), 'Ergebnis:  Punkte', 'Nach Doppelpunkt kein eigener Satz');
     eq(fillTemplate('RR {{RR?}} mmHg, HF {{HF?}}/min', {}), '', 'Alle Messwerte leer: kein Text');
+    // Vorlagen nach dem SAN-Protokoll Tirol: Text mit Vorauswahl
+    const vor = (t) => fillTemplate(tpl(t), initialValues(tpl(t)));
+    eq(vor('c – Kritische'), 'c – keine kritische Blutung, kein V.a. HWS-Verletzung. Maßnahmen: keine Interventionen notwendig.', 'Vorlage c – Kritische Blutung');
+    eq(vor('TNC'), 'TNC: nicht durchgeführt (kein Trauma), keine offensichtlichen Verletzungen.', 'Vorlage TNC');
+    eq(vor('Verlauf'), 'Verlauf: Pat. zeigt sich zu jeder Zeit stabil, komplikationsloser Transport, Zustand unverändert bei Übergabe.', 'Vorlage Verlauf');
+    eq(defaultItems().filter((i) => i.category === 'ABCDE').map((i) => i.title[0]).join(''), 'ABCDE', 'Neue Benutzer bekommen weiterhin A–E');
+    eq(fillTemplate('Monitoring {{M+:SpO2|EKG}} angelegt.', {}), 'Monitoring  angelegt.', 'Leeres Pflichtfeld: Satz bleibt in der Vorschau stehen');
+    eq(fillTemplate('A – Atemwege: {{A:frei|verlegt}}, Atmung {{B:*vorhanden|nicht vorhanden}}.', { B: 'vorhanden' }), 'A – Atemwege: Atmung vorhanden.', 'Leeres Pflichtfeld: Beschriftung bleibt stehen');
     {
       const blocks = [{ type: 'module', tpl: MON, values: { Monitoring: [] } }, { type: 'text', text: 'Freitext' }];
       eq(joinBlocks(blocks), 'Freitext', 'Leerer Baustein erscheint nicht im Protokoll');

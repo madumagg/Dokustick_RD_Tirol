@@ -9,7 +9,7 @@ export default async function (t) {
   // Zerlegen: Zeichensetzung bleibt erhalten, Felder werden nie geteilt
   const r = await p.evaluate(() => ({
     roundtrip: TEMPLATES.every((x) => joinPieces(splitPieces(x.body)) === x.body),
-    a: splitPieces(TEMPLATES[0].body),
+    a: splitPieces(TEMPLATES.find((x) => x.title === 'A – Atemwege').body),
     vital: splitPieces(TEMPLATES.find((x) => x.title === 'Vitalparameter').body).pieces.map(templatePreview),
     gcs: splitPieces(TEMPLATES.find((x) => x.title === 'GCS').body).pieces.length,
     swapped: (() => { const s = splitPieces('A – Atemwege: {{A:x, y|z}}. Maßnahmen: {{M+:a|b}}.'); s.pieces.reverse(); return joinPieces(s); })(),

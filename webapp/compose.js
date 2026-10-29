@@ -33,11 +33,13 @@ const isListField = (f) => f.type === 'multi' || f.type === 'med' || f.type === 
 const LOOKUP_QUICK = ['keine', 'unbekannt'];
 
 const TEMPLATES = [
+  { category: 'ABCDE', title: 'c – Kritische Blutung', body: 'c – {{Kritische Blutung:*keine kritische Blutung|kritische Blutung}}, {{HWS:*kein V.a. HWS-Verletzung|V.a. HWS-Verletzung}}. Maßnahmen: {{Maßnahmen c+:*keine Interventionen notwendig|Tourniquet|Druckverband|manuelle Kompression|manuelle HWS-Stabilisierung|HWS-Immobilisation}}.' },
   { category: 'ABCDE', title: 'A – Atemwege', body: 'A – Atemwege: {{Atemwege:frei und gesichert|gefährdet}}. Maßnahmen: {{Maßnahmen A+:*keine Maßnahmen erforderlich|Wendltubus|Guedeltubus|Larynxtubus|Endotrachealtubus|i-gel Larynxmaske}}.' },
   { category: 'ABCDE', title: 'B – Belüftung', body: 'B – Belüftung: Atmung {{Atmung:*unauffällig|Dyspnoe|Tachypnoe|Bradypnoe|Apnoe}}, AF {{AF:#}}/min, SpO2 {{SpO2:#}} %, Auskultation {{Auskultation:*seitengleich, vesikulär|abgeschwächt links|abgeschwächt rechts|Spastik|Rasselgeräusche}}. Maßnahmen: {{Maßnahmen B+:*keine Maßnahmen erforderlich|O2-Gabe|assistierte Beatmung|kontrollierte Beatmung}}.' },
   { category: 'ABCDE', title: 'C – Kreislauf', body: 'C – Kreislauf: {{Kreislauf:*stabil|instabil}}, RR {{RR}} mmHg, HF {{HF:#}}/min, Rekap.-Zeit {{Rekap:*< 2 s|> 2 s}}, Haut {{Haut:*rosig, warm, trocken|blass|kaltschweißig|zyanotisch|marmoriert}}. Maßnahmen: {{Maßnahmen C+:*keine Maßnahmen erforderlich|i.v.-Zugang|i.o.-Zugang|Volumengabe|Blutstillung|Tourniquet|Beckenschlinge}}.' },
   { category: 'ABCDE', title: 'D – Neurologie', body: 'D – Neurologie: GCS {{GCS:15|14|13|12|11|10|9|8|7|6|5|4|3}}, Pupillen {{Pupillen:*isokor, lichtreagibel|anisokor|lichtstarr}}, BZ {{BZ:#}} mg/dl, FAST {{FAST:*unauffällig|auffällig}}. Maßnahmen: {{Maßnahmen D+:*keine Maßnahmen erforderlich|Glukosegabe|Stroke-Voranmeldung}}.' },
   { category: 'ABCDE', title: 'E – Exposure', body: 'E – Exposure: {{Befund E:*keine weiteren Auffälligkeiten|Verletzungen (siehe Freitext)}}, Temp. {{Temp:#}} °C. Maßnahmen: {{Maßnahmen E+:*keine Maßnahmen erforderlich|Wärmeerhalt|Immobilisation|Wundversorgung|Schienung}}.' },
+  { category: 'ABCDE', title: 'TNC – Traumacheck', body: 'TNC: {{TNC:*nicht durchgeführt (kein Trauma)|durchgeführt}}, {{Verletzungen:*keine offensichtlichen Verletzungen|Verletzungen (siehe Freitext)}}.' },
   { category: 'SAMPLER', title: 'S – Symptome', body: 'S – Symptome: {{Symptome}}.' },
   { category: 'SAMPLER', title: 'A – Allergien', body: 'A – Allergien: {{Allergien+:keine bekannt|unbekannt|Penicillin|Pflaster|Latex|Kontrastmittel}}.' },
   { category: 'SAMPLER', title: 'M – Medikation', body: 'M – Dauermedikation: {{Dauermedikation:@med}}.' },
@@ -47,6 +49,7 @@ const TEMPLATES = [
   { category: 'SAMPLER', title: 'R – Risikofaktoren', body: 'R – Risikofaktoren: {{Risikofaktoren+:keine bekannt|Rauchen|Diabetes|Hypertonie|Adipositas|Schwangerschaft}}.' },
   { category: 'Allgemein', title: 'Vitalparameter', body: 'RR {{RR}} mmHg, HF {{HF:#}}/min, SpO2 {{SpO2:#}} %, AF {{AF:#}}/min, BZ {{BZ:#}} mg/dl, Temp. {{Temp:#}} °C, GCS {{GCS:15|14|13|12|11|10|9|8|7|6|5|4|3}}' },
   { category: 'Allgemein', title: 'Schmerz', body: 'Schmerz NRS {{NRS:0|1|2|3|4|5|6|7|8|9|10}}/10, Lokalisation {{Lokalisation}}.' },
+  { category: 'Allgemein', title: 'Verlauf', body: 'Verlauf: {{Zustand:*Pat. zeigt sich zu jeder Zeit stabil|Zustand gebessert|Zustand verschlechtert}}, {{Transport:*komplikationsloser Transport|Transport mit Komplikationen (siehe Freitext)}}, {{Übergabe:*Zustand unverändert bei Übergabe|Zustand gebessert bei Übergabe|Zustand verschlechtert bei Übergabe}}.' },
   {
     category: 'Maßnahmen', title: 'Venenzugang und Medikamente (Liste 2)',
     body: 'Venenzugang und Medikamente:\n{{Aufklärung:*Patient wurde über mögliche Folgen des Zuganges sowie des zu gebenden Medikamentes aufgeklärt und ist mit der Maßnahme einverstanden.|Aufklärung nicht möglich, da Patient nicht ansprechbar.}}\nGröße: {{Größe Venflon:Venflon Blau|Venflon Pink|Venflon Grün|Venflon Orange|Venflon Grau}}, \nOrt: {{Ort:Handrücken Links|Handrücken Rechts|Ellenbeuge Links|Ellenbeuge Rechts|Unterarm Links|Unterarm Rechts}}, \nKrankheitsbild: {{Krankheitsbild?:@kb2}}, \nMedikamente (Arzneimittelliste 2): {{Medikamente:@al2}}, \nDosis: {{Dosis?}}.',
@@ -179,11 +182,14 @@ function fillTemplate(tpl, values) {
     const fields = [...seg.matchAll(FIELD_RE)];
     return fields.length > 0 && fields.every((m) => !valueOf(m[1], m[2]).trim());
   };
+  // Beschriftung bzw. ganzer Satz fallen nur bei optionalen Feldern weg; ein leeres
+  // Pflichtfeld wird ohnehin ausgefuellt, bis dahin bleibt die Vorschau verstaendlich
+  const allOptional = (seg) => [...seg.matchAll(FIELD_RE)].every((m) => parseField(m[1], m[2]).optional);
   const parts = splitSegments(tpl);
   for (let k = 0; k < parts.length; k += 2) {
     if (!allEmpty(parts[k].s)) continue;
     const next = parts[k + 1];
-    if (dropLabelled(parts, k)) continue;
+    if (allOptional(parts[k].s) && dropLabelled(parts, k)) continue;
     if (next && next.s === ', ') { parts[k].drop = next.drop = true; continue; }
     // Sonst das naechste noch vorhandene Komma davor entfernen, Satzzeichen am Ende behalten
     let j = k - 1;
@@ -193,7 +199,7 @@ function fillTemplate(tpl, values) {
       parts[k].keep = (parts[k].s.match(/[.!?]\s*$/) || [''])[0];
       continue;
     }
-    dropSentence(parts, k, j);
+    if (allOptional(parts[k].s)) dropSentence(parts, k, j);
   }
   return parts.map((p) => (p.drop ? p.keep || '' : p.s)).join('')
     .replace(FIELD_RE, (m, n, o, at, str) => {
