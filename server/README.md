@@ -187,7 +187,7 @@ In der App unter *Administration → Einstellungen → Hinweis an alle* den Umzu
 | **Protokolle** | `docker compose logs -f auth` (bzw. `rest`, `caddy`, `db`); Updates und Backups: `journalctl -u dokustick-update -u dokustick-backup` |
 | **Zeitpläne** | `systemctl list-timers 'dokustick-*'` |
 | **Verwaltung (Studio)** | `docker compose --profile admin up -d`, dann im Heimnetz `http://192.168.1.20:8000` (Benutzer `admin`, Passwort aus setup.sh). Danach `docker compose --profile admin stop studio meta`. |
-| **App-Admin ernennen** | in der App unter *Administration → Benutzer*; ohne vorhandenen Admin: `server/make-admin.sh name@beispiel.at` |
+| **App-Admin ernennen** | in der App unter *Administration → Benutzer*; ohne vorhandenen Admin: `server/make-admin.sh name@beispiel.at`, als Superadmin mit `--superadmin` dahinter |
 | **Neustart** | Die VM startet mit Windows automatisch, Docker startet alle Dienste von selbst. |
 | **USV** | Die USV-Software soll Windows bei Stromausfall sauber herunterfahren. Hyper-V fährt dabei die VM herunter (Stoppaktion aus Schritt 2). |
 | **Ubuntu-Updates** | automatisch (unattended-upgrades); gelegentlich `sudo apt full-upgrade` und neu starten |

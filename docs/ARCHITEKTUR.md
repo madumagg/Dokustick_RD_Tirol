@@ -146,12 +146,14 @@ Schema als Migrationen in `supabase/migrations/` (Reihenfolge = Dateiname):
 | `…_arzneimittellisten.sql` | `drug_list_entries` (`list` 1/2, `name`, `indication`, `ingredient`, `dose`, `note`; eindeutig je Liste + Name + Krankheitsbild), Regeln wie `medications`; `admin_import_catalog` kennt zusätzlich `al1`/`al2`; Startdaten aus der Arzneimittelliste RD Tirol 2022. Fehlt die Tabelle, setzt die App nur `catalog.listsAvailable = false`, Medikamente und Krankheiten laufen weiter. |
 | `…_arzneimittellisten_korrektur.sql` | Startdaten nach fachlicher Prüfung: Stesolid Rektiole 5 mg / 10 mg, Amiodaron 300 mg / 150 mg i.v.; die alten Sammel-Einträge werden nur gelöscht, wenn sie unverändert sind |
 | `…_arzneimittelliste_penthrox.sql` | Penthrox Inhaler (Methoxyfluran) in Liste 2 bei „Starke Schmerzen“, Anwendungsregel in `dose`; Dosierung und Kontraindikationen fehlen noch (in der App ergänzen) |
+| `…_superadmin.sql` | `app_admins.owner` (Superadmin), `is_owner()`, `require_not_owner()`, `admin_set_owner()`; Schutz in `admin_set_superadmin`, `admin_set_banned`, `admin_delete_user`; `admin_users()` und `app_info()` mit `is_owner` |
 
 Alle Tabellen haben **Row Level Security**. Kurzfassung:
 - **Eigene Einträge:** sieht und ändert nur der Besitzer.
 - **Teams:** Team-Einträge sehen die Mitglieder, ändern dürfen nur die Team-Admins.
 - **Beitrittscode:** sehen nur die Team-Admins.
-- **Admin-Funktionen** prüfen selbst `require_superadmin()`.
+- **Admin-Funktionen** prüfen selbst `require_superadmin()` (Achtung: der Name meint jeden App-Admin).
+- **Superadmin** = `app_admins.owner`. `require_not_owner()` schützt in `admin_set_superadmin` (entziehen), `admin_set_banned` (sperren) und `admin_delete_user` vor Änderungen an Superadmins, für alle Aufrufer. Nur `admin_set_owner()` ändert die Rolle, nur für Superadmins (`is_owner()`), und lässt immer mindestens einen übrig. `app_info().is_owner` und `admin_users().is_owner` für die App.
 - **Medikamente und Krankheiten:** freigegebene Einträge sind für alle sichtbar, Vorschläge nur für den Ersteller und die App-Admins.
 - **Support:** Tickets, Nachrichten, Lesestand und Stimmen haben **keine** Tabellenrechte, nur die `security definer`-Funktionen greifen zu. Sie prüfen Ersteller oder App-Admin (`support_get`). Interne Notizen und E-Mail-Adressen liefern sie nur an App-Admins, Ideen (`support_ideas`) nur mit Titel, Ideen-Text und Stimmen. Ist ein Ticket jemand anderem zugewiesen, verweigern `admin_reply` und `admin_ticket_assign` ohne `p_force` mit Fehlercode `DS409`; die App fragt dann nach. Häufige Fragen: lesen alle (auch `anon`), schreiben nur App-Admins (RLS).
 - **Themes:** `theme_settings` und `theme_unlocks` haben keine Tabellenrechte, nur die Funktionen greifen zu. `app_info().themes` nennt die für den Aufrufer freigegebenen Themes (für alle freigegebene auch ohne Anmeldung). App-Admins dürfen in der App alle Themes verwenden. Ohne Eintrag in `theme_settings` gilt ein Theme als „nur Admins“.

@@ -12,6 +12,7 @@
 // "Was ist neu": Neuerungen fuer Benutzer pro Version, neueste zuerst.
 // Bei jeder Version mit sichtbaren Neuerungen hier einen Eintrag ergaenzen.
 const NEWS = [
+  { v: '0.44', items: ['Administration: Superadmins. Sie sind geschützt, niemand kann ihnen die Rechte entziehen, sie sperren oder löschen. Nur ein Superadmin ernennt weitere Superadmins.'] },
   { v: '0.43', items: [
     'Neue Vorlagen nach dem SAN-Protokoll Tirol: „c – Kritische Blutung“ (inkl. V.a. HWS-Verletzung), „TNC – Traumacheck“ und „Verlauf“ (Bausteine → Vorlagen).',
     'Bleibt ein Pflichtfeld leer, bleiben Beschriftung und Satz in der Vorschau stehen, damit man sieht, was noch fehlt. Wegfallen tun sie nur bei optionalen Feldern.'] },

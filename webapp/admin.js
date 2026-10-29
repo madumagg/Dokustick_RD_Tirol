@@ -295,31 +295,41 @@ const admin = {
   userCard(u) {
     const me = u.id === cloud.account.id;
     const badge = (t, cls = '') => el('span', { class: 'badge ' + cls }, t);
+    // Superadmins sind geschuetzt (Datenbank prueft das auch): kein Sperren, Entziehen, Loeschen
+    const locked = !!u.is_owner;
+    const iAmOwner = !!cloud.info.is_owner;
     return el('div', { class: 'card pad' },
       el('div', {}, el('b', {}, u.email),
         me ? badge('Du') : null,
-        u.is_admin ? badge('App-Admin') : null,
+        u.is_owner ? badge('Superadmin', 'ok') : u.is_admin ? badge('App-Admin') : null,
         u.banned ? badge('Gesperrt', 'bad') : null,
         !u.confirmed ? badge('Unbestätigt', 'warn') : null),
       el('div', { class: 'help' }, `Registriert ${fmtDate(u.created_at)} · zuletzt angemeldet ${fmtDate(u.last_sign_in_at)}`),
       el('div', { class: 'help' }, 'Teams: ' + (u.teams || 'keine')),
+      locked && !me ? el('div', { class: 'help' }, 'Geschützt: Superadmins können nicht gesperrt, herabgestuft oder gelöscht werden.') : null,
       el('div', { class: 'row', style: 'margin-top:8px' },
         el('button', { type: 'button', class: 'btn small', onclick: () => {
           if (confirm(`E-Mail zum Zurücksetzen des Passworts an ${u.email} senden?`)) {
             this.act(async () => { const { error } = await cloud.sb.auth.resetPasswordForEmail(u.email, { redirectTo: cloud.redirectUrl() }); if (error) throw error; }, 'E-Mail gesendet');
           }
         } }, 'Passwort-Reset'),
-        me ? null : el('button', { type: 'button', class: 'btn small', onclick: () => {
+        me || (locked && !u.banned) ? null : el('button', { type: 'button', class: 'btn small', onclick: () => {
           if (u.banned || confirm(`${u.email} sperren? Die Person wird abgemeldet und kann sich nicht mehr anmelden.`)) {
             this.act(() => this.call('admin_set_banned', { p_user: u.id, p_banned: !u.banned }), u.banned ? 'Entsperrt' : 'Gesperrt');
           }
         } }, u.banned ? 'Entsperren' : 'Sperren'),
-        me ? null : el('button', { type: 'button', class: 'btn small', onclick: () => {
+        me || locked ? null : el('button', { type: 'button', class: 'btn small', onclick: () => {
           if (confirm(u.is_admin ? `${u.email} die App-Admin-Rechte entziehen?` : `${u.email} zum App-Admin machen? Die Person kann dann alle Benutzer und Teams verwalten.`)) {
             this.act(() => this.call('admin_set_superadmin', { p_user: u.id, p_admin: !u.is_admin }), 'Gespeichert');
           }
         } }, u.is_admin ? 'Admin entziehen' : 'Zum App-Admin'),
-        me ? null : el('button', { type: 'button', class: 'btn small danger', onclick: () => {
+        // Nur Superadmins ernennen oder entfernen Superadmins (aus dem Kreis der App-Admins)
+        iAmOwner && !me && u.is_admin ? el('button', { type: 'button', class: 'btn small', onclick: () => {
+          if (confirm(u.is_owner ? `${u.email} die Superadmin-Rolle entfernen? Die Person bleibt App-Admin.` : `${u.email} zum Superadmin machen? Die Person ist dann geschützt und kann selbst Superadmins ernennen und entfernen.`)) {
+            this.act(() => this.call('admin_set_owner', { p_user: u.id, p_owner: !u.is_owner }), 'Gespeichert');
+          }
+        } }, u.is_owner ? 'Superadmin entfernen' : 'Zum Superadmin') : null,
+        me || locked ? null : el('button', { type: 'button', class: 'btn small danger', onclick: () => {
           if (confirm(`Konto ${u.email} endgültig löschen? Alle eigenen Bausteine, Formulare und Einstellungen dieser Person werden gelöscht. Das kann nicht rückgängig gemacht werden.`)) {
             this.act(() => this.call('admin_delete_user', { p_user: u.id }), 'Konto gelöscht');
           }

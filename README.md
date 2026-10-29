@@ -268,7 +268,7 @@ Für App-Admins gibt es unter *Einstellungen → Administration* eine Verwaltung
 |---|---|
 | Übersicht | Anzahl Benutzer (aktiv, unbestätigt, gesperrt), Teams, Textbausteine, Formulare, Protokollvorlagen, nicht zugewiesene Support-Tickets |
 | Support | Tickets beantworten, zuweisen, Status setzen, interne Notizen; Vorschläge als Idee veröffentlichen; häufige Fragen pflegen (siehe [Support & Feedback](#support--feedback)) |
-| Benutzer | suchen, Passwort-Reset senden, sperren/entsperren, zum App-Admin machen, Konto löschen |
+| Benutzer | suchen, Passwort-Reset senden, sperren/entsperren, zum App-Admin machen, Konto löschen; als Superadmin: App-Admins zum Superadmin machen und die Rolle wieder entfernen |
 | Teams | alle Teams sehen, anlegen, umbenennen, löschen; Mitglieder per E-Mail hinzufügen, entfernen, Rollen ändern; Beitrittscode erneuern |
 | Themes | je Theme: nur App-Admins oder für alle; einzelne Benutzer per E-Mail freischalten und wieder entfernen (siehe [Themes](#themes)) |
 | Einstellungen | Registrierung offen / nur bestimmte E-Mail-Domains / geschlossen; Team für neue Benutzer; Hinweis an alle |
@@ -279,6 +279,11 @@ Hinweise:
 - Gesperrte Benutzer werden sofort abgemeldet und können sich nicht mehr anmelden.
 - Löscht man ein Konto, das einziger Admin eines Teams ist, wird automatisch das am längsten dabei befindliche Mitglied Team-Admin.
 - Sich selbst kann man weder sperren noch löschen noch die Admin-Rechte entziehen. So bleibt immer mindestens ein App-Admin übrig.
+
+**Superadmin:** ein geschützter App-Admin (Abzeichen „Superadmin“). Einmalig einrichten: [`supabase/migrations/20261029210000_superadmin.sql`](supabase/migrations/20261029210000_superadmin.sql) im SQL Editor ausführen. Den ersten Superadmin trägt man danach einmal im SQL Editor ein (die Anleitung steht oben in der Migration), auf dem eigenen Server mit `server/make-admin.sh name@beispiel.at --superadmin`.
+- Niemand kann einem Superadmin die Admin-Rechte entziehen, ihn sperren oder sein Konto löschen, auch kein anderer Superadmin. Die Knöpfe dafür fehlen bei Superadmins, und die Datenbank lehnt es ab.
+- Superadmins ernennen und entfernen kann nur ein Superadmin, und nur unter den App-Admins. Mindestens ein Superadmin bleibt immer.
+- Soll ein Superadmin doch gesperrt oder gelöscht werden, entfernt ein Superadmin zuerst die Superadmin-Rolle.
 
 ### Support & Feedback
 

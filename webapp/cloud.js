@@ -487,6 +487,9 @@ const cloud = {
     support.render();
     const adminCard = $('#adminCard');
     adminCard.hidden = $('#adminHead').hidden = !(this.account && this.info.is_admin);
+    $('#adminRole').textContent = this.info.is_owner
+      ? 'Du bist Superadmin: Benutzer, Teams, Support-Tickets, Themes, Registrierung und den Hinweis an alle verwalten. Niemand kann dir die Rechte entziehen, und du ernennst die Superadmins.'
+      : 'Du bist App-Admin: Benutzer, Teams, Support-Tickets, Themes, Registrierung und den Hinweis an alle verwalten.';
     card.replaceChildren();
     teamsCard.replaceChildren();
     teamsHead.hidden = teamsCard.hidden = !this.account;
