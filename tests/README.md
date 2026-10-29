@@ -29,7 +29,7 @@ Die Zugangsdaten der lokalen Supabase holen sich die Tests automatisch. Weitere 
 | `npm run test:offline` | nur Tests ohne Datenbank (kein Docker nötig) |
 | `npm run db:reset` | Datenbank leeren und alle Migrationen neu einspielen |
 | `npm run db:status` | Adressen und Schlüssel der lokalen Supabase anzeigen. Das Dashboard liegt unter http://127.0.0.1:54323 |
-| `tests/firmware/run.sh` | Test der deutschen Tastaturbelegung der Firmware (braucht gcc) |
+| `tests/firmware/run.sh [Pfad]` | Test der deutschen Tastaturbelegung der Firmware (braucht gcc). Der Pfad zeigt auf einen Klon von `rdprotopilot/firmware`, Standard: `../firmware` neben diesem Repository |
 
 Screenshots und die Test-PDF landen in `tests/test-output/` (nicht im Git).
 

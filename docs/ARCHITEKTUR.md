@@ -11,7 +11,7 @@
 └──────────────┬─────────────────────────┘
                │ Bluetooth LE (Web Bluetooth)
 ┌──────────────▼─────────────────────────┐
-│ Dongle nRF52840 (firmware/, Zephyr)    │ USB-HID  ┌──────────────────┐
+│ Dongle nRF52840 (Repo firmware, Zephyr)│ USB-HID  ┌──────────────────┐
 │  · empfängt Text, tippt als Tastatur   │─────────▶│ Zielgerät (NIDA…) │
 └────────────────────────────────────────┘          └──────────────────┘
 ```
@@ -191,7 +191,7 @@ Service `6e7a0001-4b3c-4f8e-9a1d-5c2b7d0a4e01`:
 | Befehl (write, verschlüsselt) | `6e7a0002-…` | `01` + Daten (max. 19 Byte pro Paket) · `02` Abbrechen · `03 <ms>` Tippverzögerung · `04` alle Kopplungen löschen |
 | Status (read/notify) | `6e7a0003-…` | Flags (USB, Caps Lock, tippt, koppelbar), wartende Bytes, freie Bytes, Verzögerung, Firmware-Version |
 
-Datenstrom: UTF-8-Text, `00 <mod> <key>` = Taste, `00 FF <n>` = Pause n×10 ms. Zeichen ohne Taste auf der deutschen Tastatur lässt die Firmware weg (`keymap_de.c`). Typografische Zeichen wie „–“ oder „„“ werden auf `-` bzw. `"` abgebildet, ® und ™ entfernt schon die App.
+Datenstrom: UTF-8-Text, `00 <mod> <key>` = Taste, `00 FF <n>` = Pause n×10 ms. Zeichen ohne Taste auf der deutschen Tastatur lässt die Firmware weg (`keymap_de.c` im Repository `rdprotopilot/firmware`). Typografische Zeichen wie „–“ oder „„“ werden auf `-` bzw. `"` abgebildet, ® und ™ entfernt schon die App.
 
 **Achtung:** Änderungen am Protokoll erfordern neue Firmware auf **jedem** Dongle. Möglichst nur erweitern (neue Befehlsnummern), nie bestehende ändern.
 

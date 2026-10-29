@@ -42,7 +42,7 @@ Dokumentationshilfe für den Rettungsdienst: Eine Web-App (Handy/iPad) schickt T
 - **Feld-Syntax in Bausteinen** (`{{Name+?:a|b}}`, `@med`, `@dx`): Sie steht so in der Datenbank. Eine Änderung braucht eine Umwandlung bestehender Daten.
 - **Speicherformat in localStorage** (`dokustick.u.<id>.items` usw.): Dort liegen eventuell noch nicht hochgeladene Änderungen der Benutzer. Formatwechsel nur mit Umwandlung in `loadItems()`.
 - **Interne Namen `dokustick`** (Speicherschlüssel `dokustick.*`, `DOKUSTICK_CONFIG`, Sicherungsformat `app: 'dokustick'`, Docker-Projekt `name: dokustick`, systemd-Dienste, `/opt/dokustick`): bleiben trotz des Namens ProtoPilot. Umbenennen würde Anmeldungen, nicht hochgeladene Änderungen oder die Datenbank-Volumes verlieren.
-- **Bluetooth-Protokoll / Firmware** (`firmware/`): Eine Änderung erfordert neue Firmware auf jedem Dongle. Nur erweitern, nichts Bestehendes ändern.
+- **Bluetooth-Protokoll / Firmware** (Repository `rdprotopilot/firmware`): Eine Änderung erfordert neue Firmware auf jedem Dongle. Nur erweitern, nichts Bestehendes ändern.
 - **Medizinische Inhalte** (Vorlagen, Medikamente, Optionen): fachlich prüfen lassen, keine Medikamentenlisten erfinden.
 
 ## Code-Konventionen
@@ -50,4 +50,4 @@ Dokumentationshilfe für den Rettungsdienst: Eine Web-App (Handy/iPad) schickt T
 - Vanilla JavaScript ohne Build-Schritt. Klassische Skripte mit gemeinsamem globalen Bereich, Ladereihenfolge siehe `docs/ARCHITEKTUR.md`.
 - DOM mit `el(...)` bauen, Benutzerinhalte nie als HTML einfügen. Speicherzugriff nur über `store`.
 - Kommentare auf Deutsch ohne Umlaute, Oberflächentexte mit Umlauten.
-- Firmware: Zephyr 3.7, Boards `nrf52840dongle/nrf52840` und `nrf52840_mdk_usb_dongle/nrf52840`. Bauen siehe `README.md`.
+- Firmware: Zephyr 3.7, Boards `nrf52840dongle/nrf52840` und `nrf52840_mdk_usb_dongle/nrf52840`. Quellen in `rdprotopilot/firmware`, bauen siehe `README.md`.

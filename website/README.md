@@ -35,6 +35,6 @@ Die Dateien nur mit einem reinen Texteditor bearbeiten (z. B. Notepad++). Ein We
 
 - **Neue Adresse der Web-App** (nach dem Umzug auf den eigenen Server): nur in `.htaccess` die Zieladresse bei `RedirectMatch` ändern. Alle Knöpfe „Web-App öffnen“ zeigen auf `/app`.
 - **Datenschutz nach dem Server-Umzug:** In `datenschutz.html` den Absatz „Mit Konto“ anpassen (eigener Server statt Supabase, Standort).
-- **Logo, Favicon und Vorschaubild** kommen aus `branding/` und werden mit `node branding/export.mjs` hier neu abgelegt.
-- **Name:** Kommt statt ProtoPilot ein anderer Name, „ProtoPilot“ in allen `.html`-Dateien ersetzen, in `branding/make.py` den Schriftzug ändern und beide Skripte neu laufen lassen.
+- **Logo, Favicon und Vorschaubild** kommen aus dem Repository `rdprotopilot/branding` und werden dort mit `node export.mjs` neu erzeugt und hier abgelegt.
+- **Name:** Kommt statt ProtoPilot ein anderer Name, „ProtoPilot“ in allen `.html`-Dateien ersetzen, im Repository `rdprotopilot/branding` in `make.py` den Schriftzug ändern und beide Skripte neu laufen lassen.
 - **Bildschirmfotos** sind 390 Punkte breite Handy-Aufnahmen der App (doppelte Auflösung, WebP). Neue Fotos im gleichen Format einfach ersetzen.

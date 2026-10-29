@@ -12,38 +12,44 @@ Handy (Web-App)  ──Bluetooth LE──▶  nRF52840 Dongle  ──USB-Tastatu
 
 | Ordner | Inhalt |
 |---|---|
-| `firmware/` | Firmware (Zephyr RTOS) für **Makerdiary nRF52840 MDK USB Dongle** und **Nordic nRF52840 Dongle (PCA10059)** |
-| `firmware/out/` | Fertig kompilierte Firmware zum Aufspielen |
 | `webapp/` | Weboberfläche (als App installierbar, funktioniert offline) |
 | `server/` | Eigener Server statt supabase.co und GitHub Pages: Docker-Aufbau, Backups, Umzug, siehe [`server/README.md`](server/README.md) |
-| `gehaeuse/` | 3D-druckbares Gehäuse für den Nordic-Dongle (STL und OpenSCAD), siehe [`gehaeuse/README.md`](gehaeuse/README.md) |
-| `branding/` | Logo und Icons von ProtoPilot (SVG, PNG, favicon), siehe [`branding/README.md`](branding/README.md) |
 | `website/` | Infoseite für protopilot.at (statisches HTML für das Webhosting), siehe [`website/README.md`](website/README.md) |
 | `supabase/migrations/` | Datenbank-Schema (Konto, Teams, Administration, Medikamente & Krankheiten, Arzneimittellisten, Standard-Bausteine & Protokollvorlagen, Support, Themes) |
 | `tests/` | Automatische Tests, siehe [`tests/README.md`](tests/README.md) |
 | `docs/ARCHITEKTUR.md` | Technischer Aufbau für Entwickler |
 
+In eigenen Repositories:
+
+| Repository | Inhalt |
+|---|---|
+| [`rdprotopilot/firmware`](https://github.com/rdprotopilot/firmware) | Firmware (Zephyr RTOS) für **Makerdiary nRF52840 MDK USB Dongle** und **Nordic nRF52840 Dongle (PCA10059)**. Fertig kompilierte Dateien zum Aufspielen stehen dort unter **Releases**. |
+| [`rdprotopilot/case`](https://github.com/rdprotopilot/case) | 3D-druckbares Gehäuse für den Nordic-Dongle (STL und OpenSCAD) |
+| [`rdprotopilot/branding`](https://github.com/rdprotopilot/branding) | Logo und Icons von ProtoPilot (SVG, PNG, favicon) |
+
 ## 1. Firmware aufspielen
 
 Der Bootloader auf dem Dongle bleibt immer erhalten. Du kannst also jederzeit eine neue Version aufspielen.
+
+Die fertigen Dateien (`.uf2` und `.hex`) gibt es in den [Releases des Firmware-Repositories](https://github.com/rdprotopilot/firmware/releases).
 
 ### Makerdiary nRF52840 MDK USB Dongle (z. B. von GeeekPi)
 
 1. **Taste gedrückt halten** und den Dongle dabei in den PC stecken, dann loslassen.
 2. Erscheint ein USB-Laufwerk (z. B. `MDK-DONGLE` oder ähnlich), hat der Dongle den **UF2-Bootloader**:
    - Öffne darauf die Datei `INFO_UF2.TXT` und sieh nach, was bei **SoftDevice** steht:
-     - `S140 …` → `firmware/out/protopilot-makerdiary-uf2-s140.uf2` auf das Laufwerk ziehen
-     - `not found` oder `S132 …` → `firmware/out/protopilot-makerdiary-uf2-ohne-softdevice.uf2` auf das Laufwerk ziehen. `S132 5.1.0` zeigen Makerdiary-Sticks ab Juli 2023 (Bootloader 0.7.1, `Date: Jul 20 2023`): Das ist die ab Werk aufgespielte Bluetooth-Firmware, sie wird dabei ersetzt. Der Bootloader selbst braucht kein SoftDevice.
+     - `S140 …` → `protopilot-makerdiary-uf2-s140.uf2` auf das Laufwerk ziehen
+     - `not found` oder `S132 …` → `protopilot-makerdiary-uf2-ohne-softdevice.uf2` auf das Laufwerk ziehen. `S132 5.1.0` zeigen Makerdiary-Sticks ab Juli 2023 (Bootloader 0.7.1, `Date: Jul 20 2023`): Das ist die ab Werk aufgespielte Bluetooth-Firmware, sie wird dabei ersetzt. Der Bootloader selbst braucht kein SoftDevice.
    - Während des Aufspielens blinkt die LED schnell rot. Das Laufwerk verschwindet von selbst (sonst den Dongle neu einstecken), die LED leuchtet kurz **rot, grün, blau** und blinkt dann blau.
    - **Nicht mit TeraCopy oder ähnlichen Kopierprogrammen kopieren**, nur mit dem Explorer oder in der Eingabeaufforderung mit `copy /b datei.uf2 E:\`. Steht danach in `INFO_UF2.TXT` noch dieselbe SoftDevice-Zeile, ist die Datei nicht angekommen.
-3. Erscheint **kein** Laufwerk, hat der Dongle den älteren **Nordic Open Bootloader**. Dann gehst du wie beim Nordic-Dongle vor (siehe unten), mit der Datei `firmware/out/protopilot-makerdiary-open-bootloader.hex`.
+3. Erscheint **kein** Laufwerk, hat der Dongle den älteren **Nordic Open Bootloader**. Dann gehst du wie beim Nordic-Dongle vor (siehe unten), mit der Datei `protopilot-makerdiary-open-bootloader.hex`.
 
 ### Nordic nRF52840 Dongle (PCA10059)
 
 1. **nRF Connect for Desktop** installieren und darin die App **Programmer** installieren.
 2. Den Dongle in den PC stecken und die kleine, seitlich angebrachte **RESET-Taste** drücken. Die rote LED pulsiert.
 3. Im Programmer das Gerät **„Open DFU Bootloader“** auswählen.
-4. **Add file** → `firmware/out/protopilot-nordic-pca10059.hex` → **Write**.
+4. **Add file** → `protopilot-nordic-pca10059.hex` → **Write**.
 
 ## 2. Weboberfläche bereitstellen
 
@@ -338,6 +344,8 @@ Medikamente, die wir selbst geben dürfen, nach der *Arzneimittelliste I + II NE
 
 ## 5. Gehäuse (3D-Druck)
 
+Ein fertiges Gehäuse für den Nordic-Dongle (STL und OpenSCAD) liegt im Repository [`rdprotopilot/case`](https://github.com/rdprotopilot/case).
+
 Beim Konstruieren beachten:
 - Der Makerdiary-Dongle wird bereits mit Gehäuse geliefert.
 - Beim Nordic-Dongle:
@@ -371,13 +379,15 @@ Beim Konstruieren beachten:
 
 ## Firmware selbst bauen
 
+Die Quellen liegen in [`rdprotopilot/firmware`](https://github.com/rdprotopilot/firmware).
+
 ```sh
 pip install west
 west init -m https://github.com/zephyrproject-rtos/zephyr --mr v3.7.0 zephyrproject
 cd zephyrproject && west update && pip install -r zephyr/scripts/requirements-base.txt
 # Zephyr SDK 0.16.8 (ARM-Toolchain) installieren, dann:
-west build -b nrf52840dongle/nrf52840 /pfad/zu/dokustick/firmware             # Nordic
-west build -b nrf52840_mdk_usb_dongle/nrf52840 /pfad/zu/dokustick/firmware \
+west build -b nrf52840dongle/nrf52840 /pfad/zu/firmware             # Nordic
+west build -b nrf52840_mdk_usb_dongle/nrf52840 /pfad/zu/firmware \
   -- -DCONFIG_BUILD_OUTPUT_UF2=y                                              # Makerdiary
 # UF2-Bootloader mit SoftDevice S140 zusätzlich: -DCONFIG_FLASH_LOAD_OFFSET=0x26000
 ```
