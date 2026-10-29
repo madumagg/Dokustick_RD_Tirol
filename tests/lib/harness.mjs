@@ -86,6 +86,8 @@ export async function cloudAvailable() {
 
 // Test-Admin anlegen (falls noetig) und zum App-Admin machen
 export async function ensureAdmin() {
+  // Ein abgebrochener Testlauf kann die Registrierung geschlossen lassen: Ausgangszustand herstellen
+  await serviceClient().from('app_settings').update({ signup_mode: 'open', allowed_domains: [], announcement: '', default_team: null }).eq('id', true);
   const c = anonClient();
   let r = await c.auth.signInWithPassword({ email: config.adminEmail, password: config.password });
   if (r.error) r = await c.auth.signUp({ email: config.adminEmail, password: config.password });
@@ -176,12 +178,19 @@ export async function newDevice(t, { name = 'Gerät', cloud = false, ble = false
   return page;
 }
 
+// Einstellungen oeffnen; ohne Konto steht das Anmeldeformular stattdessen auf der Anmeldeseite (#gate)
+export async function openSettings(page) {
+  if (!(await page.isVisible('#gate'))) await page.click('nav button[data-tab=settings]');
+}
+
 export async function login(page, email, { signup = false } = {}) {
-  await page.click('nav button[data-tab=settings]');
+  await openSettings(page);
   await page.fill('#accountCard input[type=email]', email);
   await page.fill('#accountCard input[type=password]', config.password);
   await page.click(`#accountCard >> text=${signup ? 'Registrieren' : 'Anmelden'}`);
   await page.waitForFunction(() => cloud.account && cloud.lastSync && !cloud.syncing, null, { timeout: 15000 });
+  // Wie frueher: nach der Anmeldung in den Einstellungen
+  await openSettings(page);
 }
 
 export const waitSynced = (page) => page.waitForFunction(() => cloud.account && !cloud.syncing && !cloud.pending() && cloud.lastSync, null, { timeout: 15000 });

@@ -1,4 +1,4 @@
-import { newDevice, login as loginAs, uniq } from '../lib/harness.mjs';
+import { newDevice, login as loginAs, uniq, openSettings } from '../lib/harness.mjs';
 
 export const needsCloud = true;
 export const title = 'Administration: Benutzer, Teams, Registrierung, Hinweis an alle';
@@ -7,10 +7,10 @@ export default async function (t) {
   const ok = (c, m) => t.ok(c, m);
   async function device(name) {
     const page = await newDevice(t, { name, cloud: true, dialog: (d) => (d.type() === 'prompt' ? d.accept('Rettungswache Tirol') : /übernommen/.test(d.message()) ? d.dismiss() : d.accept()) });
-    await page.click('nav button[data-tab=settings]');
+    await openSettings(page);
     return page;
   }
-  const login = async (p, email) => { await loginAs(p, email); await p.click('nav button[data-tab=settings]'); };
+  const login = async (p, email) => { await loginAs(p, email); await openSettings(p); };
   const s = uniq();
   // normaler Benutzer sieht keine Administration
   const U = await device('U');
@@ -58,22 +58,24 @@ export default async function (t) {
   await A.screenshot({ path: t.out + '/33-admin-einstellungen.png', fullPage: true });
 
   const N = await device('N');
-  await N.waitForSelector('#accountCard >> text=Neue Registrierungen sind derzeit geschlossen');
-  await N.waitForSelector('#announce >> text=Testhinweis');
-  ok(true, 'Abgemeldet: Hinweis an alle + "Registrierung geschlossen" sichtbar');
+  await N.waitForSelector('#gate #accountCard >> text=Neue Registrierungen sind derzeit geschlossen');
+  ok(!(await N.textContent('body')).includes('Testhinweis') && await N.evaluate(() => cloud.info.announcement === ''), 'Abgemeldet: Anmeldeseite mit „Registrierung geschlossen“, kein Hinweis an alle');
   await N.fill('#accountCard input[type=email]', `neu-${s}@test.at`);
   await N.fill('#accountCard input[type=password]', 'geheim123');
   await N.click('#accountCard >> text=Registrieren');
   await N.waitForSelector('#toast.err');
   ok((await N.textContent('#toast')).includes('geschlossen'), 'Registrierung blockiert: ' + await N.textContent('#toast'));
-  await N.click('#announce button');
-  ok(await N.isHidden('#announce .note'), 'Hinweis lässt sich ausblenden');
+  // Angemeldet erscheint der Hinweis an alle
+  await A.evaluate(() => { localStorage.removeItem('dokustick.announceSeen'); return cloud.loadInfo(); });
+  await A.waitForSelector('#announce >> text=Testhinweis');
+  ok(true, 'Angemeldet: Hinweis an alle sichtbar');
+  await A.click('#announce button');
+  ok(await A.isHidden('#announce .note'), 'Hinweis lässt sich ausblenden');
 
   // zuruecksetzen
   await A.check('#adminBody input[value=open]');
   await A.fill('#adminBody textarea >> nth=1', '');
   await A.click('#adminBody button:has-text("Speichern")');
   await A.waitForFunction(() => cloud.info.signup_mode === 'open' && !cloud.info.announcement, null, { timeout: 10000 });
-  ok(true, 'Einstellungen zurückgesetzt');
   ok(true, 'Einstellungen zurückgesetzt');
 }

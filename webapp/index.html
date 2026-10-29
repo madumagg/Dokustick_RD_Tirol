@@ -265,6 +265,25 @@ input[type=email], input[type=password] { width: 100%; border: 1px solid var(--b
 @media (min-width: 640px) { #adminTabs { grid-template-columns: repeat(6, 1fr); } }
 #adminTabs .badge { margin-left: 4px; }
 .mod .prev .badge { margin-left: 0; vertical-align: 0; }
+/* Anmeldeseite und Vorschau (gate.js) */
+body.gated > header, body.gated > main, body.gated > nav { display: none !important; }
+#gate { max-width: 480px; margin: 0 auto; padding: 36px 16px 48px; }
+.gate-brand { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 28px; font-weight: 700; letter-spacing: -.01em; }
+.gate-brand svg { width: 46px; height: 46px; }
+.gate-lead { text-align: center; color: var(--muted); margin: 10px 0 22px; }
+.gate-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 16px 0 6px; }
+.gate-actions .btn { text-decoration: none; }
+.gate-hint { text-align: center; margin: 0 0 22px; }
+#gateNews h3 { margin: 0 0 4px; font-size: 15px; }
+#gateNews ul { margin: 0 0 12px; padding-left: 20px; }
+.gate-foot { text-align: center; font-size: 13px; color: var(--muted); margin-top: 22px; }
+.gate-foot a { color: inherit; }
+#previewSettings { display: none; }
+body.previewing #previewSettings { display: block; }
+body.previewing #tab-settings > :not(#previewSettings) { display: none; }
+.preview-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.preview-points { padding-left: 20px; }
+.preview-points li { margin-bottom: 6px; }
 .mod .prev.full { display: block; -webkit-line-clamp: unset; overflow: visible; }
 .db-group { margin: 12px 0 0; font-size: 15px; }
 .chip.hint:not(.sel) { border-color: var(--accent); color: var(--accent); }
@@ -330,9 +349,32 @@ textarea.internal-input { background: var(--warn-soft); }
 #toast.show { opacity: 1; }
 #toast.err { background: var(--danger); color: #fff; }
 </style>
-<link rel="stylesheet" href="themes.css?v=0.44">
+<link rel="stylesheet" href="themes.css?v=0.45">
 </head>
 <body>
+
+<!-- Anmeldeseite: ohne Konto ist die App nur als Vorschau sichtbar (gate.js) -->
+<section id="gate" hidden>
+  <div class="gate-brand">
+    <svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#0b6f6a"/><g transform="translate(256 256) scale(1.2) translate(-254.6 -265.4)"><path d="M374.5 125.7 115 217 231.3 268.9z" fill="#fff"/><path d="M394.3 145.5 303 405 251.1 288.7z" fill="#bfe3df"/></g></svg>
+    <span class="brand-name">Proto<span>Pilot</span></span>
+  </div>
+  <p class="gate-lead">Dokumentationshilfe für den Rettungsdienst: Bausteine antippen, Felder ausfüllen und das Protokoll vom ProtoPilot-Stick am PC eintippen lassen.</p>
+  <h2>Anmelden oder registrieren</h2>
+  <div id="gateLogin"></div>
+  <div class="gate-actions">
+    <button type="button" class="btn" id="previewBtn">Vorschau ansehen</button>
+    <a class="btn" href="https://protopilot.at" target="_blank" rel="noopener">Mehr auf protopilot.at</a>
+  </div>
+  <p class="help gate-hint">Die Vorschau zeigt die App mit Beispiel-Bausteinen. Du kannst alles ausprobieren, gesendet und gespeichert wird nichts.</p>
+  <h2>Was ist neu</h2>
+  <div class="card pad" id="gateNews"></div>
+  <p class="gate-foot">
+    <a href="https://protopilot.at/impressum.html" target="_blank" rel="noopener">Impressum</a> ·
+    <a href="https://protopilot.at/datenschutz.html" target="_blank" rel="noopener">Datenschutz</a> ·
+    Version <span id="gateVer"></span>
+  </p>
+</section>
 
 <header>
   <div class="bar">
@@ -349,6 +391,7 @@ textarea.internal-input { background: var(--warn-soft); }
 </header>
 
 <main>
+  <div id="previewBar"></div>
   <div id="announce"></div>
   <div id="newsNote"></div>
   <!-- Schreiben: Protokoll aus Text- und Baustein-Bloecken -->
@@ -409,7 +452,11 @@ textarea.internal-input { background: var(--warn-soft); }
 
   <!-- Einstellungen -->
   <section id="tab-settings" hidden>
-    <h2>Konto</h2>
+    <div class="note" id="previewSettings">
+      <p style="margin-top:0">In der Vorschau sind die Einstellungen gesperrt. Nach der Anmeldung stellst du hier Konto, Teams, Tippen, Diktat und Aussehen ein.</p>
+      <button type="button" class="btn primary" id="previewSettingsLogin">Zur Anmeldung</button>
+    </div>
+    <h2 id="accountHead">Konto</h2>
     <div class="card pad" id="accountCard"></div>
     <h2 id="teamsHead" hidden>Teams</h2>
     <div class="card pad" id="teamsCard" hidden></div>
@@ -478,7 +525,7 @@ textarea.internal-input { background: var(--warn-soft); }
 
     <h2>Daten</h2>
     <div class="card pad">
-      <p class="help" style="margin-top:0">Ohne Konto werden Textbausteine, Formulare und Einstellungen nur auf diesem Gerät gespeichert, mit Konto zusätzlich in der Cloud. Ausgefüllte Formulare und der Editor-Text werden nie gespeichert oder hochgeladen.</p>
+      <p class="help" style="margin-top:0">Textbausteine, Formulare und Einstellungen liegen auf diesem Gerät und in deinem Konto in der Cloud. Ausgefüllte Formulare und der Editor-Text werden nie gespeichert oder hochgeladen.</p>
       <div class="row">
         <button class="btn" id="exportBtn">Exportieren</button>
         <button class="btn" id="importBtn">Importieren</button>
@@ -533,18 +580,19 @@ textarea.internal-input { background: var(--warn-soft); }
 <dialog id="dlg2"><form method="dialog" id="dlg2Form"></form></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=0.44"></script>
-<script src="vendor/supabase.js?v=0.44"></script>
-<script src="app.js?v=0.44"></script>
-<script src="compose.js?v=0.44"></script>
-<script src="protocols.js?v=0.44"></script>
-<script src="spell.js?v=0.44"></script>
-<script src="catalog.js?v=0.44"></script>
-<script src="cloud.js?v=0.44"></script>
-<script src="support.js?v=0.44"></script>
-<script src="themes.js?v=0.44"></script>
-<script src="admin.js?v=0.44"></script>
-<script src="virtual.js?v=0.44"></script>
+<script src="config.js?v=0.45"></script>
+<script src="vendor/supabase.js?v=0.45"></script>
+<script src="app.js?v=0.45"></script>
+<script src="compose.js?v=0.45"></script>
+<script src="protocols.js?v=0.45"></script>
+<script src="spell.js?v=0.45"></script>
+<script src="catalog.js?v=0.45"></script>
+<script src="cloud.js?v=0.45"></script>
+<script src="support.js?v=0.45"></script>
+<script src="themes.js?v=0.45"></script>
+<script src="admin.js?v=0.45"></script>
+<script src="virtual.js?v=0.45"></script>
+<script src="gate.js?v=0.45"></script>
 <script>boot(); $('#adminOpen').addEventListener('click', () => admin.open());</script>
 </body>
 </html>

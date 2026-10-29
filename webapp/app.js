@@ -3,7 +3,7 @@
 /* ================= Konstanten ================= */
 
 // Wird mit tools/version.sh zusammen mit sw.js und index.html erhoeht
-const APP_VERSION = '0.44';
+const APP_VERSION = '0.45';
 
 const SVC_UUID = '6e7a0001-4b3c-4f8e-9a1d-5c2b7d0a4e01';
 const CMD_UUID = '6e7a0002-4b3c-4f8e-9a1d-5c2b7d0a4e01';
@@ -87,6 +87,8 @@ const store = {
     try { const v = localStorage.getItem('dokustick.' + key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
   },
   save(key, value) {
+    // Vorschau (gate.js): Einstellungen nur im Speicher aendern, nichts auf dem Geraet ablegen
+    if (key === 'settings' && typeof preview !== 'undefined' && preview.active) return;
     try { localStorage.setItem('dokustick.' + key, JSON.stringify(value)); } catch { /* privater Modus */ }
   },
   remove(key) {
@@ -118,11 +120,14 @@ function defaultItems() {
   ];
 }
 
-const itemsKey = () => (cloud.account ? `u.${cloud.account.id}.items` : 'local.items');
+// Vorschau (gate.js): eigener Speicher, damit lokale Daten unberuehrt bleiben
+const itemsKey = () => (cloud.account ? `u.${cloud.account.id}.items` : preview.active ? 'preview.items' : 'local.items');
 
 function loadItems() {
   let list = store.load(itemsKey(), null);
-  if (!list && !cloud.account) {
+  if (!list && preview.active && !cloud.account) {
+    list = defaultItems();
+  } else if (!list && !cloud.account) {
     // Daten aus der ersten Version uebernehmen
     const oldM = store.load('modules', null), oldF = store.load('forms', null);
     if (oldM || oldF) {
@@ -324,6 +329,7 @@ async function writeCmd(bytes) {
 
 function send(text) {
   if (!text.trim()) { toast('Kein Text vorhanden'); return false; }
+  if (preview.active && !cloud.account) { preview.sent(text); return false; }
   if (!ble.connected) { toast('Nicht mit dem Dongle verbunden', 'err'); return false; }
   const bad = unsupportedChars(text);
   if (bad.length && !confirm(`Diese Zeichen gibt es auf der deutschen Tastatur nicht und werden ausgelassen:\n\n${bad.join('  ')}\n\nTrotzdem senden?`)) return false;
@@ -386,6 +392,12 @@ function renderStatus() {
   $('#fwVer').textContent = s ? (virtual ? 'virtuell' : 'Version ' + s.version) : '–';
   if (typeof renderVirtual === 'function') renderVirtual();
 
+  // Vorschau: keine Verbindung, "Verbinden" erklaert das nur
+  if (preview.active && !cloud.account) {
+    txt.textContent = 'Vorschau';
+    btn.disabled = false;
+    return;
+  }
   if (!navigator.bluetooth && !virtual) {
     if (IS_IOS) {
       // Safari auf iPhone/iPad kann kein Web Bluetooth -> Weg ueber die App Bluefy zeigen
@@ -415,7 +427,7 @@ function renderStatus() {
 }
 
 // connectMenu (virtual.js) bietet App-Admins zusaetzlich den virtuellen Dongle an
-$('#connBtn').addEventListener('click', () => (ble.connected ? disconnect() : connectMenu()));
+$('#connBtn').addEventListener('click', () => (preview.active && !cloud.account ? preview.noConnect() : ble.connected ? disconnect() : connectMenu()));
 
 /* ================= Diktat ================= */
 

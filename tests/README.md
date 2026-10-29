@@ -62,6 +62,7 @@ In jeder Testreihe gelten als Fehler: JavaScript-Ausnahmen im Browser und Text �
 | `50-virtual` | Virtueller Dongle, PDF, Einsatz beenden *(Datenbank)* |
 | `60-sync` | Konto, Synchronisation, Teams, Offline-Änderungen *(Datenbank)* |
 | `62-sitzung` | Abgelaufene Anmeldung (z. B. nach Serverwechsel): nicht hochgeladene Änderungen bleiben, Hinweis mit vorausgefüllter E-Mail, nach erneuter Anmeldung hochgeladen *(Datenbank)* |
+| `63-anmeldeseite` | Anmeldeseite ohne Konto (App ausgeblendet, Website-Link, Was ist neu, kein Hinweis an alle), Vorschau (Überblick, Beispiel-Protokoll, Senden zeigt nur Text, nichts gespeichert, lokale Daten unberührt), nach Anmeldung App und Hinweis, ohne Server weiter angemeldet *(Datenbank)* |
 | `70-admin-ui` | Administration in der App *(Datenbank)* |
 | `75-standard` | Standard-Bausteine: App-Admin pflegt, alle nutzen und kopieren *(Datenbank)* |
 | `76-protokolle` | Protokollvorlagen: anlegen, mit 📋 einfügen, Reihenfolge, Import; mit Datenbank zusätzlich Standard-Vorlagen |

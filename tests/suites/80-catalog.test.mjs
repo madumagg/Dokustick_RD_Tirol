@@ -14,8 +14,7 @@ export default async function (t) {
   const med1 = `Thrombo ASS ${s}`, med2 = `Concor ${s}`, dx1 = `Koronare Herzkrankheit ${s}`;
   // --- Nicht angemeldet
   const N = await device('N');
-  await N.click('nav button[data-tab=db]');
-  ok(await N.isVisible('#dbBody >> text=nach der Anmeldung'), 'Nicht angemeldet: Hinweis auf Anmeldung');
+  ok(await N.isVisible('#gate') && await N.isHidden('#tab-db'), 'Nicht angemeldet: nur die Anmeldeseite, keine Datenbank');
 
   // --- Benutzer U schlaegt vor
   const U = await device('U');

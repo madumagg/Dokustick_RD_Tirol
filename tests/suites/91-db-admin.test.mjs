@@ -48,6 +48,8 @@ export default async function (t) {
   ok(r.data?.some((m) => m.email === `neu-${s}@test.at` && m.role === 'member'), 'Neuer Benutzer automatisch im Standard-Team');
   r = await U.rpc('app_info');
   ok(r.data?.announcement === 'Bitte keine Patientendaten in Bausteine!', 'Hinweis an alle lesbar');
+  r = await client().rpc('app_info');
+  ok(r.data?.announcement === '' && r.data?.signup_mode === 'open', 'Ohne Anmeldung: kein Hinweis an alle, Registrierungsregeln lesbar');
 
   // Mitglieder verwalten
   r = await admin.rpc('admin_add_member', { p_team: team, p_email: `USER-${s}@test.at`, p_role: 'admin' });

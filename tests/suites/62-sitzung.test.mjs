@@ -1,4 +1,4 @@
-import { newDevice, login, waitSynced, serviceClient, uniq, config } from '../lib/harness.mjs';
+import { newDevice, login, waitSynced, serviceClient, uniq, config, openSettings } from '../lib/harness.mjs';
 
 export const needsCloud = true;
 export const title = 'Abgelaufene Anmeldung (z. B. nach Serverwechsel): nichts geht verloren';
@@ -26,7 +26,7 @@ export default async function (t) {
   });
   await A.reload();
   await A.waitForFunction(() => !cloud.account, null, { timeout: 15000 });
-  await A.click('nav button[data-tab=settings]');
+  await openSettings(A);
   const note = await A.textContent('#accountCard .note.warn');
   ok(note.includes(`wieder mit ${email} an`) && note.includes('1 Änderung(en) auf diesem Gerät werden danach hochgeladen'), 'Hinweis: abgelaufen, 1 Änderung wartet');
   ok(await A.inputValue('#accountCard input[type=email]') === email, 'E-Mail-Adresse vorausgefüllt');
@@ -42,6 +42,7 @@ export default async function (t) {
   ok(await A.evaluate(() => !localStorage.getItem('dokustick.lostSession')) && await A.locator('#accountCard .note.warn').count() === 0, 'Hinweis verschwindet');
 
   // Abmelden mit dem Knopf loescht die Kontodaten wie bisher
+  await openSettings(A);
   await A.click('#accountCard >> text=Abmelden');
   await A.waitForFunction(() => !cloud.account);
   await A.waitForTimeout(300);

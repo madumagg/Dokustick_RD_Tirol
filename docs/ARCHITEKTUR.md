@@ -34,6 +34,7 @@ Reines HTML/CSS/JavaScript **ohne Build-Schritt**. Die Skripte sind klassische `
 | `themes.js` | Themes: Liste `THEMES`, Freigabe prüfen, `data-skin` am `<html>` setzen, Auswahl in den Einstellungen. Aussehen in `themes.css` |
 | `admin.js` | Administration (nur App-Admins), darin die Reiter „Support“ und „Themes“ |
 | `virtual.js` | Virtueller Dongle mit PDF-Ausgabe (nur App-Admins); `vendor/jspdf.umd.min.js` wird erst bei Bedarf geladen |
+| `gate.js` | Anmeldeseite (`gate`) und Vorschau (`preview`), siehe unten |
 | `sw.js` | Service Worker: Offline-Speicher |
 
 Eine Datei darf Funktionen einer **später** geladenen Datei nur zur Laufzeit aufrufen (in Funktionen oder Event-Handlern), nicht beim Laden. `boot()` läuft erst, wenn alle Skripte geladen sind.
@@ -54,7 +55,8 @@ Eine Datei darf Funktionen einer **später** geladenen Datei nur zur Laufzeit au
 | Schlüssel | Inhalt |
 |---|---|
 | `settings` | Einstellungen: `{ delay, lang, voiceCmds, replacements, blankLine, theme, skin, defaultProtocol, spellcheck, dictionary }`. `theme` (hell/dunkel) und `skin` (Theme) gelten nur auf diesem Gerät und werden nicht synchronisiert. |
-| `local.items` | Bausteine ohne Konto |
+| `local.items` | Bausteine ohne Konto (aus der Zeit vor der Anmeldeseite, bzw. ohne Supabase in `config.js`) |
+| `preview.items` | Beispiel-Bausteine der Vorschau, beim Beenden gelöscht |
 | `account` | angemeldetes Konto `{ id, email }` |
 | `u.<userId>.items` | Bausteine des Kontos (lokale Kopie, inklusive noch nicht hochgeladener Änderungen!) |
 | `u.<userId>.teams` | Teams des Kontos `[{ id, name, role }]` |
@@ -68,7 +70,14 @@ Eine Datei darf Funktionen einer **später** geladenen Datei nur zur Laufzeit au
 | `supportFaq` | häufige Fragen für offline |
 | `auth` | Supabase-Sitzung (von supabase-js verwaltet) |
 
-In `sessionStorage` liegen `dokustick.doc` (das Protokoll, bleibt beim Neuladen erhalten und wird beim Schließen des Tabs verworfen) und `dokustick.tab` (zuletzt offener Reiter).
+In `sessionStorage` liegen `dokustick.doc` (das Protokoll, bleibt beim Neuladen erhalten und wird beim Schließen des Tabs verworfen), `dokustick.tab` (zuletzt offener Reiter) und `dokustick.preview` (`'1'` in der Vorschau).
+
+### Anmeldeseite und Vorschau (`gate.js`)
+
+- **Anmeldeseite:** `gate.needed()` = `cloud.configured` (Supabase in `config.js`, schon vor `cloud.start()`) und kein `cloud.account` und keine Vorschau. `gate.update()` läuft in jedem `cloud.render()`: setzt `body.gated` (blendet Kopf, Inhalt und Navigation per CSS aus) und **verschiebt `#accountCard`** auf die Anmeldeseite (`#gateLogin`) und zurück hinter `#accountHead`. So gibt es das Anmeldeformular nur einmal (`cloud.render()`), auch die Tests nutzen weiter `#accountCard`.
+- **Offline:** Das Konto steht in `store('account')`. Fehlt das Netz, bleibt man angemeldet. Die Anmeldeseite erscheint nur ohne Konto: noch nie angemeldet, selbst abgemeldet oder Anmeldung ungültig (`sessionLost`, dann mit vorausgefüllter E-Mail).
+- **Vorschau:** `preview.active` (Sitzung). `itemsKey()` nimmt dann `preview.items`, `loadItems()` füllt sie mit `defaultItems()`. `store.save('settings')` schreibt in der Vorschau nicht, `preview.stop()` lädt die Einstellungen neu. `send()` zeigt nur den Text (`preview.sent`), „Verbinden“ erklärt die Vorschau (`preview.noConnect`), `body.previewing` sperrt die Einstellungen (`#previewSettings`). Ohne Konto gibt es keine Synchronisation, Datenbank und Support.
+- **Hinweis an alle** nur angemeldet: `cloud.renderAnnouncement()` und `app_info()` (liefert ohne Anmeldung `''`).
 
 ### Baustein (Eintrag in `items`)
 
@@ -147,6 +156,7 @@ Schema als Migrationen in `supabase/migrations/` (Reihenfolge = Dateiname):
 | `…_arzneimittellisten_korrektur.sql` | Startdaten nach fachlicher Prüfung: Stesolid Rektiole 5 mg / 10 mg, Amiodaron 300 mg / 150 mg i.v.; die alten Sammel-Einträge werden nur gelöscht, wenn sie unverändert sind |
 | `…_arzneimittelliste_penthrox.sql` | Penthrox Inhaler (Methoxyfluran) in Liste 2 bei „Starke Schmerzen“, Anwendungsregel in `dose`; Dosierung und Kontraindikationen fehlen noch (in der App ergänzen) |
 | `…_superadmin.sql` | `app_admins.owner` (Superadmin), `is_owner()`, `require_not_owner()`, `admin_set_owner()`; Schutz in `admin_set_superadmin`, `admin_set_banned`, `admin_delete_user`; `admin_users()` und `app_info()` mit `is_owner` |
+| `…_hinweis_nur_angemeldet.sql` | `app_info().announcement` nur für Angemeldete (ohne Anmeldung `''`) |
 
 Alle Tabellen haben **Row Level Security**. Kurzfassung:
 - **Eigene Einträge:** sieht und ändert nur der Besitzer.

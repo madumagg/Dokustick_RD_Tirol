@@ -1,5 +1,5 @@
 // Themes: nur App-Admins und freigeschaltete Benutzer, Freigabe in der Administration
-import { newDevice, login, anonClient, uniq } from '../lib/harness.mjs';
+import { newDevice, login, anonClient, uniq, openSettings } from '../lib/harness.mjs';
 
 export const needsCloud = true;
 export const title = 'Themes: Liquid Glass für Admins, Freischaltung einzelner Benutzer, Freigabe für alle';
@@ -12,7 +12,7 @@ export default async function (t) {
   await adminApi.rpc('admin_theme_release', { p_theme: 'glass', p_release: 'admins' });
 
   const skin = (p) => p.evaluate(() => document.documentElement.dataset.skin || '');
-  const settingsTab = (p) => p.click('nav button[data-tab=settings]');
+  const settingsTab = (p) => openSettings(p);
 
   // Normaler Benutzer: keine Auswahl, auch ein gespeichertes Theme greift nicht
   const U = await newDevice(t, { name: 'Benutzer', cloud: true });
@@ -77,13 +77,15 @@ export default async function (t) {
   await U.waitForSelector('#skinField', { state: 'hidden' });
   ok(await skin(U) === '', 'Freischaltung entfernt: wieder Standard');
 
-  // Für alle freigeben: auch ohne Konto sichtbar
+  // Für alle freigeben: jeder angemeldete Benutzer kann es wählen (ohne Konto gibt es nur die Anmeldeseite)
   await A.locator('#adminBody .theme-card select').selectOption('all');
   await A.waitForSelector('#adminBody .theme-card .badge.ok');
+  await U.evaluate(() => cloud.loadInfo());
+  await U.waitForSelector('#skinField:not([hidden])');
+  ok(true, 'Für alle freigegeben: auch ohne Freischaltung auswählbar');
   const N = await newDevice(t, { name: 'Ohne Konto', cloud: true });
   await N.waitForFunction(() => (cloud.info.themes || []).includes('glass'), null, { timeout: 10000 });
-  await settingsTab(N);
-  ok(await N.isVisible('#skinField'), 'Für alle freigegeben: auch ohne Konto auswählbar');
+  ok(await N.isVisible('#gate'), 'Ohne Konto: Freigabe bekannt, sichtbar ist nur die Anmeldeseite');
 
   await adminApi.rpc('admin_theme_release', { p_theme: 'glass', p_release: 'admins' });
 }

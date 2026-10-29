@@ -1,4 +1,4 @@
-import { newDevice, waitSynced, serviceClient, userId, uniq } from '../lib/harness.mjs';
+import { newDevice, waitSynced, serviceClient, userId, uniq, openSettings } from '../lib/harness.mjs';
 
 export const needsCloud = true;
 export const title = 'Konto, Synchronisation, Teams, Offline';
@@ -11,12 +11,15 @@ export default async function (t) {
     const page = await newDevice(t, { name, cloud: true, dialog: (d) => (declineImport && /übernommen/.test(d.message()) ? d.dismiss() : d.accept(d.type() === 'prompt' ? d.defaultValue() : undefined)) });
     return { ctx: page.ctx, page };
   }
-  const settingsTab = (p) => p.click('nav button[data-tab=settings]');
+  const settingsTab = (p) => openSettings(p);
   async function register(p, email) {
     await settingsTab(p);
     await p.fill('#accountCard input[type=email]', email);
     await p.fill('#accountCard input[type=password]', t.config.password);
     await p.click('#accountCard >> text=Registrieren');
+    // Nach der Anmeldung verschwindet die Anmeldeseite, das Konto steht in den Einstellungen
+    await p.waitForFunction(() => cloud.account);
+    await settingsTab(p);
     await p.waitForSelector('#accountCard >> text=Angemeldet als');
     await waitSynced(p);
   }
@@ -123,9 +126,10 @@ export default async function (t) {
   const a2 = await A2.page.evaluate(() => ({ n: listItems().filter((i) => !cloud.isStandard(i.team_id)).length, delay: settings.delay, teams: cloud.teams.length }));
   ok(a2.n === 19 && a2.delay === 17 && a2.teams === 1, `A2: ${a2.n} Eintraege, Verzoegerung ${a2.delay}, ${a2.teams} Team (ohne Import-Frage)`);
 
-  // --- Abmelden
+  // --- Abmelden: danach wieder die Anmeldeseite
+  await settingsTab(A2.page);
   await A2.page.click('#accountCard >> text=Abmelden');
-  await A2.page.waitForSelector('#accountCard >> text=Registrieren');
+  await A2.page.waitForSelector('#gate #accountCard >> text=Registrieren');
   const after = await A2.page.evaluate(() => ({ acc: cloud.account, keys: Object.keys(localStorage).filter((k) => k.startsWith('dokustick.u.')).length, n: items.length }));
   ok(!after.acc && after.keys === 0 && after.n === 18, `A2 abgemeldet: Kontodaten entfernt, lokale Standarddaten (${after.n})`);
 
@@ -134,6 +138,6 @@ export default async function (t) {
   await waitSynced(A.page);
   ok(await A.page.evaluate(() => cloud.account && cloud.account.email) === emailA, 'A: nach Neuladen weiterhin angemeldet');
 
-  await B.page.click('nav button[data-tab=settings]');
+  await openSettings(B.page);
   await B.page.screenshot({ path: t.out + '/13-mitglied.png', fullPage: false });
 }

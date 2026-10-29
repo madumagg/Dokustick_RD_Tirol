@@ -79,6 +79,14 @@ Safari kann auf iPhone und iPad kein Bluetooth für Webseiten. Deshalb läuft Pr
 
 ## 3. Erste Schritte
 
+**Anmeldeseite:** Die App startet mit einer Anmeldeseite. Dort meldest du dich an oder registrierst dich, findest den Link zu protopilot.at, „Was ist neu“, Impressum und Datenschutz. Die App selbst siehst du nur angemeldet. Ohne Netz bleibst du angemeldet, die App funktioniert also auch im Einsatz ohne Internet.
+
+**Vorschau:** Mit **Vorschau ansehen** lässt sich die App ohne Konto ausprobieren:
+- Ein kurzer Überblick erklärt die Reiter, im Schreiben-Fenster liegt ein Beispiel-Protokoll (A und B).
+- Bausteine, Felder, Vorlagen und eigene Bausteine funktionieren wie gewohnt, mit Beispiel-Bausteinen.
+- **Gesendet wird nichts:** „Senden“ zeigt nur, was getippt würde. Verbinden mit dem Stick geht nicht.
+- **Gespeichert wird nichts:** Die Einstellungen sind gesperrt, und mit „Anmelden“ in der Leiste oben verschwinden alle Beispieldaten wieder.
+
 1. Den Dongle am Zielgerät einstecken. Die LED blinkt blau, der Dongle ist koppelbereit.
 2. In der App auf **Verbinden** tippen, „ProtoPilot“ auswählen (Sticks mit Firmware 3 oder älter: „DokuStick“) und die Kopplungsanfrage bestätigen.
 3. Am Zielgerät in das gewünschte Textfeld klicken.
@@ -216,9 +224,11 @@ Themes legen ein anderes Aussehen über die ganze App. Das erste ist **Liquid Gl
 
 Einmalig einrichten: Im Supabase **SQL Editor** den Inhalt von [`supabase/migrations/20261028120000_themes.sql`](supabase/migrations/20261028120000_themes.sql) ausführen. Fehlt die Migration, können nur App-Admins Themes verwenden, und der Reiter „Themes“ in der Administration meldet einen Fehler.
 
-## 4. Konto & Teams (optional)
+## 4. Konto & Teams
 
-Mit einem Konto werden Textbausteine, Formulare und Einstellungen in der Cloud gesichert und auf allen Geräten synchronisiert. In **Teams** (z. B. eine Wache) teilen sich mehrere Personen gemeinsame Bausteine. Admins pflegen sie, alle Mitglieder können sie nutzen. Ohne Konto funktioniert die App wie bisher, dann wird nur lokal gespeichert.
+Für die App braucht man ein Konto (siehe Anmeldeseite oben). Textbausteine, Formulare und Einstellungen werden damit in der Cloud gesichert und auf allen Geräten synchronisiert. In **Teams** (z. B. eine Wache) teilen sich mehrere Personen gemeinsame Bausteine. Admins pflegen sie, alle Mitglieder können sie nutzen. Wer die App früher ohne Konto benutzt hat, wird nach der ersten Anmeldung gefragt, ob die Bausteine auf dem Gerät ins Konto übernommen werden sollen. Der **Hinweis an alle** erscheint nur für Angemeldete. Dafür muss [`supabase/migrations/20261029230000_hinweis_nur_angemeldet.sql`](supabase/migrations/20261029230000_hinweis_nur_angemeldet.sql) im SQL Editor ausgeführt sein.
+
+Ist in `webapp/config.js` keine Supabase eingetragen, gibt es keine Anmeldeseite, und die App speichert nur auf dem Gerät.
 
 Die Daten liegen bei **Supabase** (kostenloser Tarif, Server in Frankfurt).
 
@@ -368,7 +378,7 @@ Beim Konstruieren beachten:
 
 ## Datenschutz
 
-- Ohne Konto liegen Textbausteine, Formulare und Einstellungen nur lokal im Browser des Handys. Mit Konto werden sie zusätzlich bei Supabase (Frankfurt) gespeichert. Ausgefüllte Formulare und der Editor-Inhalt werden nie gespeichert oder hochgeladen.
+- Textbausteine, Formulare und Einstellungen liegen im Browser des Handys und im Konto bei Supabase (Frankfurt). Ausgefüllte Formulare und der Editor-Inhalt werden nie gespeichert oder hochgeladen. Die Vorschau legt ihre Beispiel-Bausteine nur vorübergehend im Browser ab und löscht sie beim Beenden.
 - Die Bluetooth-Verbindung ist verschlüsselt, und nur gekoppelte Handys werden angenommen.
 - **Diktat:** Die Spracherkennung des Browsers läuft je nach Gerät über Server von Google bzw. Apple. Keine identifizierenden Patientendaten diktieren.
 - **Rechtschreibprüfung:** läuft vollständig auf dem Gerät, es wird kein Text verschickt.

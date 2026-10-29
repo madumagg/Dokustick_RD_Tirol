@@ -44,6 +44,8 @@ const cloud = {
   timer: null,
 
   get enabled() { return !!this.sb; },
+  // Cloud in config.js eingerichtet (auch bevor start() laeuft): dann nur angemeldet nutzbar
+  get configured() { const c = window.DOKUSTICK_CONFIG || {}; return !!(c.supabaseUrl && c.supabaseAnonKey && window.supabase); },
 
   // Standard-Bereich: Eintraege fuer alle angemeldeten Benutzer, gepflegt von App-Admins
   get standardTeam() { return (this.account && this.info.standard_team) || null; },
@@ -474,7 +476,8 @@ const cloud = {
   renderAnnouncement() {
     const box = $('#announce'), text = (this.info.announcement || '').trim();
     box.replaceChildren();
-    if (!text || store.load('announceSeen', '') === text) return;
+    // Hinweis an alle nur fuer Angemeldete (liefert app_info ohnehin nur ihnen)
+    if (!text || !this.account || store.load('announceSeen', '') === text) return;
     box.append(el('div', { class: 'note announce' },
       el('span', { class: 'grow' }, text),
       el('button', { type: 'button', class: 'linkish', 'aria-label': 'Hinweis ausblenden', onclick: () => { store.save('announceSeen', text); this.renderAnnouncement(); } }, '✕')));
@@ -483,6 +486,7 @@ const cloud = {
   render() {
     const card = $('#accountCard'), teamsCard = $('#teamsCard'), teamsHead = $('#teamsHead');
     if (!card) return;
+    if (typeof gate !== 'undefined') gate.update();
     this.renderAnnouncement();
     support.render();
     const adminCard = $('#adminCard');
@@ -517,7 +521,7 @@ const cloud = {
       card.append(...kids(
         lost ? el('p', { class: 'note warn', style: 'margin-top:0' }, `Deine Anmeldung ist abgelaufen. Bitte melde dich wieder mit ${lost.email} an`,
           lost.pending ? ` – ${lost.pending} Änderung(en) auf diesem Gerät werden danach hochgeladen.` : '.') : null,
-        el('p', { class: 'help', style: 'margin-top:0' }, 'Mit einem Konto werden deine Bausteine, Formulare und Einstellungen gesichert und auf all deinen Geräten synchronisiert. Außerdem kannst du Teams beitreten.'),
+        el('p', { class: 'help', style: 'margin-top:0' }, 'Melde dich an oder registriere dich, um ProtoPilot zu nutzen. Deine Bausteine, Formulare und Einstellungen werden gesichert und auf all deinen Geräten abgeglichen. Außerdem kannst du Teams beitreten.'),
         mode === 'closed' ? el('p', { class: 'note' }, 'Neue Registrierungen sind derzeit geschlossen.') : null,
         mode === 'domains' ? el('p', { class: 'note' }, 'Registrierung nur mit E-Mail-Adressen von ' + (this.info.allowed_domains || []).map((d) => '@' + d).join(', ') + '.') : null,
         field('E-Mail', email),

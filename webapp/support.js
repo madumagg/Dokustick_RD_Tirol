@@ -12,6 +12,10 @@
 // "Was ist neu": Neuerungen fuer Benutzer pro Version, neueste zuerst.
 // Bei jeder Version mit sichtbaren Neuerungen hier einen Eintrag ergaenzen.
 const NEWS = [
+  { v: '0.45', items: [
+    'ProtoPilot startet jetzt mit einer Anmeldeseite: anmelden, registrieren, Link zu protopilot.at und „Was ist neu“. Die App selbst sieht man nur angemeldet. Offline bleibt man angemeldet.',
+    'Neu: Vorschau. Die App mit Beispiel-Bausteinen ausprobieren, ohne Konto. Gesendet und gespeichert wird dabei nichts, „Senden“ zeigt nur, was getippt würde.',
+    'Der Hinweis an alle erscheint nur noch für angemeldete Benutzer.'] },
   { v: '0.44', items: ['Administration: Superadmins. Sie sind geschützt, niemand kann ihnen die Rechte entziehen, sie sperren oder löschen. Nur ein Superadmin ernennt weitere Superadmins.'] },
   { v: '0.43', items: [
     'Neue Vorlagen nach dem SAN-Protokoll Tirol: „c – Kritische Blutung“ (inkl. V.a. HWS-Verletzung), „TNC – Traumacheck“ und „Verlauf“ (Bausteine → Vorlagen).',
