@@ -36,6 +36,17 @@ export default async function (t) {
   const blur = await A.evaluate(() => getComputedStyle(document.querySelector('nav')).backdropFilter);
   ok(/blur/.test(blur), 'Navigation ist eine Glasfläche: ' + blur);
   await A.screenshot({ path: t.out + '/79-glass-einstellungen.png' });
+  // Dialoge ohne Glas-Effekt (iPad: sonst verrutschen Text und Cursor in Eingabefeldern bei offener Tastatur)
+  await A.evaluate(() => openDialog('Test', [field('Name', el('input', { type: 'text', name: 'n', value: 'Hyperurikämie' })), field('Beschreibung', el('textarea', { name: 'b' }, 'Krankhaft erhöhter Harnsäurespiegel'))], { onSave: () => {} }));
+  const dlg = await A.evaluate(() => {
+    const d = document.querySelector('#dlg');
+    const bf = (n) => getComputedStyle(n).backdropFilter;
+    const alpha = Number((getComputedStyle(d).backgroundColor.match(/[\d.]+(?=\))/) || ['1'])[0]);
+    return { dialog: bf(d), inner: [...d.querySelectorAll('*')].map(bf).filter((x) => x && x !== 'none').length, alpha };
+  });
+  ok(dlg.dialog === 'none' && dlg.inner === 0 && dlg.alpha >= 0.95, 'Liquid Glass: Dialoge ohne Glas-Effekt, fast deckend ' + JSON.stringify(dlg));
+  await A.screenshot({ path: t.out + '/79-glass-dialog.png' });
+  await A.click('#dlg >> text=Abbrechen');
   await A.click('nav button[data-tab=write]');
   await A.evaluate(() => {
     const ta = document.querySelector('.doc-text'); ta.value = 'Pat. sitzend im Wohnzimmer angetroffen, ansprechbar.'; ta.dispatchEvent(new Event('input', { bubbles: true }));

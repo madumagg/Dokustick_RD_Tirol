@@ -12,6 +12,7 @@
 // "Was ist neu": Neuerungen fuer Benutzer pro Version, neueste zuerst.
 // Bei jeder Version mit sichtbaren Neuerungen hier einen Eintrag ergaenzen.
 const NEWS = [
+  { v: '0.47', items: ['Behoben: Im Theme Liquid Glass stand auf dem iPad in Dialogen (z. B. „Krankheit hinzufügen“) der Text bzw. der Cursor neben dem Eingabefeld. Dialoge sind dort jetzt fast deckend statt gläsern.'] },
   { v: '0.46', items: ['Arzneimittellisten: Dosierung und Hinweise (z. B. Kontraindikationen) dürfen jetzt bis 2000 Zeichen lang sein, Zeilenumbrüche bleiben erhalten. Neu ist ein Link für mehr Infos, z. B. ins Medikamentenlexikon, der in der Datenbank und im Baustein erscheint.'] },
   { v: '0.45', items: [
     'ProtoPilot startet jetzt mit einer Anmeldeseite: anmelden, registrieren, Link zu protopilot.at und „Was ist neu“. Die App selbst sieht man nur angemeldet. Offline bleibt man angemeldet.',
